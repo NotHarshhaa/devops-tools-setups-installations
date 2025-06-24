@@ -8,7 +8,7 @@
     "dev": "turbo run dev:next dev:docs",
     "dev:next": "next dev",
     "dev:docs": "velite dev",
-    "build": "turbo run build:next build:docs build:registry",
+    "build": "npm run build:next && npm run build:docs && npm run build:registry",
     "build:next": "next build",
     "build:registry": "shadcn build",
     "build:docs": "velite build",
