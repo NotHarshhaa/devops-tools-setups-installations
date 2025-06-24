@@ -1,0 +1,304 @@
+---
+title: GitLab CI/CD Setup Guide
+description: Comprehensive guide for setting up and configuring GitLab CI/CD pipelines in your projects.
+---
+
+This guide provides detailed instructions for setting up GitLab CI/CD in your projects and creating efficient pipelines.
+
+## Requirements
+
+- GitLab account (Cloud or Self-hosted)
+- Repository with code to build/test/deploy
+- `.gitlab-ci.yml` file in repository root
+- GitLab Runner (Cloud or Self-hosted)
+
+## Basic Setup
+
+### Pipeline Configuration
+
+```yaml
+# .gitlab-ci.yml
+stages:
+  - build
+  - test
+  - deploy
+
+build:
+  stage: build
+  image: node:20
+  script:
+    - npm ci
+    - npm run build
+
+test:
+  stage: test
+  image: node:20
+  script:
+    - npm ci
+    - npm test
+```
+
+## Runner Setup
+
+<Tabs defaultValue="shared">
+  <TabsList>
+    <TabsTrigger value="shared">Shared Runners</TabsTrigger>
+    <TabsTrigger value="specific">Specific Runners</TabsTrigger>
+    <TabsTrigger value="docker">Docker Runners</TabsTrigger>
+  </TabsList>
+
+  <TabsContent value="shared">
+    ### GitLab.com Shared Runners
+    
+    Enable in Project Settings:
+    1. Settings → CI/CD → Runners
+    2. Enable shared runners
+    
+    #### Usage Limits
+    ```yaml
+    # Free tier
+    - 400 CI/CD minutes/month
+    # Premium
+    - 10,000 CI/CD minutes/month
+    # Ultimate
+    - 50,000 CI/CD minutes/month
+    ```
+  </TabsContent>
+
+  <TabsContent value="specific">
+    ### Specific Runner Installation
+
+    ```bash
+    # 1. Install GitLab Runner
+    curl -L "https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.deb.sh" | sudo bash
+
+    # 2. Install the runner package
+    sudo apt-get install gitlab-runner
+
+    # 3. Register the runner
+    sudo gitlab-runner register \
+      --url "https://gitlab.com/" \
+      --registration-token "PROJECT_REGISTRATION_TOKEN" \
+      --description "my-runner" \
+      --executor "docker" \
+      --docker-image "docker:stable"
+
+    # 4. Start the runner
+    sudo gitlab-runner start
+    ```
+
+    #### Runner Tags
+    ```yaml
+    job:
+      tags:
+        - my-runner
+    ```
+  </TabsContent>
+
+  <TabsContent value="docker">
+    ### Docker Runner Setup
+
+    ```bash
+    # Run GitLab Runner in Docker
+    docker run -d --name gitlab-runner --restart always \
+      -v /srv/gitlab-runner/config:/etc/gitlab-runner \
+      -v /var/run/docker.sock:/var/run/docker.sock \
+      gitlab/gitlab-runner:latest
+
+    # Register the runner
+    docker exec -it gitlab-runner gitlab-runner register
+    ```
+
+    #### Docker Configuration
+    ```yaml
+    build:
+      image: docker:stable
+      services:
+        - docker:dind
+      variables:
+        DOCKER_TLS_CERTDIR: ""
+    ```
+  </TabsContent>
+</Tabs>
+
+## Common Pipeline Examples
+
+<Accordion type="single">
+  <AccordionItem value="pipeline-1">
+    <AccordionTrigger>
+      Multi-Stage Pipeline
+    </AccordionTrigger>
+    <AccordionContent>
+      ```yaml
+      stages:
+        - build
+        - test
+        - deploy
+      
+      variables:
+        NODE_ENV: "test"
+      
+      build:
+        stage: build
+        image: node:20
+        script:
+          - npm ci
+          - npm run build
+        artifacts:
+          paths:
+            - dist/
+      
+      test:
+        stage: test
+        image: node:20
+        script:
+          - npm ci
+          - npm test
+        coverage: '/Coverage: \d+\.\d+/'
+      
+      deploy:
+        stage: deploy
+        image: alpine
+        script:
+          - echo "Deploying application..."
+        environment:
+          name: production
+        only:
+          - main
+      ```
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="pipeline-2">
+    <AccordionTrigger>
+      Docker Build Pipeline
+    </AccordionTrigger>
+    <AccordionContent>
+      ```yaml
+      build_image:
+        image: docker:stable
+        services:
+          - docker:dind
+        variables:
+          DOCKER_TLS_CERTDIR: ""
+        script:
+          - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+          - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA .
+          - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+        only:
+          - main
+      ```
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>
+
+## CI/CD Variables
+
+<Accordion type="single">
+  <AccordionItem value="vars-1">
+    <AccordionTrigger>
+      Predefined Variables
+    </AccordionTrigger>
+    <AccordionContent>
+      ```yaml
+      job:
+        script:
+          - echo $CI_COMMIT_SHA        # The commit SHA
+          - echo $CI_COMMIT_REF_NAME   # Branch or tag name
+          - echo $CI_PROJECT_PATH      # Project path
+          - echo $CI_REGISTRY_IMAGE    # Container registry image
+      ```
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="vars-2">
+    <AccordionTrigger>
+      Custom Variables
+    </AccordionTrigger>
+    <AccordionContent>
+      ```yaml
+      variables:
+        STAGING_API: "https://api.staging.example.com"
+        PROD_API: "https://api.example.com"
+      
+      deploy_staging:
+        script:
+          - curl $STAGING_API/deploy
+        environment:
+          name: staging
+      ```
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>
+
+## Cache and Artifacts
+
+```yaml
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - node_modules/
+    - .npm/
+
+artifacts:
+  paths:
+    - dist/
+  reports:
+    coverage: coverage/lcov.info
+    junit: junit.xml
+```
+
+## Troubleshooting
+
+<Accordion type="single">
+  <AccordionItem value="issue-1">
+    <AccordionTrigger>
+      Pipeline Debugging
+    </AccordionTrigger>
+    <AccordionContent>
+      1. Enable debug logging:
+      ```yaml
+      job:
+        variables:
+          CI_DEBUG_TRACE: "true"
+      ```
+      2. Check runner status:
+      ```bash
+      gitlab-runner status
+      gitlab-runner verify
+      ```
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-2">
+    <AccordionTrigger>
+      Common Runner Issues
+    </AccordionTrigger>
+    <AccordionContent>
+      1. Check runner connectivity
+      2. Verify runner tags match job tags
+      3. Ensure sufficient runner resources
+      4. Check Docker socket permissions
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>
+
+## Best Practices
+
+1. **Pipeline Optimization**
+   - Use parallel jobs when possible
+   - Implement caching strategy
+   - Use dependencies wisely
+   - Keep build times under 10 minutes
+
+2. **Security**
+   - Use masked variables for secrets
+   - Implement review apps
+   - Scan for vulnerabilities
+   - Use protected branches
+
+3. **Maintenance**
+   - Regular runner updates
+   - Clean old artifacts
+   - Monitor pipeline metrics
+   - Document CI/CD configurations 

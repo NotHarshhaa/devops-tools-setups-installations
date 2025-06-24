@@ -1,0 +1,233 @@
+---
+title: GitHub CLI Installation Guide
+description: A comprehensive guide for installing and configuring GitHub CLI (gh) on different operating systems
+---
+
+GitHub CLI (`gh`) is GitHub's official command-line tool that brings GitHub to your terminal. It reduces the need to switch between the browser and terminal by enabling you to manage GitHub workflows directly from the command line.
+
+## Prerequisites
+
+- A system running Windows, macOS, or Linux
+- Administrative/sudo privileges
+- Terminal/Command Prompt access
+- Internet connection for downloading packages
+- A GitHub account
+
+## Installation Instructions
+
+<Tabs defaultValue="ubuntu">
+  <TabsList>
+    <TabsTrigger value="ubuntu">Ubuntu/Debian</TabsTrigger>
+    <TabsTrigger value="centos">CentOS/RHEL</TabsTrigger>
+    <TabsTrigger value="fedora">Fedora</TabsTrigger>
+    <TabsTrigger value="arch">Arch Linux</TabsTrigger>
+    <TabsTrigger value="alpine">Alpine</TabsTrigger>
+    <TabsTrigger value="suse">SUSE</TabsTrigger>
+    <TabsTrigger value="macos">macOS</TabsTrigger>
+    <TabsTrigger value="windows">Windows</TabsTrigger>
+  </TabsList>
+
+  <TabsContent value="ubuntu">
+    ### Ubuntu/Debian Installation
+
+    ```bash
+    # Add GitHub CLI repository
+    curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+
+    # Update package list and install
+    sudo apt update
+    sudo apt install gh -y
+    ```
+  </TabsContent>
+
+  <TabsContent value="centos">
+    ### CentOS/RHEL Installation
+
+    ```bash
+    # For RHEL/CentOS
+    sudo dnf config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo
+    sudo dnf install gh -y
+    ```
+  </TabsContent>
+
+  <TabsContent value="fedora">
+    ### Fedora Installation
+
+    ```bash
+    # For Fedora
+    sudo dnf install gh -y
+    ```
+  </TabsContent>
+
+  <TabsContent value="arch">
+    ### Arch Linux Installation
+
+    ```bash
+    sudo pacman -S github-cli
+    ```
+  </TabsContent>
+
+  <TabsContent value="alpine">
+    ### Alpine Linux Installation
+
+    ```bash
+    sudo apk add github-cli
+    ```
+  </TabsContent>
+
+  <TabsContent value="suse">
+    ### SUSE Linux Installation
+
+    ```bash
+    sudo zypper addrepo https://cli.github.com/packages/rpm/gh-cli.repo
+    sudo zypper ref
+    sudo zypper install gh
+    ```
+  </TabsContent>
+
+  <TabsContent value="macos">
+    ### macOS Installation
+
+    ```bash
+    brew install gh
+    ```
+  </TabsContent>
+
+  <TabsContent value="windows">
+    ### Windows Installation
+
+    ```powershell
+    # Using Winget
+    winget install --id GitHub.cli
+
+    # Using Chocolatey
+    choco install gh -y
+
+    # Using Scoop
+    scoop install gh
+    ```
+  </TabsContent>
+</Tabs>
+
+## Post-Installation Configuration
+
+After installing GitHub CLI, authenticate with your GitHub account:
+
+```bash
+# Start the login process
+gh auth login
+
+# Follow the interactive prompts to:
+# 1. Select GitHub.com or GitHub Enterprise Server
+# 2. Choose your preferred protocol (HTTPS or SSH)
+# 3. Authenticate through your browser or with a token
+```
+
+## Verification
+
+Verify the installation by checking the GitHub CLI version:
+
+```bash
+gh --version
+```
+
+## Common Commands and Usage
+
+### Repository Operations
+
+```bash
+# Clone a repository
+gh repo clone owner/repo
+
+# Create a new repository
+gh repo create [name] [flags]
+
+# Fork a repository
+gh repo fork [repository]
+
+# View repository
+gh repo view [repository]
+```
+
+### Issue Management
+
+```bash
+# Create an issue
+gh issue create
+
+# List issues
+gh issue list
+
+# View an issue
+gh issue view [issue-number]
+
+# Close an issue
+gh issue close [issue-number]
+```
+
+### Pull Request Operations
+
+```bash
+# Create a pull request
+gh pr create
+
+# List pull requests
+gh pr list
+
+# Check out a pull request locally
+gh pr checkout [pr-number]
+
+# View a pull request
+gh pr view [pr-number]
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Authentication Failed**
+   - Ensure you have a valid GitHub account
+   - Check your internet connection
+   - Try regenerating your authentication token
+   - Verify you have the correct permissions
+
+2. **Command Not Found**
+   - Ensure GitHub CLI is properly installed
+   - Check if the installation directory is in your PATH
+   - Try closing and reopening your terminal
+
+3. **API Rate Limiting**
+   - Authenticate with your GitHub account
+   - Wait for rate limit to reset
+   - Use authenticated requests
+
+## Security Considerations
+
+1. Keep GitHub CLI updated to the latest version
+2. Use token-based authentication instead of password
+3. Enable two-factor authentication on your GitHub account
+4. Regularly rotate access tokens
+5. Be cautious when using scripts that automate GitHub CLI commands
+
+## Environment Variables
+
+GitHub CLI respects several environment variables:
+
+```bash
+# Set default GitHub host
+export GH_HOST="github.com"
+
+# Set default editor
+export GH_EDITOR="vim"
+
+# Set default browser
+export GH_BROWSER="firefox"
+```
+
+## Additional Resources
+
+- [GitHub CLI Manual](https://cli.github.com/manual/)
+- [GitHub CLI Repository](https://github.com/cli/cli)
+- [GitHub CLI Reference](https://cli.github.com/reference)
+- [GitHub Documentation](https://docs.github.com) 

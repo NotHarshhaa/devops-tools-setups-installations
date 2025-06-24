@@ -1,0 +1,288 @@
+---
+title: "Ansible Installation Guide"
+description: "Complete guide for installing and setting up Ansible, an agentless automation tool that enables infrastructure as code, configuration management, and application deployment using simple YAML syntax."
+---
+
+Ansible is an open-source automation tool that enables infrastructure as code, configuration management, application deployment, and task automation. It uses a simple, human-readable language (YAML) and requires no agents on remote systems.
+
+## Prerequisites
+
+- Python 2.7 or Python 3.5+ (Python 3.9+ recommended)
+- Control node: Linux/Unix/macOS (Windows is not supported as a control node)
+- Managed nodes: Windows or Unix/Linux systems
+- SSH access to managed nodes
+- Administrative/sudo privileges
+
+## Installation Instructions
+
+<Tabs defaultValue="ubuntu">
+  <TabsList>
+    <TabsTrigger value="ubuntu">Ubuntu/Debian</TabsTrigger>
+    <TabsTrigger value="centos">CentOS/RHEL</TabsTrigger>
+    <TabsTrigger value="fedora">Fedora</TabsTrigger>
+    <TabsTrigger value="macos">macOS</TabsTrigger>
+    <TabsTrigger value="windows">Windows (WSL)</TabsTrigger>
+  </TabsList>
+
+  <TabsContent value="ubuntu">
+    ### Ubuntu/Debian Installation
+
+    ```bash
+    # Update package index
+    sudo apt update
+
+    # Install dependencies
+    sudo apt install -y python3 python3-pip
+
+    # Install Ansible
+    sudo apt install -y ansible
+
+    # Alternative: Install via pip
+    pip3 install --user ansible
+    ```
+  </TabsContent>
+
+  <TabsContent value="centos">
+    ### CentOS/RHEL Installation
+
+    ```bash
+    # Install EPEL repository
+    sudo dnf install -y epel-release
+
+    # Install Ansible
+    sudo dnf install -y ansible
+
+    # Alternative: Install via pip
+    pip3 install --user ansible
+    ```
+  </TabsContent>
+
+  <TabsContent value="fedora">
+    ### Fedora Installation
+
+    ```bash
+    # Install Ansible
+    sudo dnf install -y ansible
+
+    # Alternative: Install via pip
+    pip3 install --user ansible
+    ```
+  </TabsContent>
+
+  <TabsContent value="macos">
+    ### macOS Installation
+
+    ```bash
+    # Using Homebrew
+    brew install ansible
+
+    # Alternative: Install via pip
+    pip3 install --user ansible
+    ```
+  </TabsContent>
+
+  <TabsContent value="windows">
+    ### Windows (WSL) Installation
+
+    ```bash
+    # Install WSL2 and Ubuntu, then:
+    sudo apt update
+    sudo apt install -y ansible
+    ```
+  </TabsContent>
+</Tabs>
+
+## Basic Configuration
+
+### 1. Create Configuration Directory
+
+```bash
+# Create Ansible directory structure
+mkdir -p ~/ansible/playbooks
+cd ~/ansible
+```
+
+### 2. Configure Inventory
+
+Create `inventory.ini`:
+
+```ini
+[webservers]
+web1 ansible_host=192.168.1.10
+web2 ansible_host=192.168.1.11
+
+[dbservers]
+db1 ansible_host=192.168.1.20
+
+[all:vars]
+ansible_user=your_ssh_user
+ansible_ssh_private_key_file=~/.ssh/id_rsa
+```
+
+### 3. Configure Ansible
+
+Create `ansible.cfg`:
+
+```ini
+[defaults]
+inventory = ./inventory.ini
+remote_user = your_ssh_user
+private_key_file = ~/.ssh/id_rsa
+host_key_checking = False
+```
+
+## Basic Usage
+
+### 1. Test Connection
+
+```bash
+# Ping all hosts
+ansible all -m ping
+
+# Check specific group
+ansible webservers -m ping
+```
+
+### 2. Create First Playbook
+
+Create `playbooks/update_servers.yml`:
+
+```yaml
+---
+- name: Update all servers
+  hosts: all
+  become: yes
+  tasks:
+    - name: Update apt cache (Debian/Ubuntu)
+      apt:
+        update_cache: yes
+      when: ansible_os_family == "Debian"
+
+    - name: Update dnf cache (RHEL/CentOS)
+      dnf:
+        update_cache: yes
+      when: ansible_os_family == "RedHat"
+```
+
+### 3. Run Playbook
+
+```bash
+# Run playbook
+ansible-playbook playbooks/update_servers.yml
+
+# Run with extra variables
+ansible-playbook playbooks/update_servers.yml -e "variable=value"
+```
+
+## Advanced Configuration
+
+### 1. SSH Key Setup
+
+```bash
+# Generate SSH key
+ssh-keygen -t rsa -b 4096
+
+# Copy key to remote hosts
+ssh-copy-id username@remote_host
+```
+
+### 2. Vault Configuration
+
+```bash
+# Create encrypted file
+ansible-vault create secrets.yml
+
+# Edit encrypted file
+ansible-vault edit secrets.yml
+
+# Run playbook with vault
+ansible-playbook playbook.yml --ask-vault-pass
+```
+
+### 3. Role Structure
+
+```bash
+# Create role structure
+ansible-galaxy init my_role
+
+# Role directory structure
+my_role/
+├── defaults/
+├── files/
+├── handlers/
+├── meta/
+├── tasks/
+├── templates/
+└── vars/
+```
+
+## Best Practices
+
+1. **Project Organization**
+   - Use roles for reusable components
+   - Keep sensitive data in Ansible Vault
+   - Use version control for playbooks
+
+2. **Security**
+   - Use SSH keys instead of passwords
+   - Implement proper inventory grouping
+   - Secure sensitive variables
+
+3. **Performance**
+   - Use dynamic inventory when possible
+   - Implement proper error handling
+   - Use async tasks for long-running operations
+
+## Troubleshooting
+
+### Common Issues
+
+1. **SSH Connection Problems**
+   ```bash
+   # Check SSH connection
+   ssh -v username@remote_host
+   
+   # Test Ansible connection
+   ansible host -m ping -vvv
+   ```
+
+2. **Permission Issues**
+   ```bash
+   # Check sudo access
+   ansible host -m shell -a "sudo -l"
+   
+   # Run with become
+   ansible-playbook playbook.yml --become
+   ```
+
+3. **Python Issues**
+   ```bash
+   # Check Python version
+   ansible host -m setup -a "filter=ansible_python_version"
+   
+   # Install Python if missing
+   ansible host -m raw -a "apt-get install -y python3"
+   ```
+
+### Error Resolution
+
+1. **Module Errors**
+   - Check module documentation
+   - Verify module dependencies
+   - Use correct module parameters
+
+2. **Playbook Syntax**
+   ```bash
+   # Check playbook syntax
+   ansible-playbook --syntax-check playbook.yml
+   
+   # Run in check mode
+   ansible-playbook --check playbook.yml
+   ```
+
+## Additional Resources
+
+- [Official Ansible Documentation](https://docs.ansible.com)
+- [Ansible Galaxy](https://galaxy.ansible.com)
+- [Ansible Best Practices](https://docs.ansible.com/ansible/latest/user_guide/playbooks_best_practices.html)
+- [Ansible Examples](https://github.com/ansible/ansible-examples) 

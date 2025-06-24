@@ -1,0 +1,331 @@
+---
+title: Nagios Installation Guide
+description: A comprehensive guide for installing and configuring Nagios monitoring system
+---
+
+Nagios is an industry standard open-source monitoring system that watches hosts and services, alerting users when things go wrong and again when they get better.
+
+## Prerequisites
+
+- A system running Linux (preferably Ubuntu/CentOS)
+- Administrative/sudo privileges
+- Terminal access
+- LAMP stack (Linux, Apache, MySQL, PHP)
+- Development tools and compilers
+- Internet connection for downloading packages
+
+## Installation Instructions
+
+<Tabs defaultValue="ubuntu">
+  <TabsList>
+    <TabsTrigger value="ubuntu">Ubuntu/Debian</TabsTrigger>
+    <TabsTrigger value="centos">CentOS/RHEL</TabsTrigger>
+    <TabsTrigger value="source">Source</TabsTrigger>
+  </TabsList>
+
+  <TabsContent value="ubuntu">
+    ### Ubuntu/Debian Installation
+
+    ```bash
+    # Install required dependencies
+    sudo apt update
+    sudo apt install -y apache2 php php-gd libapache2-mod-php mysql-server php-mysql \
+      build-essential libgd-dev unzip apache2-utils
+
+    # Create Nagios user and group
+    sudo useradd nagios
+    sudo usermod -a -G nagios www-data
+
+    # Download Nagios Core
+    cd /tmp
+    wget https://github.com/NagiosEnterprises/nagioscore/archive/nagios-4.4.9.tar.gz
+    tar xzf nagios-*.tar.gz
+    cd nagioscore-nagios-*
+
+    # Compile and install Nagios
+    sudo ./configure --with-httpd-conf=/etc/apache2/sites-enabled
+    sudo make all
+    sudo make install
+    sudo make install-daemoninit
+    sudo make install-commandmode
+    sudo make install-config
+    sudo make install-webconf
+
+    # Create nagiosadmin user
+    sudo htpasswd -c /usr/local/nagios/etc/htpasswd.users nagiosadmin
+
+    # Install Nagios Plugins
+    cd /tmp
+    wget https://github.com/nagios-plugins/nagios-plugins/archive/release-2.4.2.tar.gz
+    tar xzf release-2.4.2.tar.gz
+    cd nagios-plugins-release-2.4.2
+    sudo ./tools/setup
+    sudo ./configure
+    sudo make
+    sudo make install
+
+    # Configure Apache
+    sudo a2enmod rewrite
+    sudo a2enmod cgi
+
+    # Start services
+    sudo systemctl restart apache2
+    sudo systemctl start nagios
+    sudo systemctl enable nagios
+    ```
+  </TabsContent>
+
+  <TabsContent value="centos">
+    ### CentOS/RHEL Installation
+
+    ```bash
+    # Install EPEL repository
+    sudo yum install -y epel-release
+
+    # Install required dependencies
+    sudo yum install -y httpd php php-gd gcc glibc glibc-common make gettext \
+      automake autoconf unzip perl perl-devel perl-ExtUtils-Embed openssl-devel \
+      wget mysql-server php-mysql gd gd-devel
+
+    # Create Nagios user and group
+    sudo useradd nagios
+    sudo usermod -a -G nagios apache
+
+    # Download Nagios Core
+    cd /tmp
+    wget https://github.com/NagiosEnterprises/nagioscore/archive/nagios-4.4.9.tar.gz
+    tar xzf nagios-*.tar.gz
+    cd nagioscore-nagios-*
+
+    # Compile and install Nagios
+    sudo ./configure
+    sudo make all
+    sudo make install
+    sudo make install-daemoninit
+    sudo make install-commandmode
+    sudo make install-config
+    sudo make install-webconf
+
+    # Create nagiosadmin user
+    sudo htpasswd -c /usr/local/nagios/etc/htpasswd.users nagiosadmin
+
+    # Install Nagios Plugins
+    cd /tmp
+    wget https://github.com/nagios-plugins/nagios-plugins/archive/release-2.4.2.tar.gz
+    tar xzf release-2.4.2.tar.gz
+    cd nagios-plugins-release-2.4.2
+    sudo ./tools/setup
+    sudo ./configure
+    sudo make
+    sudo make install
+
+    # Configure SELinux
+    sudo setsebool -P httpd_can_network_connect 1
+    sudo setsebool -P httpd_can_network_connect_db 1
+
+    # Start services
+    sudo systemctl start httpd
+    sudo systemctl enable httpd
+    sudo systemctl start nagios
+    sudo systemctl enable nagios
+    ```
+  </TabsContent>
+
+  <TabsContent value="source">
+    ### Source Installation
+
+    ```bash
+    # Download Nagios Core
+    wget https://github.com/NagiosEnterprises/nagioscore/archive/nagios-4.4.9.tar.gz
+    tar xzf nagios-*.tar.gz
+    cd nagioscore-nagios-*
+
+    # Configure and compile
+    ./configure --with-command-group=nagcmd
+    make all
+
+    # Create user and group
+    sudo make install-groups-users
+    sudo usermod -a -G nagios www-data
+
+    # Install binaries
+    sudo make install
+
+    # Install service/daemon
+    sudo make install-daemoninit
+
+    # Install command mode
+    sudo make install-commandmode
+
+    # Install configuration files
+    sudo make install-config
+
+    # Install Apache config files
+    sudo make install-webconf
+
+    # Configure firewall
+    sudo iptables -I INPUT -p tcp --destination-port 80 -j ACCEPT
+    ```
+  </TabsContent>
+</Tabs>
+
+## Post-Installation Configuration
+
+### Basic Configuration Files
+
+1. Main Configuration (nagios.cfg):
+```ini
+# Main configuration file
+log_file=/usr/local/nagios/var/nagios.log
+cfg_file=/usr/local/nagios/etc/objects/commands.cfg
+cfg_file=/usr/local/nagios/etc/objects/contacts.cfg
+cfg_file=/usr/local/nagios/etc/objects/timeperiods.cfg
+cfg_file=/usr/local/nagios/etc/objects/templates.cfg
+cfg_file=/usr/local/nagios/etc/objects/localhost.cfg
+```
+
+2. Resource Configuration (resource.cfg):
+```ini
+# User-defined macros
+$USER1$=/usr/local/nagios/libexec
+$USER2$=/usr/local/nagios/etc
+```
+
+3. Contacts Configuration (contacts.cfg):
+```ini
+define contact {
+    contact_name            nagiosadmin
+    use                    generic-contact
+    alias                  Nagios Admin
+    email                  your-email@domain.com
+}
+
+define contactgroup {
+    contactgroup_name      admins
+    alias                  Nagios Administrators
+    members               nagiosadmin
+}
+```
+
+### Adding Monitored Hosts
+
+Create a new host configuration file (hosts.cfg):
+```ini
+define host {
+    use                    linux-server
+    host_name              remote-server
+    alias                  Remote Linux Server
+    address                192.168.1.100
+    max_check_attempts     5
+    check_period          24x7
+    notification_interval  30
+    notification_period    24x7
+    notification_options   d,u,r
+    contact_groups         admins
+}
+
+define service {
+    use                    generic-service
+    host_name              remote-server
+    service_description    CPU Load
+    check_command         check_nrpe!check_load
+    notifications_enabled  1
+}
+```
+
+## Verification
+
+1. Verify configuration syntax:
+```bash
+sudo /usr/local/nagios/bin/nagios -v /usr/local/nagios/etc/nagios.cfg
+```
+
+2. Access web interface:
+```
+http://localhost/nagios/
+```
+
+3. Check service status:
+```bash
+sudo systemctl status nagios
+```
+
+## Common Configuration Options
+
+### Setting Up Email Notifications
+
+1. Install mail server:
+```bash
+# For Ubuntu/Debian
+sudo apt-get install postfix mailutils
+
+# For CentOS/RHEL
+sudo yum install postfix mailx
+```
+
+2. Configure email command in commands.cfg:
+```ini
+define command {
+    command_name    notify-by-email
+    command_line    /usr/bin/printf "%b" "***** Nagios *****\n\nNotification Type: $NOTIFICATIONTYPE$\nHost: $HOSTNAME$\nState: $HOSTSTATE$\nAddress: $HOSTADDRESS$\nInfo: $HOSTOUTPUT$\n\nDate/Time: $LONGDATETIME$\n" | /usr/bin/mail -s "** $NOTIFICATIONTYPE$ Host Alert: $HOSTNAME$ is $HOSTSTATE$ **" $CONTACTEMAIL$
+}
+```
+
+### Adding NRPE for Remote Monitoring
+
+1. Install NRPE on monitored host:
+```bash
+# Ubuntu/Debian
+sudo apt install nagios-nrpe-server nagios-plugins
+
+# CentOS/RHEL
+sudo yum install nrpe nagios-plugins-all
+```
+
+2. Configure NRPE (nrpe.cfg):
+```ini
+allowed_hosts=127.0.0.1,<nagios-server-ip>
+command[check_load]=/usr/lib/nagios/plugins/check_load -w 15,10,5 -c 30,25,20
+command[check_disk]=/usr/lib/nagios/plugins/check_disk -w 20% -c 10% -p /
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Web Interface Not Accessible**
+   - Check Apache configuration
+   - Verify permissions
+   - Check firewall settings
+   - Validate authentication settings
+
+2. **Service Checks Failing**
+   - Verify plugin permissions
+   - Check command definitions
+   - Validate host connectivity
+   - Review service configuration
+
+3. **Email Notifications Not Working**
+   - Check mail server configuration
+   - Verify contact settings
+   - Test mail delivery manually
+   - Check notification commands
+
+## Security Considerations
+
+1. Change default password immediately
+2. Use HTTPS for web interface
+3. Implement access control lists
+4. Regular security updates
+5. Monitor log files
+6. Use secure passwords
+7. Configure firewall rules
+8. Implement SSL/TLS for remote monitoring
+
+## Additional Resources
+
+- [Nagios Core Documentation](https://www.nagios.org/documentation/)
+- [Nagios Plugins Documentation](https://www.nagios.org/downloads/nagios-plugins/)
+- [Nagios Exchange](https://exchange.nagios.org/)
+- [Nagios Community](https://support.nagios.com/forum/)
+- [Nagios Solutions](https://www.nagios.org/solutions/) 

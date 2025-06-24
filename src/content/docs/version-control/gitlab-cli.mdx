@@ -1,0 +1,265 @@
+---
+title: GitLab CLI Installation Guide
+description: A comprehensive guide for installing and configuring GitLab CLI (glab) on different operating systems
+---
+
+GitLab CLI (`glab`) is an open source GitLab CLI tool that brings GitLab to your terminal. It allows you to manage GitLab operations directly from the command line, reducing context switching between the browser and terminal.
+
+## Prerequisites
+
+- A system running Windows, macOS, or Linux
+- Administrative/sudo privileges
+- Terminal/Command Prompt access
+- Internet connection for downloading packages
+- A GitLab account (self-hosted or GitLab.com)
+
+## Installation Instructions
+
+<Tabs defaultValue="ubuntu">
+  <TabsList>
+    <TabsTrigger value="ubuntu">Ubuntu/Debian</TabsTrigger>
+    <TabsTrigger value="centos">CentOS/RHEL</TabsTrigger>
+    <TabsTrigger value="fedora">Fedora</TabsTrigger>
+    <TabsTrigger value="arch">Arch Linux</TabsTrigger>
+    <TabsTrigger value="alpine">Alpine</TabsTrigger>
+    <TabsTrigger value="suse">SUSE</TabsTrigger>
+    <TabsTrigger value="macos">macOS</TabsTrigger>
+    <TabsTrigger value="windows">Windows</TabsTrigger>
+  </TabsList>
+
+  <TabsContent value="ubuntu">
+    ### Ubuntu/Debian Installation
+
+    ```bash
+    # Download the latest .deb package
+    curl -LO "https://gitlab.com/gitlab-org/cli/-/releases/download/v$(curl -s "https://gitlab.com/api/v4/projects/gitlab-org%2Fcli/releases" | grep tag_name | head -n 1 | cut -d'"' -f4)/glab_$(curl -s "https://gitlab.com/api/v4/projects/gitlab-org%2Fcli/releases" | grep tag_name | head -n 1 | cut -d'"' -f4)_linux_amd64.deb"
+
+    # Install the package
+    sudo dpkg -i glab_*_linux_amd64.deb
+    ```
+  </TabsContent>
+
+  <TabsContent value="centos">
+    ### CentOS/RHEL Installation
+
+    ```bash
+    # For RHEL/CentOS/Fedora
+    sudo dnf install glab
+    ```
+  </TabsContent>
+
+  <TabsContent value="fedora">
+    ### Fedora Installation
+
+    ```bash
+    # For Fedora
+    sudo dnf install glab
+    ```
+  </TabsContent>
+
+  <TabsContent value="arch">
+    ### Arch Linux Installation
+
+    ```bash
+    # Using yay
+    yay -S glab-bin
+
+    # Or using the AUR manually
+    git clone https://aur.archlinux.org/glab-bin.git
+    cd glab-bin
+    makepkg -si
+    ```
+  </TabsContent>
+
+  <TabsContent value="alpine">
+    ### Alpine Linux Installation
+
+    ```bash
+    sudo apk add glab
+    ```
+  </TabsContent>
+
+  <TabsContent value="suse">
+    ### SUSE Linux Installation
+
+    ```bash
+    sudo zypper install glab
+    ```
+  </TabsContent>
+
+  <TabsContent value="macos">
+    ### macOS Installation
+
+    ```bash
+    brew install glab
+    ```
+  </TabsContent>
+
+  <TabsContent value="windows">
+    ### Windows Installation
+
+    ```powershell
+    # Using Scoop
+    scoop install glab
+
+    # Using Chocolatey
+    choco install gitlab-cli -y
+    ```
+
+    #### Manual Installation
+    1. Download the latest Windows release from [GitLab CLI Releases](https://gitlab.com/gitlab-org/cli/-/releases)
+    2. Extract the archive
+    3. Add the binary location to your system's PATH
+  </TabsContent>
+</Tabs>
+
+## Post-Installation Configuration
+
+After installing GitLab CLI, authenticate with your GitLab account:
+
+```bash
+# Start the login process
+glab auth login
+
+# Follow the interactive prompts to:
+# 1. Enter your GitLab instance URL (default: https://gitlab.com)
+# 2. Enter your personal access token
+# 3. Choose your preferred protocol (HTTPS or SSH)
+```
+
+## Verification
+
+Verify the installation by checking the GitLab CLI version:
+
+```bash
+glab --version
+```
+
+## Common Commands and Usage
+
+### Repository Operations
+
+```bash
+# Clone a repository
+glab repo clone owner/repo
+
+# Create a new repository
+glab repo create [name]
+
+# Fork a repository
+glab repo fork [repository]
+
+# View repository
+glab repo view [repository]
+```
+
+### Issue Management
+
+```bash
+# Create an issue
+glab issue create
+
+# List issues
+glab issue list
+
+# View an issue
+glab issue view [issue-number]
+
+# Close an issue
+glab issue close [issue-number]
+```
+
+### Merge Request Operations
+
+```bash
+# Create a merge request
+glab mr create
+
+# List merge requests
+glab mr list
+
+# Check out a merge request locally
+glab mr checkout [mr-number]
+
+# View a merge request
+glab mr view [mr-number]
+```
+
+### CI/CD Pipeline Operations
+
+```bash
+# View pipeline status
+glab pipeline list
+
+# View pipeline logs
+glab pipeline ci view
+
+# Trigger a pipeline
+glab pipeline run
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Authentication Failed**
+   - Ensure you have a valid GitLab account
+   - Check your personal access token permissions
+   - Verify your GitLab instance URL
+   - Check your internet connection
+
+2. **Command Not Found**
+   - Ensure GitLab CLI is properly installed
+   - Check if the installation directory is in your PATH
+   - Try closing and reopening your terminal
+
+3. **API Rate Limiting**
+   - Authenticate with your GitLab account
+   - Wait for rate limit to reset
+   - Use authenticated requests
+
+## Security Considerations
+
+1. Keep GitLab CLI updated to the latest version
+2. Use tokens with minimum required permissions
+3. Enable two-factor authentication on your GitLab account
+4. Regularly rotate access tokens
+5. Never share or expose your personal access tokens
+6. Use environment variables for sensitive information
+
+## Environment Variables
+
+GitLab CLI respects several environment variables:
+
+```bash
+# Set default GitLab host
+export GITLAB_HOST="gitlab.com"
+
+# Set personal access token
+export GITLAB_TOKEN="your-token"
+
+# Set default editor
+export EDITOR="vim"
+```
+
+## Configuration File
+
+GitLab CLI configuration is stored in `~/.config/glab-cli/config.yml`:
+
+```yaml
+# Example configuration
+hosts:
+  gitlab.com:
+    token: your-token
+    git_protocol: ssh
+  gitlab.example.com:
+    token: your-enterprise-token
+    git_protocol: https
+```
+
+## Additional Resources
+
+- [GitLab CLI Documentation](https://gitlab.com/gitlab-org/cli/-/tree/main/docs)
+- [GitLab CLI Repository](https://gitlab.com/gitlab-org/cli)
+- [GitLab Documentation](https://docs.gitlab.com)
+- [GitLab API Documentation](https://docs.gitlab.com/ee/api/) 

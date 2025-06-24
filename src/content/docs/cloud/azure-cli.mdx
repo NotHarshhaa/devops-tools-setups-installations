@@ -1,0 +1,382 @@
+---
+title: Azure CLI Installation Guide
+description: Complete guide for installing and configuring Azure Command Line Interface (CLI) across different operating systems.
+---
+
+The Azure Command Line Interface (Azure CLI) is a cross-platform command-line tool for managing Azure resources.
+
+## Prerequisites
+
+- Active Azure subscription
+- Internet connection
+- Python 3.6 or later (for some operating systems)
+- Administrative privileges
+
+## Installation Instructions
+
+<Tabs defaultValue="ubuntu">
+  <TabsList>
+    <TabsTrigger value="ubuntu">Ubuntu/Debian</TabsTrigger>
+    <TabsTrigger value="centos">CentOS/RHEL</TabsTrigger>
+    <TabsTrigger value="fedora">Fedora</TabsTrigger>
+    <TabsTrigger value="arch">Arch Linux</TabsTrigger>
+    <TabsTrigger value="alpine">Alpine</TabsTrigger>
+    <TabsTrigger value="suse">SUSE</TabsTrigger>
+    <TabsTrigger value="windows">Windows</TabsTrigger>
+  </TabsList>
+
+  <TabsContent value="ubuntu">
+    ### Ubuntu/Debian Installation
+
+    ```bash
+    # Get packages needed for the installation process
+    sudo apt update
+    sudo apt install -y ca-certificates curl apt-transport-https lsb-release gnupg
+
+    # Download and install the Microsoft signing key
+    curl -sL https://packages.microsoft.com/keys/microsoft.asc | \
+      gpg --dearmor | \
+      sudo tee /etc/apt/trusted.gpg.d/microsoft.gpg > /dev/null
+
+    # Add the Azure CLI software repository
+    AZ_REPO=$(lsb_release -cs)
+    echo "deb [arch=`dpkg --print-architecture`] https://packages.microsoft.com/repos/azure-cli/ $AZ_REPO main" | \
+      sudo tee /etc/apt/sources.list.d/azure-cli.list
+
+    # Install Azure CLI
+    sudo apt update
+    sudo apt install -y azure-cli
+
+    # Verify installation
+    az --version
+    ```
+  </TabsContent>
+
+  <TabsContent value="centos">
+    ### CentOS/RHEL Installation
+
+    ```bash
+    # Import Microsoft repository key
+    sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
+
+    # Add Azure CLI repository
+    echo -e "[azure-cli]
+    name=Azure CLI
+    baseurl=https://packages.microsoft.com/yumrepos/azure-cli
+    enabled=1
+    gpgcheck=1
+    gpgkey=https://packages.microsoft.com/keys/microsoft.asc" | \
+      sudo tee /etc/yum.repos.d/azure-cli.repo
+
+    # Install Azure CLI
+    sudo yum install -y azure-cli
+
+    # Verify installation
+    az --version
+    ```
+  </TabsContent>
+
+  <TabsContent value="fedora">
+    ### Fedora Installation
+
+    ```bash
+    # Import Microsoft repository key
+    sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
+
+    # Add Azure CLI repository
+    sudo dnf install -y dnf-utils
+    sudo dnf config-manager --add-repo https://packages.microsoft.com/yumrepos/azure-cli
+    sudo dnf config-manager --set-enabled azure-cli
+
+    # Install Azure CLI
+    sudo dnf install -y azure-cli
+
+    # Verify installation
+    az --version
+    ```
+  </TabsContent>
+
+  <TabsContent value="arch">
+    ### Arch Linux Installation
+
+    ```bash
+    # Install Azure CLI using pacman
+    sudo pacman -Sy azure-cli
+
+    # Verify installation
+    az --version
+    ```
+  </TabsContent>
+
+  <TabsContent value="alpine">
+    ### Alpine Linux Installation
+
+    ```bash
+    # Install required packages
+    sudo apk add --no-cache python3 py3-pip
+
+    # Install Azure CLI
+    pip3 install --upgrade pip
+    pip3 install azure-cli
+
+    # Verify installation
+    az --version
+    ```
+  </TabsContent>
+
+  <TabsContent value="suse">
+    ### SUSE Linux Installation
+
+    ```bash
+    # Import Microsoft repository key
+    sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
+
+    # Add Azure CLI repository
+    sudo zypper addrepo --name 'Azure CLI' --check \
+      https://packages.microsoft.com/yumrepos/azure-cli azure-cli
+
+    # Install Azure CLI
+    sudo zypper install --no-confirm azure-cli
+
+    # Verify installation
+    az --version
+    ```
+  </TabsContent>
+
+  <TabsContent value="windows">
+    ### Windows Installation
+
+    ```powershell
+    # Install using Chocolatey
+    choco install azure-cli
+
+    # Alternative: Download MSI installer
+    # Navigate to: https://aka.ms/installazurecliwindows
+    # Download and run the MSI installer
+
+    # Verify installation
+    az --version
+    ```
+  </TabsContent>
+</Tabs>
+
+## Configuration
+
+### Initial Setup
+
+```bash
+# Login to Azure
+az login
+
+# List subscriptions
+az account list
+
+# Set default subscription
+az account set --subscription "My Subscription"
+```
+
+### Environment Configuration
+
+```bash
+# Set default output format
+az configure --defaults output=table
+
+# Set default location
+az configure --defaults location=westus2
+
+# View current configuration
+az configure --list-defaults
+```
+
+### Multiple Accounts
+
+```bash
+# Login with different account
+az login --use-device-code
+
+# Switch between accounts
+az account set --subscription "Other Subscription"
+
+# List accounts
+az account list --output table
+```
+
+## Basic Usage
+
+### Resource Groups
+
+```bash
+# Create resource group
+az group create --name myResourceGroup --location westus2
+
+# List resource groups
+az group list --output table
+
+# Delete resource group
+az group delete --name myResourceGroup --yes
+```
+
+### Virtual Machines
+
+```bash
+# Create VM
+az vm create \
+  --resource-group myResourceGroup \
+  --name myVM \
+  --image UbuntuLTS \
+  --admin-username azureuser \
+  --generate-ssh-keys
+
+# List VMs
+az vm list --output table
+
+# Start/Stop VM
+az vm start --resource-group myResourceGroup --name myVM
+az vm stop --resource-group myResourceGroup --name myVM
+```
+
+## Troubleshooting
+
+<Accordion type="single">
+  <AccordionItem value="issue-1">
+    <AccordionTrigger>
+      Authentication Issues
+    </AccordionTrigger>
+    <AccordionContent>
+      Check authentication status:
+      ```bash
+      # Clear cached credentials
+      az logout
+
+      # Login again
+      az login
+
+      # Check current account
+      az account show
+      ```
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-2">
+    <AccordionTrigger>
+      Extension Problems
+    </AccordionTrigger>
+    <AccordionContent>
+      Manage extensions:
+      ```bash
+      # List installed extensions
+      az extension list
+
+      # Update extensions
+      az extension update --name <extension-name>
+
+      # Remove problematic extension
+      az extension remove --name <extension-name>
+      ```
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-3">
+    <AccordionTrigger>
+      Performance Issues
+    </AccordionTrigger>
+    <AccordionContent>
+      Check and clear cache:
+      ```bash
+      # Clear CLI cache
+      az cache purge
+
+      # Check CLI version
+      az version
+
+      # Update CLI
+      az upgrade
+      ```
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>
+
+## Best Practices
+
+1. **Resource Management**
+   ```bash
+   # Use resource groups for organization
+   az group create --name myApp-prod --location westus2 --tags Environment=Production
+
+   # Use tags for resource tracking
+   az resource tag --tags Environment=Production \
+     --resource-group myResourceGroup \
+     --name myResource \
+     --resource-type "Microsoft.Web/sites"
+   ```
+
+2. **Security**
+   ```bash
+   # Use service principals for automation
+   az ad sp create-for-rbac --name myApp
+
+   # Manage role assignments
+   az role assignment create \
+     --assignee <principal-id> \
+     --role Contributor \
+     --resource-group myResourceGroup
+   ```
+
+3. **Automation**
+   ```bash
+   # Create deployment from template
+   az deployment group create \
+     --resource-group myResourceGroup \
+     --template-file template.json \
+     --parameters parameters.json
+   ```
+
+## Advanced Configuration
+
+### Azure CLI Configuration File
+
+```json
+// ~/.azure/config
+{
+  "defaults": {
+    "group": "myResourceGroup",
+    "location": "westus2",
+    "vm": {
+      "image": "UbuntuLTS",
+      "size": "Standard_DS2_v2"
+    }
+  }
+}
+```
+
+### Environment Variables
+
+```bash
+# Set environment variables
+export AZURE_SUBSCRIPTION_ID="your-subscription-id"
+export AZURE_TENANT_ID="your-tenant-id"
+export AZURE_CLIENT_ID="your-client-id"
+export AZURE_CLIENT_SECRET="your-client-secret"
+```
+
+## Extensions
+
+```bash
+# List available extensions
+az extension list-available --output table
+
+# Install extension
+az extension add --name <extension-name>
+
+# Update all extensions
+az extension update --all
+
+# Remove extension
+az extension remove --name <extension-name>
+```
+
+## Next Steps
+
+- [Azure CLI Command Reference](https://docs.microsoft.com/cli/azure/reference-index)
+- [Azure CLI Configuration](https://docs.microsoft.com/cli/azure/azure-cli-configuration)
+- [Azure CLI Best Practices](https://docs.microsoft.com/azure/developer/azure-cli/use-cli-effectively) 

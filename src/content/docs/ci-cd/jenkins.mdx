@@ -1,0 +1,239 @@
+---
+title: Jenkins Installation Guide
+description: Comprehensive guide for installing Jenkins CI/CD server across different operating systems with package manager specific commands.
+---
+
+This guide provides detailed instructions for installing Jenkins on various operating systems using their native package managers.
+
+## System Requirements
+
+- 256 MB RAM (minimum)
+- 1 GB RAM (recommended)
+- 10 GB disk space (for Jenkins and Docker)
+- Java 11 or Java 17 (either JRE or JDK)
+- Internet connection for package downloads
+
+## Installation Instructions
+
+<Tabs defaultValue="ubuntu">
+  <TabsList>
+    <TabsTrigger value="ubuntu">Ubuntu/Debian</TabsTrigger>
+    <TabsTrigger value="centos">CentOS/RHEL</TabsTrigger>
+    <TabsTrigger value="fedora">Fedora</TabsTrigger>
+    <TabsTrigger value="docker">Docker</TabsTrigger>
+    <TabsTrigger value="windows">Windows</TabsTrigger>
+  </TabsList>
+
+  <TabsContent value="ubuntu">
+    ### Ubuntu/Debian Installation
+    
+    ```bash
+    # Add Jenkins repository key
+    curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key | sudo tee \
+      /usr/share/keyrings/jenkins-keyring.asc > /dev/null
+
+    # Add Jenkins repository
+    echo deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] \
+      https://pkg.jenkins.io/debian-stable binary/ | sudo tee \
+      /etc/apt/sources.list.d/jenkins.list > /dev/null
+
+    # Update package index
+    sudo apt update
+
+    # Install Java
+    sudo apt install -y openjdk-17-jre
+
+    # Install Jenkins
+    sudo apt install -y jenkins
+
+    # Start Jenkins service
+    sudo systemctl start jenkins
+    sudo systemctl enable jenkins
+
+    # Check status
+    sudo systemctl status jenkins
+    ```
+
+    ### Post-Installation Steps
+
+    1. Get the initial admin password:
+    ```bash
+    sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+    ```
+
+    2. Open Jenkins in your browser:
+    ```
+    http://localhost:8080
+    ```
+  </TabsContent>
+
+  <TabsContent value="centos">
+    ### CentOS/RHEL Installation
+
+    ```bash
+    # Add Jenkins repository
+    sudo wget -O /etc/yum.repos.d/jenkins.repo \
+      https://pkg.jenkins.io/redhat-stable/jenkins.repo
+    sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+
+    # Install Java
+    sudo dnf install -y java-17-openjdk-devel
+
+    # Install Jenkins
+    sudo dnf install -y jenkins
+
+    # Start Jenkins service
+    sudo systemctl start jenkins
+    sudo systemctl enable jenkins
+
+    # Configure firewall
+    sudo firewall-cmd --permanent --add-port=8080/tcp
+    sudo firewall-cmd --reload
+    ```
+  </TabsContent>
+
+  <TabsContent value="fedora">
+    ### Fedora Installation
+
+    ```bash
+    # Add Jenkins repository
+    sudo wget -O /etc/yum.repos.d/jenkins.repo \
+      https://pkg.jenkins.io/redhat-stable/jenkins.repo
+    sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+
+    # Install Java
+    sudo dnf install -y java-17-openjdk-devel
+
+    # Install Jenkins
+    sudo dnf install -y jenkins
+
+    # Start Jenkins service
+    sudo systemctl start jenkins
+    sudo systemctl enable jenkins
+
+    # Configure firewall
+    sudo firewall-cmd --permanent --add-port=8080/tcp
+    sudo firewall-cmd --reload
+    ```
+  </TabsContent>
+
+  <TabsContent value="docker">
+    ### Docker Installation
+
+    ```bash
+    # Create a network for Jenkins
+    docker network create jenkins
+
+    # Run Jenkins container
+    docker run --name jenkins-server --restart=on-failure \
+      --detach \
+      --network jenkins \
+      --env DOCKER_HOST=tcp://docker:2376 \
+      --env DOCKER_CERT_PATH=/certs/client \
+      --env DOCKER_TLS_VERIFY=1 \
+      --publish 8080:8080 \
+      --publish 50000:50000 \
+      --volume jenkins-data:/var/jenkins_home \
+      --volume jenkins-docker-certs:/certs/client:ro \
+      jenkins/jenkins:lts-jdk17
+
+    # Get initial admin password
+    docker exec jenkins-server cat /var/jenkins_home/secrets/initialAdminPassword
+    ```
+  </TabsContent>
+
+  <TabsContent value="windows">
+    ### Windows Installation
+
+    ```powershell
+    # Install using Chocolatey
+    choco install jenkins
+
+    # Alternative: Download and install manually
+    # 1. Download Jenkins.msi from https://www.jenkins.io/download/
+    # 2. Run the installer
+    # 3. Follow installation wizard
+    ```
+
+    #### Java Installation
+    ```powershell
+    # Install OpenJDK 17
+    choco install openjdk17
+    ```
+  </TabsContent>
+</Tabs>
+
+## Initial Setup
+
+After installation, follow these steps to complete Jenkins setup:
+
+1. Access Jenkins web interface at `http://localhost:8080`
+2. Enter the initial admin password
+3. Install suggested plugins or select specific plugins
+4. Create first admin user
+5. Configure Jenkins URL
+
+## Security Configuration
+
+<Accordion type="single">
+  <AccordionItem value="security-1">
+    <AccordionTrigger>
+      Recommended Security Settings
+    </AccordionTrigger>
+    <AccordionContent>
+      1. Use HTTPS with valid SSL certificate
+      2. Enable security realm (e.g., Jenkins own database)
+      3. Use project-based matrix authorization
+      4. Configure CSRF protection
+      5. Enable agent-to-controller security
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>
+
+## Troubleshooting
+
+<Accordion type="single">
+  <AccordionItem value="issue-1">
+    <AccordionTrigger>
+      Jenkins fails to start
+    </AccordionTrigger>
+    <AccordionContent>
+      Check Java installation and version:
+      ```bash
+      java -version
+      ```
+      Ensure Java 11 or 17 is installed and JAVA_HOME is set correctly.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-2">
+    <AccordionTrigger>
+      Cannot access Jenkins web interface
+    </AccordionTrigger>
+    <AccordionContent>
+      1. Verify Jenkins is running:
+      ```bash
+      sudo systemctl status jenkins
+      ```
+      2. Check firewall settings
+      3. Ensure port 8080 is not in use
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>
+
+## Best Practices
+
+1. **Backup Configuration**
+   - Regularly backup JENKINS_HOME directory
+   - Use Configuration as Code plugin
+   - Store job configurations in version control
+
+2. **Performance Tuning**
+   - Adjust Java heap size settings
+   - Monitor resource usage
+   - Clean up old builds regularly
+
+3. **Plugin Management**
+   - Keep plugins updated
+   - Remove unused plugins
+   - Use LTS versions when possible 

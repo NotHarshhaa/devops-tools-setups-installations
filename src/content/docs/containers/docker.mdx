@@ -1,0 +1,336 @@
+---
+title: Docker Installation Guide
+description: Comprehensive guide for installing Docker across different operating systems with package manager specific commands.
+---
+
+This guide provides detailed instructions for installing Docker on various operating systems using their native package managers.
+
+## System Requirements
+
+- 64-bit processor
+- Minimum 4GB RAM
+- Supported operating system (see below)
+- Internet connection for package downloads
+
+## Installation Instructions
+
+<Tabs defaultValue="ubuntu">
+  <TabsList>
+    <TabsTrigger value="ubuntu">Ubuntu/Debian</TabsTrigger>
+    <TabsTrigger value="centos">CentOS/RHEL</TabsTrigger>
+    <TabsTrigger value="fedora">Fedora</TabsTrigger>
+    <TabsTrigger value="arch">Arch Linux</TabsTrigger>
+    <TabsTrigger value="alpine">Alpine</TabsTrigger>
+    <TabsTrigger value="suse">SUSE</TabsTrigger>
+    <TabsTrigger value="windows">Windows</TabsTrigger>
+  </TabsList>
+
+  <TabsContent value="ubuntu">
+    ### Ubuntu/Debian Installation
+    
+    ```bash
+    # Update package index
+    sudo apt update
+
+    # Install prerequisites
+    sudo apt install -y \
+      apt-transport-https \
+      ca-certificates \
+      curl \
+      gnupg \
+      lsb-release
+
+    # Add Docker's official GPG key
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+
+    # Set up the stable repository
+    echo \
+      "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
+      $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+    # Install Docker Engine
+    sudo apt update
+    sudo apt install -y docker-ce docker-ce-cli containerd.io
+
+    # Start and enable Docker
+    sudo systemctl start docker
+    sudo systemctl enable docker
+
+    # Verify installation
+    sudo docker --version
+    sudo docker run hello-world
+    ```
+
+    ### Post-Installation Steps
+
+    ```bash
+    # Create docker group
+    sudo groupadd docker
+
+    # Add your user to docker group
+    sudo usermod -aG docker $USER
+
+    # Apply new group membership
+    newgrp docker
+    ```
+  </TabsContent>
+
+  <TabsContent value="centos">
+    ### CentOS/RHEL Installation
+
+    ```bash
+    # Remove old versions
+    sudo yum remove docker \
+      docker-client \
+      docker-client-latest \
+      docker-common \
+      docker-latest \
+      docker-latest-logrotate \
+      docker-logrotate \
+      docker-engine
+
+    # Install required packages
+    sudo yum install -y yum-utils
+
+    # Add Docker repository
+    sudo yum-config-manager \
+      --add-repo \
+      https://download.docker.com/linux/centos/docker-ce.repo
+
+    # Install Docker Engine
+    sudo yum install -y docker-ce docker-ce-cli containerd.io
+
+    # Start and enable Docker
+    sudo systemctl start docker
+    sudo systemctl enable docker
+
+    # Verify installation
+    sudo docker --version
+    sudo docker run hello-world
+    ```
+  </TabsContent>
+
+  <TabsContent value="fedora">
+    ### Fedora Installation
+
+    ```bash
+    # Remove old versions
+    sudo dnf remove docker \
+      docker-client \
+      docker-client-latest \
+      docker-common \
+      docker-latest \
+      docker-latest-logrotate \
+      docker-logrotate \
+      docker-selinux \
+      docker-engine-selinux \
+      docker-engine
+
+    # Add Docker repository
+    sudo dnf -y install dnf-plugins-core
+    sudo dnf config-manager \
+      --add-repo \
+      https://download.docker.com/linux/fedora/docker-ce.repo
+
+    # Install Docker Engine
+    sudo dnf install -y docker-ce docker-ce-cli containerd.io
+
+    # Start and enable Docker
+    sudo systemctl start docker
+    sudo systemctl enable docker
+
+    # Verify installation
+    sudo docker --version
+    sudo docker run hello-world
+    ```
+  </TabsContent>
+
+  <TabsContent value="arch">
+    ### Arch Linux Installation
+
+    ```bash
+    # Install Docker
+    sudo pacman -Sy docker
+
+    # Start and enable Docker
+    sudo systemctl start docker
+    sudo systemctl enable docker
+
+    # Verify installation
+    sudo docker --version
+    sudo docker run hello-world
+    ```
+  </TabsContent>
+
+  <TabsContent value="alpine">
+    ### Alpine Linux Installation
+
+    ```bash
+    # Update package index
+    sudo apk update
+
+    # Install Docker
+    sudo apk add docker
+
+    # Start and enable Docker
+    sudo rc-update add docker boot
+    sudo service docker start
+
+    # Verify installation
+    sudo docker --version
+    sudo docker run hello-world
+    ```
+  </TabsContent>
+
+  <TabsContent value="suse">
+    ### SUSE Linux Installation
+
+    ```bash
+    # Add Docker repository
+    sudo zypper addrepo \
+      https://download.docker.com/linux/sles/docker-ce.repo
+
+    # Refresh repositories
+    sudo zypper refresh
+
+    # Install Docker
+    sudo zypper install docker-ce docker-ce-cli containerd.io
+
+    # Start and enable Docker
+    sudo systemctl start docker
+    sudo systemctl enable docker
+
+    # Verify installation
+    sudo docker --version
+    sudo docker run hello-world
+    ```
+  </TabsContent>
+
+  <TabsContent value="windows">
+    ### Windows Installation
+
+    ```powershell
+    # Install Docker Desktop using Chocolatey
+    choco install docker-desktop
+
+    # Verify installation
+    docker --version
+    docker run hello-world
+    ```
+
+    #### Alternative Installation Methods
+
+    1. **Direct Download**
+    - Download Docker Desktop from [Docker Hub](https://hub.docker.com/editions/community/docker-ce-desktop-windows/)
+    - Run the installer
+    - Follow the installation wizard
+
+    2. **WSL 2 Requirements**
+    - Enable WSL 2 feature
+    - Install Linux kernel update package
+    - Set WSL 2 as default
+    ```powershell
+    wsl --set-default-version 2
+    ```
+  </TabsContent>
+</Tabs>
+
+## Troubleshooting
+
+### Common Issues
+
+<Accordion type="single">
+  <AccordionItem value="issue-1">
+    <AccordionTrigger>
+      Permission denied while trying to connect to the Docker daemon socket
+    </AccordionTrigger>
+    <AccordionContent>
+      This usually means your user is not part of the docker group. Run:
+      ```bash
+      sudo groupadd docker
+      sudo usermod -aG docker $USER
+      newgrp docker
+      ```
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-2">
+    <AccordionTrigger>
+      Cannot connect to the Docker daemon
+    </AccordionTrigger>
+    <AccordionContent>
+      Make sure Docker daemon is running:
+      ```bash
+      sudo systemctl start docker
+      sudo systemctl status docker
+      ```
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-3">
+    <AccordionTrigger>
+      Docker command not found after installation
+    </AccordionTrigger>
+    <AccordionContent>
+      Try logging out and back in, or run:
+      ```bash
+      source ~/.bashrc
+      ```
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>
+
+## Post-Installation Configuration
+
+### Docker Compose Installation
+
+<Tabs defaultValue="linux">
+  <TabsList>
+    <TabsTrigger value="linux">Linux</TabsTrigger>
+    <TabsTrigger value="windows">Windows</TabsTrigger>
+  </TabsList>
+
+  <TabsContent value="linux">
+    ```bash
+    # Download Docker Compose
+    sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+
+    # Apply executable permissions
+    sudo chmod +x /usr/local/bin/docker-compose
+
+    # Verify installation
+    docker-compose --version
+    ```
+  </TabsContent>
+
+  <TabsContent value="windows">
+    ```powershell
+    # Docker Compose is included with Docker Desktop for Windows
+    docker-compose --version
+    ```
+  </TabsContent>
+</Tabs>
+
+### System Configuration
+
+```bash
+# Configure log rotation
+sudo tee /etc/docker/daemon.json <<EOF
+{
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "10m",
+    "max-file": "3"
+  }
+}
+EOF
+
+# Restart Docker
+sudo systemctl restart docker
+```
+
+## Next Steps
+
+- [Docker Getting Started Guide](https://docs.docker.com/get-started/)
+- [Docker Compose Overview](https://docs.docker.com/compose/)
+- [Docker Security Best Practices](https://docs.docker.com/engine/security/) 

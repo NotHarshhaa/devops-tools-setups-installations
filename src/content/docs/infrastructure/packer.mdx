@@ -1,0 +1,260 @@
+---
+title: "HashiCorp Packer Installation Guide"
+description: "Detailed instructions for installing and using HashiCorp Packer, an open-source tool for creating identical machine images for multiple platforms from a single source configuration."
+---
+
+Packer is an open-source tool by HashiCorp that enables you to create identical machine images for multiple platforms from a single source configuration. It automates the creation of any type of machine image.
+
+## Prerequisites
+
+- A 64-bit operating system
+- Minimum 1GB RAM
+- Administrative/sudo privileges
+- Internet connection for downloading packages
+- Cloud provider credentials (if building cloud images)
+
+## Installation Instructions
+
+<Tabs defaultValue="ubuntu">
+  <TabsList>
+    <TabsTrigger value="ubuntu">Ubuntu/Debian</TabsTrigger>
+    <TabsTrigger value="centos">CentOS/RHEL</TabsTrigger>
+    <TabsTrigger value="fedora">Fedora</TabsTrigger>
+    <TabsTrigger value="macos">macOS</TabsTrigger>
+    <TabsTrigger value="windows">Windows</TabsTrigger>
+  </TabsList>
+
+  <TabsContent value="ubuntu">
+    ### Ubuntu/Debian Installation
+
+    ```bash
+    # Add HashiCorp GPG key
+    wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+
+    # Add HashiCorp repository
+    echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+
+    # Update and install Packer
+    sudo apt update
+    sudo apt install packer
+    ```
+  </TabsContent>
+
+  <TabsContent value="centos">
+    ### CentOS/RHEL Installation
+
+    ```bash
+    # Add HashiCorp repository
+    sudo yum install -y yum-utils
+    sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo
+
+    # Install Packer
+    sudo yum install packer
+    ```
+  </TabsContent>
+
+  <TabsContent value="fedora">
+    ### Fedora Installation
+
+    ```bash
+    # Add HashiCorp repository
+    sudo dnf install -y dnf-plugins-core
+    sudo dnf config-manager --add-repo https://rpm.releases.hashicorp.com/fedora/hashicorp.repo
+
+    # Install Packer
+    sudo dnf install packer
+    ```
+  </TabsContent>
+
+  <TabsContent value="macos">
+    ### macOS Installation
+
+    ```bash
+    # Using Homebrew
+    brew tap hashicorp/tap
+    brew install hashicorp/tap/packer
+
+    # Update if already installed
+    brew upgrade hashicorp/tap/packer
+    ```
+  </TabsContent>
+
+  <TabsContent value="windows">
+    ### Windows Installation
+
+    ```powershell
+    # Install using Chocolatey
+    choco install packer
+
+    # Alternative: Download from official website
+    # Navigate to: https://www.packer.io/downloads
+    # Download the Windows binary
+    # Add to PATH environment variable
+    ```
+  </TabsContent>
+</Tabs>
+
+## Verifying Installation
+
+```bash
+# Check Packer version
+packer version
+
+# View available commands
+packer -help
+```
+
+## Basic Configuration
+
+### 1. Create a Basic Template
+
+Create `example.pkr.hcl`:
+
+```hcl
+packer {
+  required_plugins {
+    amazon = {
+      version = ">= 1.0.0"
+      source  = "github.com/hashicorp/amazon"
+    }
+  }
+}
+
+source "amazon-ebs" "ubuntu" {
+  ami_name      = "learn-packer-linux-aws"
+  instance_type = "t2.micro"
+  region        = "us-west-2"
+  source_ami_filter {
+    filters = {
+      name                = "ubuntu/images/*ubuntu-focal-20.04-amd64-server-*"
+      root-device-type    = "ebs"
+      virtualization-type = "hvm"
+    }
+    most_recent = true
+    owners      = ["099720109477"]
+  }
+  ssh_username = "ubuntu"
+}
+
+build {
+  sources = [
+    "source.amazon-ebs.ubuntu"
+  ]
+}
+```
+
+### 2. Initialize Plugins
+
+```bash
+# Initialize Packer configuration
+packer init .
+
+# Format configuration files
+packer fmt .
+```
+
+## Building Images
+
+### 1. Validate Configuration
+
+```bash
+# Validate template
+packer validate .
+```
+
+### 2. Build Image
+
+```bash
+# Build image
+packer build .
+
+# Build with variables
+packer build -var 'aws_access_key=YOUR_KEY' .
+```
+
+## Environment Setup
+
+### 1. Cloud Provider Authentication
+
+```bash
+# AWS credentials
+export AWS_ACCESS_KEY_ID="your_access_key"
+export AWS_SECRET_ACCESS_KEY="your_secret_key"
+export AWS_DEFAULT_REGION="your_region"
+
+# Azure credentials
+export ARM_SUBSCRIPTION_ID="your_subscription_id"
+export ARM_CLIENT_ID="your_client_id"
+export ARM_CLIENT_SECRET="your_client_secret"
+export ARM_TENANT_ID="your_tenant_id"
+```
+
+### 2. Logging Configuration
+
+```bash
+# Enable detailed logging
+export PACKER_LOG=1
+export PACKER_LOG_PATH="packer.log"
+```
+
+## Best Practices
+
+1. **Template Organization**
+   - Use variables for reusable values
+   - Implement modular configurations
+   - Version control your templates
+
+2. **Security**
+   - Use environment variables for secrets
+   - Implement minimal access permissions
+   - Regularly update base images
+
+3. **Build Optimization**
+   - Use provisioner scripts efficiently
+   - Implement parallel builds where possible
+   - Clean up temporary files
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Authentication Errors**
+   - Verify cloud credentials
+   - Check environment variables
+   - Validate IAM permissions
+
+2. **Build Failures**
+   ```bash
+   # Debug mode
+   packer build -debug .
+   
+   # On error
+   export PACKER_LOG=1
+   packer build .
+   ```
+
+3. **Network Issues**
+   - Check VPC/subnet configurations
+   - Verify security group rules
+   - Ensure internet connectivity
+
+### Error Resolution
+
+1. **Plugin Issues**
+   ```bash
+   # Clean plugin cache
+   rm -rf ~/.packer.d/plugins
+   packer init -upgrade .
+   ```
+
+2. **SSH Problems**
+   - Verify SSH username
+   - Check security group rules
+   - Validate key pairs
+
+## Additional Resources
+
+- [Official Packer Documentation](https://www.packer.io/docs)
+- [Packer GitHub Repository](https://github.com/hashicorp/packer)
+- [HashiCorp Learn - Packer](https://learn.hashicorp.com/packer)
+- [Community Templates](https://github.com/hashicorp/packer-examples) 

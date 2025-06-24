@@ -1,0 +1,334 @@
+---
+title: Prometheus Installation Guide
+description: A comprehensive guide for installing and configuring Prometheus monitoring system
+---
+
+Prometheus is an open-source systems monitoring and alerting toolkit. It collects and stores metrics as time series data, with rich query language and alerting capabilities.
+
+## Prerequisites
+
+- A system running Linux, macOS, or Windows
+- Administrative/sudo privileges
+- Terminal/Command Prompt access
+- Docker (optional, for containerized installation)
+- Sufficient disk space (recommended: 50GB+)
+- Internet connection for downloading packages
+
+## Installation Instructions
+
+<Tabs defaultValue="ubuntu">
+  <TabsList>
+    <TabsTrigger value="ubuntu">Ubuntu/Debian</TabsTrigger>
+    <TabsTrigger value="centos">CentOS/RHEL</TabsTrigger>
+    <TabsTrigger value="docker">Docker</TabsTrigger>
+    <TabsTrigger value="binary">Binary</TabsTrigger>
+  </TabsList>
+
+  <TabsContent value="ubuntu">
+    ### Ubuntu/Debian Installation
+
+    ```bash
+    # Create Prometheus system user
+    sudo useradd --no-create-home --shell /bin/false prometheus
+
+    # Create directories
+    sudo mkdir /etc/prometheus
+    sudo mkdir /var/lib/prometheus
+    
+    # Download Prometheus
+    wget https://github.com/prometheus/prometheus/releases/download/v2.45.0/prometheus-2.45.0.linux-amd64.tar.gz
+    
+    # Extract and move files
+    tar xvf prometheus-*.tar.gz
+    cd prometheus-*/
+    sudo cp prometheus /usr/local/bin/
+    sudo cp promtool /usr/local/bin/
+    sudo cp -r consoles/ /etc/prometheus
+    sudo cp -r console_libraries/ /etc/prometheus
+    
+    # Configure Prometheus
+    sudo tee /etc/prometheus/prometheus.yml << EOF
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+EOF
+
+    # Create systemd service
+    sudo tee /etc/systemd/system/prometheus.service << EOF
+[Unit]
+Description=Prometheus
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=prometheus
+Group=prometheus
+Type=simple
+ExecStart=/usr/local/bin/prometheus \
+    --config.file /etc/prometheus/prometheus.yml \
+    --storage.tsdb.path /var/lib/prometheus/ \
+    --web.console.templates=/etc/prometheus/consoles \
+    --web.console.libraries=/etc/prometheus/console_libraries
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    # Set permissions
+    sudo chown -R prometheus:prometheus /etc/prometheus
+    sudo chown -R prometheus:prometheus /var/lib/prometheus
+
+    # Start Prometheus
+    sudo systemctl daemon-reload
+    sudo systemctl start prometheus
+    sudo systemctl enable prometheus
+    ```
+  </TabsContent>
+
+  <TabsContent value="centos">
+    ### CentOS/RHEL Installation
+
+    ```bash
+    # Create Prometheus user
+    sudo useradd --no-create-home --shell /bin/false prometheus
+
+    # Create directories
+    sudo mkdir /etc/prometheus
+    sudo mkdir /var/lib/prometheus
+
+    # Download Prometheus
+    wget https://github.com/prometheus/prometheus/releases/download/v2.45.0/prometheus-2.45.0.linux-amd64.tar.gz
+
+    # Extract and move files
+    tar xvf prometheus-*.tar.gz
+    cd prometheus-*/
+    sudo cp prometheus /usr/local/bin/
+    sudo cp promtool /usr/local/bin/
+    sudo cp -r consoles/ /etc/prometheus
+    sudo cp -r console_libraries/ /etc/prometheus
+
+    # Configure Prometheus (same configuration as Ubuntu)
+    sudo tee /etc/prometheus/prometheus.yml << EOF
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+EOF
+
+    # Create systemd service (same as Ubuntu)
+    sudo tee /etc/systemd/system/prometheus.service << EOF
+[Unit]
+Description=Prometheus
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=prometheus
+Group=prometheus
+Type=simple
+ExecStart=/usr/local/bin/prometheus \
+    --config.file /etc/prometheus/prometheus.yml \
+    --storage.tsdb.path /var/lib/prometheus/ \
+    --web.console.templates=/etc/prometheus/consoles \
+    --web.console.libraries=/etc/prometheus/console_libraries
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    # Set permissions
+    sudo chown -R prometheus:prometheus /etc/prometheus
+    sudo chown -R prometheus:prometheus /var/lib/prometheus
+
+    # Start and enable Prometheus
+    sudo systemctl daemon-reload
+    sudo systemctl start prometheus
+    sudo systemctl enable prometheus
+    ```
+  </TabsContent>
+
+  <TabsContent value="docker">
+    ### Docker Installation
+
+    ```bash
+    # Create directories for Prometheus data and config
+    mkdir -p prometheus/data
+    
+    # Create Prometheus configuration
+    cat << EOF > prometheus/prometheus.yml
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+EOF
+
+    # Run Prometheus container
+    docker run -d \
+      --name prometheus \
+      -p 9090:9090 \
+      -v $(pwd)/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml \
+      -v $(pwd)/prometheus/data:/prometheus \
+      prom/prometheus:v2.45.0
+    ```
+  </TabsContent>
+
+  <TabsContent value="binary">
+    ### Binary Installation
+
+    ```bash
+    # Download Prometheus
+    wget https://github.com/prometheus/prometheus/releases/download/v2.45.0/prometheus-2.45.0.linux-amd64.tar.gz
+    
+    # Extract archive
+    tar xvf prometheus-*.tar.gz
+    cd prometheus-*/
+    
+    # Run Prometheus
+    ./prometheus --config.file=prometheus.yml
+    ```
+  </TabsContent>
+</Tabs>
+
+## Post-Installation Configuration
+
+### Basic Configuration File (prometheus.yml)
+
+```yaml
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  # - "first.rules"
+  # - "second.rules"
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: node
+    static_configs:
+      - targets: ['localhost:9100']
+```
+
+### Adding Node Exporter
+
+```bash
+# Install Node Exporter (Ubuntu/Debian)
+wget https://github.com/prometheus/node_exporter/releases/download/v1.6.0/node_exporter-1.6.0.linux-amd64.tar.gz
+tar xvf node_exporter-*.tar.gz
+sudo cp node_exporter-*/node_exporter /usr/local/bin
+sudo useradd -rs /bin/false node_exporter
+
+# Create systemd service for Node Exporter
+sudo tee /etc/systemd/system/node_exporter.service << EOF
+[Unit]
+Description=Node Exporter
+After=network.target
+
+[Service]
+User=node_exporter
+Group=node_exporter
+Type=simple
+ExecStart=/usr/local/bin/node_exporter
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Start Node Exporter
+sudo systemctl daemon-reload
+sudo systemctl start node_exporter
+sudo systemctl enable node_exporter
+```
+
+## Verification
+
+Verify the installation by:
+
+1. Checking the Prometheus service status:
+```bash
+sudo systemctl status prometheus
+```
+
+2. Accessing the Prometheus web interface:
+```
+http://localhost:9090
+```
+
+3. Verifying metrics collection:
+```
+http://localhost:9090/metrics
+```
+
+## Common Configuration Options
+
+### Setting Up Basic Authentication
+
+1. Create password file:
+```bash
+sudo apt install apache2-utils
+sudo htpasswd -c /etc/prometheus/.htpasswd admin
+```
+
+2. Update Prometheus configuration:
+```yaml
+web:
+  basic_auth_users:
+    admin: <hashed-password>
+```
+
+### Configuring Retention
+
+Update the Prometheus service file with retention settings:
+```bash
+ExecStart=/usr/local/bin/prometheus \
+    --storage.tsdb.retention.time=15d \
+    --storage.tsdb.retention.size=50GB
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Service Won't Start**
+   - Check logs: `sudo journalctl -u prometheus`
+   - Verify permissions on data directory
+   - Validate configuration file syntax
+
+2. **Cannot Scrape Targets**
+   - Check firewall settings
+   - Verify target endpoints are accessible
+   - Check network connectivity
+
+3. **High Memory Usage**
+   - Adjust retention period
+   - Review query patterns
+   - Consider federation or remote storage
+
+## Security Considerations
+
+1. Use HTTPS for web interface
+2. Implement authentication
+3. Use secure passwords and rotate regularly
+4. Restrict network access
+5. Keep Prometheus and exporters updated
+6. Use minimal permissions for service accounts
+
+## Additional Resources
+
+- [Official Prometheus Documentation](https://prometheus.io/docs/introduction/overview/)
+- [Prometheus Best Practices](https://prometheus.io/docs/practices/naming/)
+- [PromQL Tutorial](https://prometheus.io/docs/prometheus/latest/querying/basics/)
+- [Alerting Rules](https://prometheus.io/docs/prometheus/latest/configuration/alerting_rules/) 

@@ -1,0 +1,188 @@
+---
+title: "Terraform Installation Guide"
+description: "A comprehensive guide for installing and configuring HashiCorp Terraform, an Infrastructure as Code (IaC) tool for building, changing, and versioning infrastructure safely and efficiently."
+---
+
+Terraform is HashiCorp's Infrastructure as Code (IaC) tool that lets you define both cloud and on-prem resources in human-readable configuration files that you can version, reuse, and share.
+
+## Prerequisites
+
+- A 64-bit operating system
+- System with at least 2GB RAM
+- Internet connection for downloading packages
+- Administrative/sudo privileges
+
+## Installation Instructions
+
+<Tabs defaultValue="ubuntu">
+  <TabsList>
+    <TabsTrigger value="ubuntu">Ubuntu/Debian</TabsTrigger>
+    <TabsTrigger value="centos">CentOS/RHEL</TabsTrigger>
+    <TabsTrigger value="fedora">Fedora</TabsTrigger>
+    <TabsTrigger value="macos">macOS</TabsTrigger>
+    <TabsTrigger value="windows">Windows</TabsTrigger>
+  </TabsList>
+
+  <TabsContent value="ubuntu">
+    ### Ubuntu/Debian Installation
+
+    ```bash
+    # Add HashiCorp GPG key
+    wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+
+    # Add HashiCorp repository
+    echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+
+    # Update and install Terraform
+    sudo apt update
+    sudo apt install terraform
+    ```
+  </TabsContent>
+
+  <TabsContent value="centos">
+    ### CentOS/RHEL Installation
+
+    ```bash
+    # Add HashiCorp repository
+    sudo yum install -y yum-utils
+    sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo
+
+    # Install Terraform
+    sudo yum install terraform
+    ```
+  </TabsContent>
+
+  <TabsContent value="fedora">
+    ### Fedora Installation
+
+    ```bash
+    # Add HashiCorp repository
+    sudo dnf install -y dnf-plugins-core
+    sudo dnf config-manager --add-repo https://rpm.releases.hashicorp.com/fedora/hashicorp.repo
+
+    # Install Terraform
+    sudo dnf install terraform
+    ```
+  </TabsContent>
+
+  <TabsContent value="macos">
+    ### macOS Installation
+
+    ```bash
+    # Using Homebrew
+    brew tap hashicorp/tap
+    brew install hashicorp/tap/terraform
+
+    # Update if already installed
+    brew upgrade hashicorp/tap/terraform
+    ```
+  </TabsContent>
+
+  <TabsContent value="windows">
+    ### Windows Installation
+
+    ```powershell
+    # Install using Chocolatey
+    choco install terraform
+
+    # Alternative: Download from official website
+    # Navigate to: https://www.terraform.io/downloads.html
+    # Download the Windows binary
+    # Add to PATH environment variable
+    ```
+  </TabsContent>
+</Tabs>
+
+## Verifying Installation
+
+```bash
+# Check Terraform version
+terraform version
+
+# Initialize Terraform in a directory
+terraform init
+```
+
+## Post-Installation Setup
+
+### 1. Configure Auto-completion (Bash)
+
+```bash
+# Add to ~/.bashrc
+terraform -install-autocomplete
+```
+
+### 2. Environment Variables
+
+Common environment variables to consider:
+
+```bash
+# Provider-specific auth (example for AWS)
+export AWS_ACCESS_KEY_ID="your_access_key"
+export AWS_SECRET_ACCESS_KEY="your_secret_key"
+export AWS_DEFAULT_REGION="your_region"
+
+# Terraform specific
+export TF_LOG=DEBUG  # For debugging
+export TF_VAR_name="value"  # For variables
+```
+
+## Best Practices
+
+1. **State Management**
+   - Use remote state storage (like S3, Azure Storage, or GCS)
+   - Enable state locking
+   - Use workspaces for environment separation
+
+2. **Security**
+   - Never commit sensitive credentials to version control
+   - Use variable files for environment-specific values
+   - Implement proper IAM policies
+
+3. **Code Organization**
+   - Use modules for reusable components
+   - Follow a consistent directory structure
+   - Implement proper tagging strategy
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Provider Plugin Issues**
+   ```bash
+   # Clear plugin cache
+   rm -rf ~/.terraform.d/plugins
+   terraform init -upgrade
+   ```
+
+2. **State Lock Issues**
+   ```bash
+   # Force unlock (use with caution)
+   terraform force-unlock LOCK_ID
+   ```
+
+3. **Version Conflicts**
+   ```bash
+   # Use specific version
+   terraform init -upgrade
+   terraform providers
+   ```
+
+### Error Resolution
+
+1. **Authentication Errors**
+   - Verify credentials are properly set
+   - Check IAM permissions
+   - Validate provider configuration
+
+2. **Network Issues**
+   - Check proxy settings
+   - Verify firewall rules
+   - Ensure registry.terraform.io is accessible
+
+## Additional Resources
+
+- [Official Terraform Documentation](https://www.terraform.io/docs)
+- [Terraform Registry](https://registry.terraform.io)
+- [HashiCorp Learn](https://learn.hashicorp.com/terraform)
+- [Terraform Best Practices](https://www.terraform-best-practices.com/) 

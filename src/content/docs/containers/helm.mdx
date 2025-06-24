@@ -1,0 +1,302 @@
+---
+title: Helm Installation Guide
+description: Complete guide for installing Helm package manager for Kubernetes across different operating systems.
+---
+
+Helm is the package manager for Kubernetes. This guide covers installation methods across different operating systems.
+
+## Prerequisites
+
+- A Kubernetes cluster
+- `kubectl` installed and configured
+
+## Installation Instructions
+
+<Tabs defaultValue="ubuntu">
+  <TabsList>
+    <TabsTrigger value="ubuntu">Ubuntu/Debian</TabsTrigger>
+    <TabsTrigger value="centos">CentOS/RHEL</TabsTrigger>
+    <TabsTrigger value="fedora">Fedora</TabsTrigger>
+    <TabsTrigger value="arch">Arch Linux</TabsTrigger>
+    <TabsTrigger value="alpine">Alpine</TabsTrigger>
+    <TabsTrigger value="suse">SUSE</TabsTrigger>
+    <TabsTrigger value="windows">Windows</TabsTrigger>
+  </TabsList>
+
+  <TabsContent value="ubuntu">
+    ### Ubuntu/Debian Installation
+
+    ```bash
+    # Add Helm repository
+    curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
+
+    # Add apt repository
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
+
+    # Update package list
+    sudo apt update
+
+    # Install Helm
+    sudo apt install helm
+
+    # Verify installation
+    helm version
+    ```
+  </TabsContent>
+
+  <TabsContent value="centos">
+    ### CentOS/RHEL Installation
+
+    ```bash
+    # Add Helm repository
+    cat <<EOF | sudo tee /etc/yum.repos.d/helm.repo
+    [helm-stable]
+    name=Helm Stable Repository
+    baseurl=https://charts.helm.sh/stable
+    enabled=1
+    gpgcheck=1
+    gpgkey=https://charts.helm.sh/stable/gpg
+    EOF
+
+    # Install Helm
+    sudo yum install helm
+
+    # Alternative: Using snap
+    sudo yum install snapd
+    sudo systemctl enable --now snapd.socket
+    sudo snap install helm --classic
+
+    # Verify installation
+    helm version
+    ```
+  </TabsContent>
+
+  <TabsContent value="fedora">
+    ### Fedora Installation
+
+    ```bash
+    # Install Helm using DNF
+    sudo dnf install helm
+
+    # Alternative: Using snap
+    sudo dnf install snapd
+    sudo systemctl enable --now snapd.socket
+    sudo snap install helm --classic
+
+    # Verify installation
+    helm version
+    ```
+  </TabsContent>
+
+  <TabsContent value="arch">
+    ### Arch Linux Installation
+
+    ```bash
+    # Install Helm using pacman
+    sudo pacman -Sy helm
+
+    # Verify installation
+    helm version
+    ```
+  </TabsContent>
+
+  <TabsContent value="alpine">
+    ### Alpine Linux Installation
+
+    ```bash
+    # Install Helm
+    sudo apk add helm
+
+    # Verify installation
+    helm version
+    ```
+  </TabsContent>
+
+  <TabsContent value="suse">
+    ### SUSE Linux Installation
+
+    ```bash
+    # Install Helm
+    sudo zypper install helm
+
+    # Alternative: Using snap
+    sudo zypper install snapd
+    sudo systemctl enable --now snapd
+    sudo snap install helm --classic
+
+    # Verify installation
+    helm version
+    ```
+  </TabsContent>
+
+  <TabsContent value="windows">
+    ### Windows Installation
+
+    ```powershell
+    # Install using Chocolatey
+    choco install kubernetes-helm
+
+    # Alternative: Using Scoop
+    scoop install helm
+
+    # Verify installation
+    helm version
+    ```
+  </TabsContent>
+</Tabs>
+
+## Manual Installation (Script)
+
+For any OS, you can use the official installation script:
+
+```bash
+curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+chmod 700 get_helm.sh
+./get_helm.sh
+```
+
+## Basic Configuration
+
+### Initialize Helm
+
+```bash
+# Add common repositories
+helm repo add stable https://charts.helm.sh/stable
+helm repo add bitnami https://charts.bitnami.com/bitnami
+
+# Update repositories
+helm repo update
+
+# List repositories
+helm repo list
+```
+
+### Working with Charts
+
+```bash
+# Search for charts
+helm search repo nginx
+
+# Install a chart
+helm install my-release bitnami/nginx
+
+# List installed releases
+helm list
+
+# Upgrade a release
+helm upgrade my-release bitnami/nginx
+
+# Rollback a release
+helm rollback my-release 1
+
+# Uninstall a release
+helm uninstall my-release
+```
+
+## Troubleshooting
+
+<Accordion type="single">
+  <AccordionItem value="issue-1">
+    <AccordionTrigger>
+      Error: could not find tiller
+    </AccordionTrigger>
+    <AccordionContent>
+      Helm 3 no longer uses Tiller. If you see this error, you might be using Helm 2. Upgrade to Helm 3:
+      ```bash
+      curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+      ```
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-2">
+    <AccordionTrigger>
+      Error: UPGRADE FAILED: another operation is in progress
+    </AccordionTrigger>
+    <AccordionContent>
+      Remove the release that is stuck in pending state:
+      ```bash
+      kubectl delete secret sh.helm.release.v1.[release-name].v[version-number] -n [namespace]
+      ```
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-3">
+    <AccordionTrigger>
+      Error: chart not found in repo
+    </AccordionTrigger>
+    <AccordionContent>
+      Update your repositories:
+      ```bash
+      helm repo update
+      helm search repo [chart-name]
+      ```
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>
+
+## Best Practices
+
+1. **Version Control Your Charts**
+   ```bash
+   # Create a new chart
+   helm create mychart
+   
+   # Package the chart
+   helm package mychart
+   
+   # Store in a chart repository
+   helm repo index .
+   ```
+
+2. **Use Values Files**
+   ```yaml
+   # values.yaml
+   replicaCount: 3
+   image:
+     repository: nginx
+     tag: latest
+   ```
+   ```bash
+   helm install -f values.yaml myrelease ./mychart
+   ```
+
+3. **Chart Testing**
+   ```bash
+   # Lint your chart
+   helm lint mychart
+
+   # Test installation
+   helm install --dry-run --debug myrelease ./mychart
+   ```
+
+## Security Considerations
+
+1. **Use Signed Charts**
+   ```bash
+   # Create a signing key
+   gpg --quick-generate-key "Helm User"
+
+   # Sign a chart
+   helm package --sign mychart
+
+   # Verify a chart
+   helm verify mychart-0.1.0.tgz
+   ```
+
+2. **RBAC Configuration**
+   ```yaml
+   apiVersion: rbac.authorization.k8s.io/v1
+   kind: Role
+   metadata:
+     name: helm-user
+   rules:
+   - apiGroups: [""]
+     resources: ["pods"]
+     verbs: ["get", "list", "watch"]
+   ```
+
+## Next Steps
+
+- [Helm Charts Guide](https://helm.sh/docs/topics/charts/)
+- [Chart Template Guide](https://helm.sh/docs/chart_template_guide/)
+- [Chart Development Tips](https://helm.sh/docs/howto/charts_tips_and_tricks/) 

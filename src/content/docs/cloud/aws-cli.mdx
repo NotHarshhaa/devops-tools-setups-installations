@@ -1,0 +1,363 @@
+---
+title: AWS CLI Installation Guide
+description: Complete guide for installing and configuring AWS Command Line Interface (CLI) across different operating systems.
+---
+
+The AWS Command Line Interface (AWS CLI) is a unified tool to manage your AWS services from the command line.
+
+## Prerequisites
+
+- Active AWS account
+- Access key ID and secret access key
+- Python 3.7 or later (for some operating systems)
+- Internet connection
+
+## Installation Instructions
+
+<Tabs defaultValue="ubuntu">
+  <TabsList>
+    <TabsTrigger value="ubuntu">Ubuntu/Debian</TabsTrigger>
+    <TabsTrigger value="centos">CentOS/RHEL</TabsTrigger>
+    <TabsTrigger value="fedora">Fedora</TabsTrigger>
+    <TabsTrigger value="arch">Arch Linux</TabsTrigger>
+    <TabsTrigger value="alpine">Alpine</TabsTrigger>
+    <TabsTrigger value="suse">SUSE</TabsTrigger>
+    <TabsTrigger value="windows">Windows</TabsTrigger>
+  </TabsList>
+
+  <TabsContent value="ubuntu">
+    ### Ubuntu/Debian Installation
+
+    ```bash
+    # Install required packages
+    sudo apt update
+    sudo apt install -y unzip curl
+
+    # Download AWS CLI
+    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+
+    # Extract the archive
+    unzip awscliv2.zip
+
+    # Install AWS CLI
+    sudo ./aws/install
+
+    # Verify installation
+    aws --version
+
+    # Clean up
+    rm -rf aws awscliv2.zip
+    ```
+  </TabsContent>
+
+  <TabsContent value="centos">
+    ### CentOS/RHEL Installation
+
+    ```bash
+    # Install required packages
+    sudo yum install -y unzip curl
+
+    # Download AWS CLI
+    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+
+    # Extract the archive
+    unzip awscliv2.zip
+
+    # Install AWS CLI
+    sudo ./aws/install
+
+    # Verify installation
+    aws --version
+
+    # Clean up
+    rm -rf aws awscliv2.zip
+    ```
+  </TabsContent>
+
+  <TabsContent value="fedora">
+    ### Fedora Installation
+
+    ```bash
+    # Install required packages
+    sudo dnf install -y unzip curl
+
+    # Download AWS CLI
+    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+
+    # Extract the archive
+    unzip awscliv2.zip
+
+    # Install AWS CLI
+    sudo ./aws/install
+
+    # Verify installation
+    aws --version
+
+    # Clean up
+    rm -rf aws awscliv2.zip
+    ```
+  </TabsContent>
+
+  <TabsContent value="arch">
+    ### Arch Linux Installation
+
+    ```bash
+    # Install AWS CLI using pacman
+    sudo pacman -Sy aws-cli
+
+    # Verify installation
+    aws --version
+    ```
+  </TabsContent>
+
+  <TabsContent value="alpine">
+    ### Alpine Linux Installation
+
+    ```bash
+    # Install required packages
+    sudo apk add --no-cache python3 py3-pip
+
+    # Install AWS CLI
+    pip3 install --upgrade pip
+    pip3 install awscli
+
+    # Verify installation
+    aws --version
+    ```
+  </TabsContent>
+
+  <TabsContent value="suse">
+    ### SUSE Linux Installation
+
+    ```bash
+    # Install required packages
+    sudo zypper install -y unzip curl
+
+    # Download AWS CLI
+    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+
+    # Extract the archive
+    unzip awscliv2.zip
+
+    # Install AWS CLI
+    sudo ./aws/install
+
+    # Verify installation
+    aws --version
+
+    # Clean up
+    rm -rf aws awscliv2.zip
+    ```
+  </TabsContent>
+
+  <TabsContent value="windows">
+    ### Windows Installation
+
+    ```powershell
+    # Install using Chocolatey
+    choco install awscli
+
+    # Alternative: Download MSI installer
+    # Navigate to: https://aws.amazon.com/cli/
+    # Download and run the MSI installer
+
+    # Verify installation
+    aws --version
+    ```
+  </TabsContent>
+</Tabs>
+
+## Configuration
+
+### Initial Setup
+
+```bash
+# Configure AWS CLI
+aws configure
+
+# Enter the following information when prompted:
+# AWS Access Key ID: YOUR_ACCESS_KEY
+# AWS Secret Access Key: YOUR_SECRET_KEY
+# Default region name: YOUR_REGION (e.g., us-west-2)
+# Default output format: json
+```
+
+### Multiple Profiles
+
+```bash
+# Configure additional profile
+aws configure --profile production
+
+# Use specific profile
+aws s3 ls --profile production
+
+# List configured profiles
+aws configure list-profiles
+```
+
+### Environment Variables
+
+```bash
+# Set AWS credentials via environment variables
+export AWS_ACCESS_KEY_ID="YOUR_ACCESS_KEY"
+export AWS_SECRET_ACCESS_KEY="YOUR_SECRET_KEY"
+export AWS_DEFAULT_REGION="us-west-2"
+```
+
+## Basic Usage
+
+### S3 Commands
+
+```bash
+# List buckets
+aws s3 ls
+
+# Copy file to S3
+aws s3 cp file.txt s3://my-bucket/
+
+# Sync directory with S3
+aws s3 sync local-dir s3://my-bucket/dir/
+```
+
+### EC2 Commands
+
+```bash
+# List instances
+aws ec2 describe-instances
+
+# Start instance
+aws ec2 start-instances --instance-ids i-1234567890abcdef0
+
+# Stop instance
+aws ec2 stop-instances --instance-ids i-1234567890abcdef0
+```
+
+## Troubleshooting
+
+<Accordion type="single">
+  <AccordionItem value="issue-1">
+    <AccordionTrigger>
+      AWS CLI not found
+    </AccordionTrigger>
+    <AccordionContent>
+      Check PATH and reinstall if necessary:
+      ```bash
+      # Check AWS CLI location
+      which aws
+
+      # Add to PATH if needed
+      export PATH=$PATH:/usr/local/bin/aws
+
+      # Reinstall if necessary
+      sudo ./aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli --update
+      ```
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-2">
+    <AccordionTrigger>
+      Authentication Failures
+    </AccordionTrigger>
+    <AccordionContent>
+      Verify credentials:
+      ```bash
+      # Check configured credentials
+      aws configure list
+
+      # Verify credentials file
+      cat ~/.aws/credentials
+
+      # Test authentication
+      aws sts get-caller-identity
+      ```
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-3">
+    <AccordionTrigger>
+      Region Issues
+    </AccordionTrigger>
+    <AccordionContent>
+      Check and update region settings:
+      ```bash
+      # View current region
+      aws configure get region
+
+      # List available regions
+      aws ec2 describe-regions
+
+      # Set new region
+      aws configure set region us-west-2
+      ```
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>
+
+## Best Practices
+
+1. **Credential Management**
+   ```bash
+   # Use AWS CLI credential helper
+   aws configure set credential_process /path/to/credential/helper
+
+   # Use AWS SSO
+   aws configure sso
+   ```
+
+2. **Security**
+   ```bash
+   # Enable MFA
+   aws iam create-virtual-mfa-device
+   aws iam enable-mfa-device
+
+   # Rotate access keys
+   aws iam create-access-key
+   aws iam delete-access-key
+   ```
+
+3. **Resource Tagging**
+   ```bash
+   # Tag resources
+   aws ec2 create-tags \
+     --resources i-1234567890abcdef0 \
+     --tags Key=Environment,Value=Production
+   ```
+
+## Advanced Configuration
+
+### AWS CLI Configuration File
+
+```ini
+# ~/.aws/config
+[default]
+region = us-west-2
+output = json
+cli_pager =
+
+[profile dev]
+region = us-east-1
+output = text
+
+[profile prod]
+region = eu-west-1
+output = yaml
+```
+
+### Credential File
+
+```ini
+# ~/.aws/credentials
+[default]
+aws_access_key_id = YOUR_ACCESS_KEY
+aws_secret_access_key = YOUR_SECRET_KEY
+
+[prod]
+aws_access_key_id = PROD_ACCESS_KEY
+aws_secret_access_key = PROD_SECRET_KEY
+```
+
+## Next Steps
+
+- [AWS CLI Command Reference](https://awscli.amazonaws.com/v2/documentation/api/latest/index.html)
+- [AWS CLI Configuration](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)
+- [AWS CLI Best Practices](https://docs.aws.amazon.com/cli/latest/userguide/cli-usage-parameters.html) 

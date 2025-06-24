@@ -1,0 +1,406 @@
+---
+title: Istio Installation Guide
+description: Complete guide for installing Istio service mesh across different operating systems and Kubernetes distributions.
+---
+
+Istio is a service mesh that helps you connect, secure, control, and observe services. This guide covers installation across different operating systems.
+
+## Prerequisites
+
+- Kubernetes cluster (version 1.22 or higher)
+- `kubectl` CLI tool installed
+- Cluster admin privileges
+- 8GB+ RAM available
+- 4+ CPU cores
+
+## Installation Instructions
+
+<Tabs defaultValue="ubuntu">
+  <TabsList>
+    <TabsTrigger value="ubuntu">Ubuntu/Debian</TabsTrigger>
+    <TabsTrigger value="centos">CentOS/RHEL</TabsTrigger>
+    <TabsTrigger value="fedora">Fedora</TabsTrigger>
+    <TabsTrigger value="arch">Arch Linux</TabsTrigger>
+    <TabsTrigger value="alpine">Alpine</TabsTrigger>
+    <TabsTrigger value="suse">SUSE</TabsTrigger>
+    <TabsTrigger value="windows">Windows</TabsTrigger>
+  </TabsList>
+
+  <TabsContent value="ubuntu">
+    ### Ubuntu/Debian Installation
+
+    ```bash
+    # Download Istio
+    curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.20.0 sh -
+
+    # Move to Istio directory
+    cd istio-1.20.0
+
+    # Add istioctl to PATH
+    sudo cp bin/istioctl /usr/local/bin/
+    sudo chmod +x /usr/local/bin/istioctl
+
+    # Verify installation
+    istioctl version
+
+    # Install Istio into the cluster
+    istioctl install --set profile=demo -y
+
+    # Enable sidecar injection for default namespace
+    kubectl label namespace default istio-injection=enabled
+    ```
+  </TabsContent>
+
+  <TabsContent value="centos">
+    ### CentOS/RHEL Installation
+
+    ```bash
+    # Download Istio
+    curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.20.0 sh -
+
+    # Move to Istio directory
+    cd istio-1.20.0
+
+    # Add istioctl to PATH
+    sudo cp bin/istioctl /usr/local/bin/
+    sudo chmod +x /usr/local/bin/istioctl
+
+    # Verify installation
+    istioctl version
+
+    # Install Istio into the cluster
+    istioctl install --set profile=demo -y
+
+    # Enable sidecar injection for default namespace
+    kubectl label namespace default istio-injection=enabled
+    ```
+  </TabsContent>
+
+  <TabsContent value="fedora">
+    ### Fedora Installation
+
+    ```bash
+    # Download Istio
+    curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.20.0 sh -
+
+    # Move to Istio directory
+    cd istio-1.20.0
+
+    # Add istioctl to PATH
+    sudo cp bin/istioctl /usr/local/bin/
+    sudo chmod +x /usr/local/bin/istioctl
+
+    # Verify installation
+    istioctl version
+
+    # Install Istio into the cluster
+    istioctl install --set profile=demo -y
+
+    # Enable sidecar injection for default namespace
+    kubectl label namespace default istio-injection=enabled
+    ```
+  </TabsContent>
+
+  <TabsContent value="arch">
+    ### Arch Linux Installation
+
+    ```bash
+    # Install Istio using pacman
+    sudo pacman -Sy istio
+
+    # Verify installation
+    istioctl version
+
+    # Install Istio into the cluster
+    istioctl install --set profile=demo -y
+
+    # Enable sidecar injection for default namespace
+    kubectl label namespace default istio-injection=enabled
+    ```
+  </TabsContent>
+
+  <TabsContent value="alpine">
+    ### Alpine Linux Installation
+
+    ```bash
+    # Download Istio
+    curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.20.0 sh -
+
+    # Move to Istio directory
+    cd istio-1.20.0
+
+    # Add istioctl to PATH
+    sudo cp bin/istioctl /usr/local/bin/
+    sudo chmod +x /usr/local/bin/istioctl
+
+    # Verify installation
+    istioctl version
+
+    # Install Istio into the cluster
+    istioctl install --set profile=demo -y
+
+    # Enable sidecar injection for default namespace
+    kubectl label namespace default istio-injection=enabled
+    ```
+  </TabsContent>
+
+  <TabsContent value="suse">
+    ### SUSE Linux Installation
+
+    ```bash
+    # Download Istio
+    curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.20.0 sh -
+
+    # Move to Istio directory
+    cd istio-1.20.0
+
+    # Add istioctl to PATH
+    sudo cp bin/istioctl /usr/local/bin/
+    sudo chmod +x /usr/local/bin/istioctl
+
+    # Verify installation
+    istioctl version
+
+    # Install Istio into the cluster
+    istioctl install --set profile=demo -y
+
+    # Enable sidecar injection for default namespace
+    kubectl label namespace default istio-injection=enabled
+    ```
+  </TabsContent>
+
+  <TabsContent value="windows">
+    ### Windows Installation
+
+    ```powershell
+    # Install using Chocolatey
+    choco install istio
+
+    # Alternative: Download from official website
+    # Navigate to: https://github.com/istio/istio/releases
+
+    # Add istioctl to PATH
+    # Move istioctl.exe to a directory in your PATH
+
+    # Verify installation
+    istioctl version
+
+    # Install Istio into the cluster
+    istioctl install --set profile=demo -y
+
+    # Enable sidecar injection for default namespace
+    kubectl label namespace default istio-injection=enabled
+    ```
+  </TabsContent>
+</Tabs>
+
+## Installation Profiles
+
+Istio offers several installation profiles for different use cases:
+
+```bash
+# List available profiles
+istioctl profile list
+
+# Get profile details
+istioctl profile dump demo
+
+# Install specific profile
+istioctl install --set profile=demo  # For testing/learning
+istioctl install --set profile=production  # For production
+istioctl install --set profile=minimal  # Minimal installation
+```
+
+## Verifying Installation
+
+```bash
+# Check Istio pods
+kubectl get pods -n istio-system
+
+# Verify CRDs
+kubectl get crd | grep istio
+
+# Check configuration
+istioctl analyze
+
+# Verify proxy injection
+kubectl get namespace -L istio-injection
+```
+
+## Installing Add-ons
+
+### Kiali Dashboard
+
+```bash
+# Install Kiali and other addons
+kubectl apply -f samples/addons/kiali.yaml
+kubectl apply -f samples/addons/prometheus.yaml
+kubectl apply -f samples/addons/grafana.yaml
+kubectl apply -f samples/addons/jaeger.yaml
+
+# Access Kiali dashboard
+istioctl dashboard kiali
+```
+
+## Troubleshooting
+
+<Accordion type="single">
+  <AccordionItem value="issue-1">
+    <AccordionTrigger>
+      Sidecar Injection Not Working
+    </AccordionTrigger>
+    <AccordionContent>
+      Check namespace label and webhook:
+      ```bash
+      # Verify namespace label
+      kubectl get namespace -L istio-injection
+
+      # Check webhook
+      kubectl get mutatingwebhookconfiguration -o yaml | grep "sidecar-injector"
+
+      # Restart pods if needed
+      kubectl rollout restart deployment <deployment-name>
+      ```
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-2">
+    <AccordionTrigger>
+      Installation Validation Errors
+    </AccordionTrigger>
+    <AccordionContent>
+      Run Istio analysis:
+      ```bash
+      istioctl analyze
+
+      # Get more details
+      istioctl analyze -A
+
+      # Check operator status
+      kubectl get pods -n istio-operator
+      kubectl logs -n istio-operator -l name=istio-operator
+      ```
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-3">
+    <AccordionTrigger>
+      Performance Issues
+    </AccordionTrigger>
+    <AccordionContent>
+      Check resource usage and configuration:
+      ```bash
+      # Check resource usage
+      kubectl top pods -n istio-system
+
+      # Verify proxy configuration
+      istioctl proxy-config all <pod-name>.<namespace>
+
+      # Check for proxy errors
+      istioctl proxy-status
+      ```
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>
+
+## Configuration Examples
+
+### 1. Traffic Management
+
+```yaml
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: reviews-route
+spec:
+  hosts:
+  - reviews
+  http:
+  - route:
+    - destination:
+        host: reviews
+        subset: v1
+      weight: 75
+    - destination:
+        host: reviews
+        subset: v2
+      weight: 25
+```
+
+### 2. Security Policies
+
+```yaml
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: istio-system
+spec:
+  mtls:
+    mode: STRICT
+```
+
+### 3. Monitoring Configuration
+
+```yaml
+apiVersion: telemetry.istio.io/v1alpha1
+kind: Telemetry
+metadata:
+  name: mesh-default
+  namespace: istio-system
+spec:
+  tracing:
+  - randomSamplingPercentage: 100.0
+    customTags:
+      environment:
+        literal:
+          value: production
+```
+
+## Best Practices
+
+1. **Resource Management**
+   ```yaml
+   apiVersion: install.istio.io/v1alpha1
+   kind: IstioOperator
+   spec:
+     components:
+       pilot:
+         k8s:
+           resources:
+             requests:
+               cpu: 500m
+               memory: 2048Mi
+             limits:
+               cpu: 1000m
+               memory: 4096Mi
+   ```
+
+2. **Security Settings**
+   ```bash
+   # Enable strict mTLS
+   kubectl apply -f - <<EOF
+   apiVersion: security.istio.io/v1beta1
+   kind: PeerAuthentication
+   metadata:
+     name: default
+     namespace: istio-system
+   spec:
+     mtls:
+       mode: STRICT
+   EOF
+   ```
+
+3. **Monitoring Setup**
+   ```bash
+   # Install monitoring stack
+   kubectl apply -f samples/addons/prometheus.yaml
+   kubectl apply -f samples/addons/grafana.yaml
+   kubectl apply -f samples/addons/jaeger.yaml
+   ```
+
+## Next Steps
+
+- [Traffic Management](https://istio.io/latest/docs/tasks/traffic-management/)
+- [Security](https://istio.io/latest/docs/tasks/security/)
+- [Observability](https://istio.io/latest/docs/tasks/observability/) 

@@ -1,0 +1,203 @@
+---
+title: Git Installation Guide
+description: A comprehensive guide for installing and configuring Git on different operating systems
+---
+
+Git is a distributed version control system that tracks changes in any set of computer files, usually used for coordinating work among programmers who are collaboratively developing source code during software development.
+
+## Prerequisites
+
+- A system running Windows, macOS, or Linux
+- Administrative/sudo privileges
+- Terminal/Command Prompt access
+- Internet connection for downloading packages
+
+## Installation Instructions
+
+<Tabs defaultValue="ubuntu">
+  <TabsList>
+    <TabsTrigger value="ubuntu">Ubuntu/Debian</TabsTrigger>
+    <TabsTrigger value="centos">CentOS/RHEL</TabsTrigger>
+    <TabsTrigger value="fedora">Fedora</TabsTrigger>
+    <TabsTrigger value="arch">Arch Linux</TabsTrigger>
+    <TabsTrigger value="alpine">Alpine</TabsTrigger>
+    <TabsTrigger value="suse">SUSE</TabsTrigger>
+    <TabsTrigger value="macos">macOS</TabsTrigger>
+    <TabsTrigger value="windows">Windows</TabsTrigger>
+  </TabsList>
+
+  <TabsContent value="ubuntu">
+    ### Ubuntu/Debian Installation
+
+    ```bash
+    # Update package list
+    sudo apt update
+
+    # Install Git
+    sudo apt install git -y
+    ```
+  </TabsContent>
+
+  <TabsContent value="centos">
+    ### CentOS/RHEL Installation
+
+    ```bash
+    # For RHEL/CentOS
+    sudo yum install git -y
+    ```
+  </TabsContent>
+
+  <TabsContent value="fedora">
+    ### Fedora Installation
+
+    ```bash
+    # For Fedora
+    sudo dnf install git -y
+    ```
+  </TabsContent>
+
+  <TabsContent value="arch">
+    ### Arch Linux Installation
+
+    ```bash
+    sudo pacman -S git
+    ```
+  </TabsContent>
+
+  <TabsContent value="alpine">
+    ### Alpine Linux Installation
+
+    ```bash
+    sudo apk add git
+    ```
+  </TabsContent>
+
+  <TabsContent value="suse">
+    ### SUSE Linux Installation
+
+    ```bash
+    sudo zypper install git
+    ```
+  </TabsContent>
+
+  <TabsContent value="macos">
+    ### macOS Installation
+
+    ```bash
+    # Using Homebrew
+    brew install git
+
+    # Using MacPorts
+    sudo port install git
+    ```
+  </TabsContent>
+
+  <TabsContent value="windows">
+    ### Windows Installation
+
+    ```powershell
+    # Using Winget
+    winget install --id Git.Git -e --source winget
+
+    # Using Chocolatey
+    choco install git -y
+    ```
+
+    #### Manual Installation
+    1. Download the latest Git installer from [Git for Windows](https://git-scm.com/download/win)
+    2. Run the installer and follow the installation wizard
+    3. Choose your preferred options during installation
+  </TabsContent>
+</Tabs>
+
+## Post-Installation Configuration
+
+After installing Git, configure your identity:
+
+```bash
+# Set your name
+git config --global user.name "Your Name"
+
+# Set your email
+git config --global user.email "your.email@example.com"
+
+# Set default branch name
+git config --global init.defaultBranch main
+
+# Configure default text editor (optional)
+git config --global core.editor "vim"  # or nano, code, etc.
+```
+
+## Verification
+
+Verify the installation by checking the Git version:
+
+```bash
+git --version
+```
+
+## Common Configuration Options
+
+### Setting Up SSH Keys
+
+1. Generate SSH key:
+```bash
+ssh-keygen -t ed25519 -C "your.email@example.com"
+```
+
+2. Start SSH agent:
+```bash
+eval "$(ssh-agent -s)"
+```
+
+3. Add SSH key to agent:
+```bash
+ssh-add ~/.ssh/id_ed25519
+```
+
+### Configuring Git Credentials Helper
+
+```bash
+# For Windows
+git config --global credential.helper wincred
+
+# For macOS
+git config --global credential.helper osxkeychain
+
+# For Linux
+git config --global credential.helper cache
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Git not found after installation**
+   - Ensure Git is added to your system's PATH
+   - Try closing and reopening your terminal
+   - For Windows, run the installer again and select "Add to PATH" option
+
+2. **Permission denied errors**
+   - Check if you have the necessary permissions
+   - Ensure SSH keys are properly set up
+   - Verify remote repository permissions
+
+3. **SSL Certificate Errors**
+   - Update your system's SSL certificates
+   - For Windows: Update Git for Windows
+   - For Linux: Update ca-certificates package
+
+## Security Considerations
+
+1. Keep Git updated to the latest version for security patches
+2. Use SSH keys instead of passwords when possible
+3. Enable two-factor authentication on Git hosting platforms
+4. Regularly rotate access tokens and credentials
+5. Avoid storing sensitive information in Git repositories
+
+## Additional Resources
+
+- [Official Git Documentation](https://git-scm.com/doc)
+- [Git Book](https://git-scm.com/book/en/v2)
+- [GitHub Guides](https://guides.github.com/)
+- [GitLab Documentation](https://docs.gitlab.com/) 

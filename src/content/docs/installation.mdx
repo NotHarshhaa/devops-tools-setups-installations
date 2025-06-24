@@ -1,0 +1,187 @@
+---
+title: DevOps Tools Installation Guide
+description: Comprehensive guide to installing and configuring essential DevOps tools, with quick navigation to detailed cheatsheets.
+---
+
+Welcome to our comprehensive DevOps tools installation guide. This resource provides quick access to detailed installation instructions and cheatsheets for various DevOps tools.
+
+<div className="grid gap-4 mt-6">
+  <Card>
+    <CardHeader>
+      <CardTitle>Container Tools</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <LinkedCard href="/docs/containers/docker" className="flex items-center gap-2">
+          <IconContainer className="h-4 w-4" />
+          Docker
+        </LinkedCard>
+        <LinkedCard href="/docs/containers/kubernetes" className="flex items-center gap-2">
+          <IconKubernetes className="h-4 w-4" />
+          Kubernetes
+        </LinkedCard>
+        <LinkedCard href="/docs/containers/helm" className="flex items-center gap-2">
+          <IconHelm className="h-4 w-4" />
+          Helm
+        </LinkedCard>
+        <LinkedCard href="/docs/containers/istio" className="flex items-center gap-2">
+          <IconIstio className="h-4 w-4" />
+          Istio
+        </LinkedCard>
+        <LinkedCard href="/docs/containers/minikube" className="flex items-center gap-2">
+          <IconKubernetes className="h-4 w-4" />
+          Minikube
+        </LinkedCard>
+        <LinkedCard href="/docs/containers/openshift" className="flex items-center gap-2">
+          <IconContainer className="h-4 w-4" />
+          OpenShift
+        </LinkedCard>
+      </div>
+    </CardContent>
+  </Card>
+
+  <Card>
+    <CardHeader>
+      <CardTitle>CI/CD Tools</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <LinkedCard href="/docs/ci-cd/jenkins" className="flex items-center gap-2">
+          <IconJenkins className="h-4 w-4" />
+          Jenkins
+        </LinkedCard>
+        <LinkedCard href="/docs/ci-cd/github-actions" className="flex items-center gap-2">
+          <IconGitHub className="h-4 w-4" />
+          GitHub Actions
+        </LinkedCard>
+        <LinkedCard href="/docs/ci-cd/gitlab-ci" className="flex items-center gap-2">
+          <IconGitLab className="h-4 w-4" />
+          GitLab CI
+        </LinkedCard>
+      </div>
+    </CardContent>
+  </Card>
+
+  <Card>
+    <CardHeader>
+      <CardTitle>Cloud CLI Tools</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <LinkedCard href="/docs/cloud/aws-cli" className="flex items-center gap-2">
+          <IconAWS className="h-4 w-4" />
+          AWS CLI
+        </LinkedCard>
+        <LinkedCard href="/docs/cloud/azure-cli" className="flex items-center gap-2">
+          <IconAzure className="h-4 w-4" />
+          Azure CLI
+        </LinkedCard>
+        <LinkedCard href="/docs/cloud/gcloud-cli" className="flex items-center gap-2">
+          <IconGCP className="h-4 w-4" />
+          Google Cloud CLI
+        </LinkedCard>
+      </div>
+    </CardContent>
+  </Card>
+
+  <Card>
+    <CardHeader>
+      <CardTitle>Infrastructure Tools</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <LinkedCard href="/docs/infrastructure/terraform" className="flex items-center gap-2">
+          <IconTerraform className="h-4 w-4" />
+          Terraform
+        </LinkedCard>
+        <LinkedCard href="/docs/infrastructure/ansible" className="flex items-center gap-2">
+          <IconAnsible className="h-4 w-4" />
+          Ansible
+        </LinkedCard>
+        <LinkedCard href="/docs/infrastructure/vault" className="flex items-center gap-2">
+          <IconVault className="h-4 w-4" />
+          HashiCorp Vault
+        </LinkedCard>
+        <LinkedCard href="/docs/infrastructure/packer" className="flex items-center gap-2">
+          <IconPacker className="h-4 w-4" />
+          Packer
+        </LinkedCard>
+        <LinkedCard href="/docs/infrastructure/consul" className="flex items-center gap-2">
+          <IconSettings className="h-4 w-4" />
+          Consul
+        </LinkedCard>
+        <LinkedCard href="/docs/infrastructure/vagrant" className="flex items-center gap-2">
+          <IconBox className="h-4 w-4" />
+          Vagrant
+        </LinkedCard>
+      </div>
+    </CardContent>
+  </Card>
+
+  <Card>
+    <CardHeader>
+      <CardTitle>Monitoring & Logging</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <LinkedCard href="/docs/monitoring/prometheus" className="flex items-center gap-2">
+          <IconMonitoring className="h-4 w-4" />
+          Prometheus
+        </LinkedCard>
+        <LinkedCard href="/docs/monitoring/grafana" className="flex items-center gap-2">
+          <IconLineChart className="h-4 w-4" />
+          Grafana
+        </LinkedCard>
+        <LinkedCard href="/docs/monitoring/elk-stack" className="flex items-center gap-2">
+          <IconServer className="h-4 w-4" />
+          ELK Stack
+        </LinkedCard>
+        <LinkedCard href="/docs/monitoring/nagios" className="flex items-center gap-2">
+          <IconMonitoring className="h-4 w-4" />
+          Nagios
+        </LinkedCard>
+      </div>
+    </CardContent>
+  </Card>
+
+  <Card>
+    <CardHeader>
+      <CardTitle>Version Control</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <LinkedCard href="/docs/version-control/git" className="flex items-center gap-2">
+          <IconGit className="h-4 w-4" />
+          Git
+        </LinkedCard>
+        <LinkedCard href="/docs/version-control/github-cli" className="flex items-center gap-2">
+          <IconGitHub className="h-4 w-4" />
+          GitHub CLI
+        </LinkedCard>
+        <LinkedCard href="/docs/version-control/gitlab-cli" className="flex items-center gap-2">
+          <IconGitLab className="h-4 w-4" />
+          GitLab CLI
+        </LinkedCard>
+      </div>
+    </CardContent>
+  </Card>
+</div>
+
+<Card className="mt-6">
+  <CardHeader>
+    <CardTitle>Installation Best Practices</CardTitle>
+  </CardHeader>
+  <CardContent>
+    <ul className="list-disc list-inside space-y-2">
+      <li>Always check system requirements before installation</li>
+      <li>Keep tools updated to their latest stable versions</li>
+      <li>Follow security best practices for each tool</li>
+      <li>Document your installation configurations</li>
+      <li>Set up proper backup procedures</li>
+    </ul>
+  </CardContent>
+</Card>
+
+<Callout className="mt-6">
+  Need help? Each tool's documentation includes detailed troubleshooting guides and common issue resolutions. If you encounter any problems, check the respective tool's troubleshooting section.
+</Callout>

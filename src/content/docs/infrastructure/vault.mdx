@@ -1,0 +1,306 @@
+---
+title: "HashiCorp Vault Installation Guide"
+description: "Step-by-step guide for installing and configuring HashiCorp Vault, a secrets management tool that provides secure, centralized storage and access control for tokens, passwords, certificates, and encryption keys."
+---
+
+HashiCorp Vault is a secrets management tool that provides a secure, centralized way to store and distribute secrets, encryption keys, and other sensitive data across your infrastructure.
+
+## Prerequisites
+
+- A 64-bit operating system
+- Minimum 2GB RAM
+- Administrative/sudo privileges
+- Network connectivity for distributed setups
+- SSL/TLS certificates (for production)
+
+## Installation Instructions
+
+<Tabs defaultValue="ubuntu">
+  <TabsList>
+    <TabsTrigger value="ubuntu">Ubuntu/Debian</TabsTrigger>
+    <TabsTrigger value="centos">CentOS/RHEL</TabsTrigger>
+    <TabsTrigger value="fedora">Fedora</TabsTrigger>
+    <TabsTrigger value="macos">macOS</TabsTrigger>
+    <TabsTrigger value="windows">Windows</TabsTrigger>
+  </TabsList>
+
+  <TabsContent value="ubuntu">
+    ### Ubuntu/Debian Installation
+
+    ```bash
+    # Add HashiCorp GPG key
+    wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+
+    # Add HashiCorp repository
+    echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+
+    # Update and install Vault
+    sudo apt update
+    sudo apt install vault
+    ```
+  </TabsContent>
+
+  <TabsContent value="centos">
+    ### CentOS/RHEL Installation
+
+    ```bash
+    # Add HashiCorp repository
+    sudo yum install -y yum-utils
+    sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo
+
+    # Install Vault
+    sudo yum install vault
+    ```
+  </TabsContent>
+
+  <TabsContent value="fedora">
+    ### Fedora Installation
+
+    ```bash
+    # Add HashiCorp repository
+    sudo dnf install -y dnf-plugins-core
+    sudo dnf config-manager --add-repo https://rpm.releases.hashicorp.com/fedora/hashicorp.repo
+
+    # Install Vault
+    sudo dnf install vault
+    ```
+  </TabsContent>
+
+  <TabsContent value="macos">
+    ### macOS Installation
+
+    ```bash
+    # Using Homebrew
+    brew tap hashicorp/tap
+    brew install hashicorp/tap/vault
+
+    # Update if already installed
+    brew upgrade hashicorp/tap/vault
+    ```
+  </TabsContent>
+
+  <TabsContent value="windows">
+    ### Windows Installation
+
+    ```powershell
+    # Install using Chocolatey
+    choco install vault
+
+    # Alternative: Download from official website
+    # Navigate to: https://www.vaultproject.io/downloads
+    # Download the Windows binary
+    # Add to PATH environment variable
+    ```
+  </TabsContent>
+</Tabs>
+
+## Basic Configuration
+
+### 1. Create Configuration Directory
+
+```bash
+sudo mkdir -p /etc/vault.d
+sudo chown -R vault:vault /etc/vault.d
+```
+
+### 2. Basic Server Configuration
+
+Create `/etc/vault.d/vault.hcl`:
+
+```hcl
+storage "file" {
+  path = "/opt/vault/data"
+}
+
+listener "tcp" {
+  address     = "0.0.0.0:8200"
+  tls_disable = "true"  # Only for development
+}
+
+api_addr = "http://127.0.0.1:8200"
+ui = true
+```
+
+### 3. Production Configuration Example
+
+```hcl
+storage "raft" {
+  path = "/opt/vault/data"
+  node_id = "node1"
+}
+
+listener "tcp" {
+  address         = "0.0.0.0:8200"
+  tls_cert_file   = "/etc/vault.d/cert.pem"
+  tls_key_file    = "/etc/vault.d/key.pem"
+  tls_client_ca_file = "/etc/vault.d/ca.pem"
+}
+
+api_addr = "https://vault.example.com:8200"
+ui = true
+```
+
+## Starting Vault
+
+### Development Mode
+
+```bash
+# Start Vault in development mode
+vault server -dev
+
+# Export Vault address
+export VAULT_ADDR='http://127.0.0.1:8200'
+
+# Save the root token displayed at startup
+```
+
+### Production Mode
+
+```bash
+# Start Vault server
+sudo systemctl start vault
+
+# Enable Vault to start at boot
+sudo systemctl enable vault
+
+# Check status
+sudo systemctl status vault
+```
+
+## Initial Setup
+
+### 1. Initialize Vault
+
+```bash
+# Initialize Vault
+vault operator init
+
+# Save the unseal keys and root token securely
+```
+
+### 2. Unseal Vault
+
+```bash
+# Unseal Vault (requires 3 keys by default)
+vault operator unseal <key1>
+vault operator unseal <key2>
+vault operator unseal <key3>
+```
+
+### 3. Login to Vault
+
+```bash
+# Login with root token
+vault login <root_token>
+```
+
+## Basic Operations
+
+### 1. Enable Secrets Engine
+
+```bash
+# Enable KV secrets engine
+vault secrets enable -path=secret kv-v2
+
+# Enable AWS secrets engine
+vault secrets enable aws
+```
+
+### 2. Write and Read Secrets
+
+```bash
+# Write a secret
+vault kv put secret/myapp/config username=myuser password=mypassword
+
+# Read a secret
+vault kv get secret/myapp/config
+```
+
+## Security Configuration
+
+### 1. Enable Audit Logging
+
+```bash
+# Enable file audit device
+vault audit enable file file_path=/var/log/vault/audit.log
+```
+
+### 2. Create Policies
+
+Create `app-policy.hcl`:
+
+```hcl
+path "secret/data/myapp/*" {
+  capabilities = ["read", "list"]
+}
+```
+
+Apply policy:
+
+```bash
+vault policy write app-policy app-policy.hcl
+```
+
+### 3. Enable Authentication Methods
+
+```bash
+# Enable AppRole auth
+vault auth enable approle
+
+# Create role
+vault write auth/approle/role/my-role \
+    secret_id_ttl=10m \
+    token_num_uses=10 \
+    token_ttl=20m \
+    token_max_ttl=30m \
+    secret_id_num_uses=40
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Seal Status**
+   ```bash
+   # Check seal status
+   vault status
+   
+   # View server logs
+   sudo journalctl -u vault
+   ```
+
+2. **Permission Issues**
+   ```bash
+   # Fix data directory permissions
+   sudo chown -R vault:vault /opt/vault
+   sudo chmod 750 /opt/vault
+   ```
+
+3. **TLS Issues**
+   - Verify certificate paths
+   - Check certificate validity
+   - Ensure proper certificate chain
+
+## Best Practices
+
+1. **Production Setup**
+   - Use TLS for all communications
+   - Implement proper backup strategy
+   - Use auto-unseal where possible
+
+2. **Security**
+   - Rotate root tokens regularly
+   - Use separate tokens per application
+   - Implement least privilege access
+
+3. **High Availability**
+   - Use Integrated Storage (Raft) or Consul backend
+   - Configure multiple nodes
+   - Implement proper monitoring
+
+## Additional Resources
+
+- [Official Vault Documentation](https://www.vaultproject.io/docs)
+- [Vault API Reference](https://www.vaultproject.io/api-docs)
+- [HashiCorp Learn - Vault](https://learn.hashicorp.com/vault)
+- [Vault Security Guide](https://learn.hashicorp.com/collections/vault/security) 

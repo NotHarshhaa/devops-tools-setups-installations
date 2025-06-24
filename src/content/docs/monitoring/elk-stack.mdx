@@ -1,0 +1,343 @@
+---
+title: ELK Stack Installation Guide
+description: A comprehensive guide for installing and configuring the ELK Stack (Elasticsearch, Logstash, Kibana)
+---
+
+The ELK Stack is a collection of three open-source products: Elasticsearch, Logstash, and Kibana. It allows you to collect any data from any source, search, analyze, and visualize it in real time.
+
+## Prerequisites
+
+- A system running Linux, macOS, or Windows
+- Administrative/sudo privileges
+- Terminal/Command Prompt access
+- Minimum 8GB RAM (16GB recommended)
+- Java 11 or later installed
+- Sufficient disk space (minimum 10GB)
+- Internet connection for downloading packages
+
+## Installation Instructions
+
+<Tabs defaultValue="ubuntu">
+  <TabsList>
+    <TabsTrigger value="ubuntu">Ubuntu/Debian</TabsTrigger>
+    <TabsTrigger value="centos">CentOS/RHEL</TabsTrigger>
+    <TabsTrigger value="docker">Docker</TabsTrigger>
+  </TabsList>
+
+  <TabsContent value="ubuntu">
+    ### Ubuntu/Debian Installation
+
+    ```bash
+    # Install Java
+    sudo apt update
+    sudo apt install default-jre -y
+
+    # Add Elastic GPG key
+    wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
+
+    # Add Elastic repository
+    echo "deb https://artifacts.elastic.co/packages/8.x/apt stable main" | \
+      sudo tee /etc/apt/sources.list.d/elastic-8.x.list
+
+    # Update package list
+    sudo apt update
+
+    # Install Elasticsearch
+    sudo apt install elasticsearch -y
+
+    # Start Elasticsearch
+    sudo systemctl daemon-reload
+    sudo systemctl enable elasticsearch
+    sudo systemctl start elasticsearch
+
+    # Install Kibana
+    sudo apt install kibana -y
+
+    # Start Kibana
+    sudo systemctl enable kibana
+    sudo systemctl start kibana
+
+    # Install Logstash
+    sudo apt install logstash -y
+
+    # Start Logstash
+    sudo systemctl enable logstash
+    sudo systemctl start logstash
+    ```
+  </TabsContent>
+
+  <TabsContent value="centos">
+    ### CentOS/RHEL Installation
+
+    ```bash
+    # Install Java
+    sudo yum install java-11-openjdk-devel -y
+
+    # Add Elastic repository
+    cat << EOF | sudo tee /etc/yum.repos.d/elasticsearch.repo
+[elasticsearch]
+name=Elasticsearch repository
+baseurl=https://artifacts.elastic.co/packages/8.x/yum
+gpgcheck=1
+gpgkey=https://artifacts.elastic.co/GPG-KEY-elasticsearch
+enabled=1
+autorefresh=1
+type=rpm-md
+EOF
+
+    # Install Elasticsearch
+    sudo yum install elasticsearch -y
+
+    # Start Elasticsearch
+    sudo systemctl daemon-reload
+    sudo systemctl enable elasticsearch
+    sudo systemctl start elasticsearch
+
+    # Install Kibana
+    sudo yum install kibana -y
+
+    # Start Kibana
+    sudo systemctl enable kibana
+    sudo systemctl start kibana
+
+    # Install Logstash
+    sudo yum install logstash -y
+
+    # Start Logstash
+    sudo systemctl enable logstash
+    sudo systemctl start logstash
+    ```
+  </TabsContent>
+
+  <TabsContent value="docker">
+    ### Docker Installation
+
+    ```bash
+    # Create docker network
+    docker network create elk
+
+    # Run Elasticsearch
+    docker run -d \
+      --name elasticsearch \
+      --net elk \
+      -p 9200:9200 \
+      -p 9300:9300 \
+      -e "discovery.type=single-node" \
+      -e "xpack.security.enabled=false" \
+      docker.elastic.co/elasticsearch/elasticsearch:8.8.0
+
+    # Run Kibana
+    docker run -d \
+      --name kibana \
+      --net elk \
+      -p 5601:5601 \
+      docker.elastic.co/kibana/kibana:8.8.0
+
+    # Run Logstash
+    # First, create logstash.conf
+    cat << EOF > logstash.conf
+input {
+  beats {
+    port => 5044
+  }
+}
+
+output {
+  elasticsearch {
+    hosts => ["elasticsearch:9200"]
+    index => "%{[@metadata][beat]}-%{[@metadata][version]}-%{+YYYY.MM.dd}"
+  }
+}
+EOF
+
+    # Run Logstash container
+    docker run -d \
+      --name logstash \
+      --net elk \
+      -p 5044:5044 \
+      -v $(pwd)/logstash.conf:/usr/share/logstash/pipeline/logstash.conf \
+      docker.elastic.co/logstash/logstash:8.8.0
+    ```
+  </TabsContent>
+</Tabs>
+
+## Post-Installation Configuration
+
+### Elasticsearch Configuration (elasticsearch.yml)
+
+```yaml
+# Network settings
+network.host: 0.0.0.0
+http.port: 9200
+
+# Discovery settings
+discovery.type: single-node
+
+# Memory settings
+bootstrap.memory_lock: true
+
+# Security settings
+xpack.security.enabled: true
+xpack.security.transport.ssl.enabled: true
+```
+
+### Kibana Configuration (kibana.yml)
+
+```yaml
+# Server settings
+server.port: 5601
+server.host: "0.0.0.0"
+
+# Elasticsearch connection
+elasticsearch.hosts: ["http://localhost:9200"]
+
+# Security settings
+elasticsearch.username: "kibana_system"
+elasticsearch.password: "your_password"
+```
+
+### Logstash Pipeline Configuration (logstash.conf)
+
+```ruby
+input {
+  beats {
+    port => 5044
+  }
+  
+  tcp {
+    port => 5000
+    codec => json
+  }
+}
+
+filter {
+  if [type] == "syslog" {
+    grok {
+      match => { "message" => "%{SYSLOGTIMESTAMP:syslog_timestamp} %{SYSLOGHOST:syslog_hostname} %{DATA:syslog_program}(?:\[%{POSINT:syslog_pid}\])?: %{GREEDYDATA:syslog_message}" }
+    }
+    
+    date {
+      match => [ "syslog_timestamp", "MMM  d HH:mm:ss", "MMM dd HH:mm:ss" ]
+    }
+  }
+}
+
+output {
+  elasticsearch {
+    hosts => ["localhost:9200"]
+    index => "logstash-%{+YYYY.MM.dd}"
+  }
+}
+```
+
+## Verification
+
+### Elasticsearch
+
+1. Check service status:
+```bash
+sudo systemctl status elasticsearch
+```
+
+2. Test the REST API:
+```bash
+curl -X GET "localhost:9200/"
+```
+
+### Kibana
+
+1. Check service status:
+```bash
+sudo systemctl status kibana
+```
+
+2. Access web interface:
+```
+http://localhost:5601
+```
+
+### Logstash
+
+1. Check service status:
+```bash
+sudo systemctl status logstash
+```
+
+2. Test configuration:
+```bash
+sudo -u logstash /usr/share/logstash/bin/logstash --config.test_and_exit -f /etc/logstash/conf.d/logstash.conf
+```
+
+## Common Configuration Options
+
+### Setting Up SSL/TLS
+
+1. Generate certificates:
+```bash
+# Generate CA
+bin/elasticsearch-certutil ca
+
+# Generate certificates
+bin/elasticsearch-certutil cert --ca elastic-stack-ca.p12
+```
+
+2. Configure Elasticsearch:
+```yaml
+xpack.security.transport.ssl.enabled: true
+xpack.security.transport.ssl.verification_mode: certificate
+xpack.security.transport.ssl.keystore.path: elastic-certificates.p12
+xpack.security.transport.ssl.truststore.path: elastic-certificates.p12
+```
+
+### Configuring Authentication
+
+1. Set up passwords:
+```bash
+# For Elasticsearch
+bin/elasticsearch-setup-passwords interactive
+
+# For Kibana (in kibana.yml)
+elasticsearch.username: "kibana_system"
+elasticsearch.password: "your_password"
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Elasticsearch Won't Start**
+   - Check Java version compatibility
+   - Verify system resources (memory, disk space)
+   - Check logs: `sudo journalctl -u elasticsearch`
+   - Verify file permissions
+
+2. **Kibana Can't Connect to Elasticsearch**
+   - Verify Elasticsearch is running
+   - Check connection settings in kibana.yml
+   - Verify network connectivity
+   - Check authentication credentials
+
+3. **Logstash Pipeline Issues**
+   - Validate configuration syntax
+   - Check input/output connectivity
+   - Monitor resource usage
+   - Review pipeline logs
+
+## Security Considerations
+
+1. Change default passwords
+2. Enable X-Pack security
+3. Implement SSL/TLS encryption
+4. Use role-based access control
+5. Regular security updates
+6. Network segmentation
+7. Audit logging
+8. Data encryption at rest
+
+## Additional Resources
+
+- [Elasticsearch Documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html)
+- [Kibana Documentation](https://www.elastic.co/guide/en/kibana/current/index.html)
+- [Logstash Documentation](https://www.elastic.co/guide/en/logstash/current/index.html)
+- [Elastic Stack Security](https://www.elastic.co/guide/en/elasticsearch/reference/current/secure-cluster.html)
+- [Elastic Community](https://discuss.elastic.co/) 
