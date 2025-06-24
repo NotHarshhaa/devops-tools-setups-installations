@@ -1,6 +1,5 @@
 "use client";
 
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
   DialogContent,
@@ -9,6 +8,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export function TermsDialog({ children }: { children: React.ReactNode }) {
   return (
@@ -44,7 +44,7 @@ export function TermsDialog({ children }: { children: React.ReactNode }) {
               <h3 className="text-lg font-semibold text-foreground">3. Disclaimer</h3>
               <div className="mt-2 space-y-4">
                 <p>
-                  The materials on DevOps Tools Guide are provided on an 'as is' basis. We make no warranties, expressed or implied, and hereby disclaim and negate all other warranties including, without limitation:
+                  The materials on DevOps Tools Setup & Installations are provided on an &apos;as is&apos; basis. We make no warranties, expressed or implied, and hereby disclaim and negate all other warranties including, without limitation:
                 </p>
                 <ul className="list-disc pl-6">
                   <li>Merchantability</li>
@@ -57,14 +57,14 @@ export function TermsDialog({ children }: { children: React.ReactNode }) {
             <section>
               <h3 className="text-lg font-semibold text-foreground">4. Limitations</h3>
               <p className="mt-2">
-                In no event shall DevOps Tools Guide or its suppliers be liable for any damages (including, without limitation, damages for loss of data or profit, or due to business interruption) arising out of the use or inability to use the materials on our website.
+                In no event shall DevOps Tools Setup & Installations or its suppliers be liable for any damages (including, without limitation, damages for loss of data or profit, or due to business interruption) arising out of the use or inability to use the materials on our website.
               </p>
             </section>
 
             <section>
               <h3 className="text-lg font-semibold text-foreground">5. Content Accuracy</h3>
               <p className="mt-2">
-                The materials appearing on DevOps Tools Guide could include technical, typographical, or photographic errors. We do not warrant that any of the materials on our website are accurate, complete, or current.
+                The materials appearing on DevOps Tools Setup & Installations could include technical, typographical, or photographic errors. We do not warrant that any of the materials on our website are accurate, complete, or current.
               </p>
             </section>
 

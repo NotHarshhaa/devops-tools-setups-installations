@@ -7,12 +7,6 @@ import {
   SettingsIcon,
 } from "lucide-react";
 
-import { CardWithForm } from "@/components/card-demo-form";
-import {
-  HorizontalLineDecorator,
-  VerticalLineDecorator,
-} from "@/components/line-decorator";
-
 export function KeyFeaturesSection() {
   return (
     <section className="bg-card border-t px-8 py-40 inset-shadow-sm">

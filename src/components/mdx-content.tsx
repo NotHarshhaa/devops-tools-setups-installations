@@ -1,8 +1,5 @@
-import Image from "next/image";
-import * as runtime from "react/jsx-runtime";
 import { 
   Terminal,
-  Container,
   Cloud,
   GitBranch,
   Github,
@@ -17,9 +14,11 @@ import {
   LineChart,
   CircuitBoard,
   MonitorDot,
+  Container,
 } from "lucide-react";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import Image from "next/image";
+import * as runtime from "react/jsx-runtime";
 import { Callout } from "@/components/callout";
 import { CodeBlock } from "@/components/code-block";
 import { CodeBlockCommand } from "@/components/code-block-command";
@@ -32,6 +31,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   UnderlinedTabs,
   UnderlinedTabsContent,

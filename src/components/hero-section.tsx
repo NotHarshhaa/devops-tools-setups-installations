@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { ArrowRightIcon, BookOpenIcon, RocketIcon, TerminalIcon } from "lucide-react";
+import Link from "next/link";
 
 import { CircleDecorator } from "@/components/circle-decorator";
 import {
@@ -100,7 +100,7 @@ export function HeroSection() {
                         title: "Detailed Documentation",
                         description: "In-depth configuration guides with best practices and troubleshooting",
                       },
-                    ].map((feature, index) => (
+                    ].map((feature) => (
                       <Card key={feature.title} className="relative overflow-hidden border bg-card p-6 transition-colors hover:bg-muted/50">
                         <div className="flex items-start gap-4">
                           <div className="rounded-lg bg-primary/10 p-2">

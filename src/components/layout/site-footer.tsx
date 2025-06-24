@@ -3,9 +3,9 @@ import Link from "next/link";
 
 import { PrivacyDialog } from "@/components/privacy-dialog";
 import { TermsDialog } from "@/components/terms-dialog";
-import { siteConfig } from "@/config/site";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { siteConfig } from "@/config/site";
 
 export function SiteFooter() {
   return (
