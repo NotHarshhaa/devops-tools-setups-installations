@@ -1,43 +1,16 @@
-import { 
-  Terminal,
-  Cloud,
-  GitBranch,
-  Github,
-  Gitlab,
-  Box,
-  Network,
-  Server,
-  Settings,
-  Wrench,
-  Key,
-  Package,
-  LineChart,
-  CircuitBoard,
-  MonitorDot,
-  Container,
-} from "lucide-react";
-
+import { Box, CircuitBoard, Cloud, Container, GitBranch, Github, Gitlab, Key, LineChart, MonitorDot, Network, Package, Server, Settings, Terminal, Wrench } from "lucide-react";
 import Image from "next/image";
 import * as runtime from "react/jsx-runtime";
+
 import { Callout } from "@/components/callout";
 import { CodeBlock } from "@/components/code-block";
 import { CodeBlockCommand } from "@/components/code-block-command";
 import { ComponentPreview } from "@/components/component-preview";
 import { ComponentSource } from "@/components/component-source";
 import * as LinkedCards from "@/components/linked-card";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  UnderlinedTabs,
-  UnderlinedTabsContent,
-  UnderlinedTabsList,
-  UnderlinedTabsTrigger,
-} from "@/components/underlined-tabs";
+import { UnderlinedTabs, UnderlinedTabsContent, UnderlinedTabsList, UnderlinedTabsTrigger } from "@/components/underlined-tabs";
 import { cn } from "@/lib/utils";
 
 const components = {
