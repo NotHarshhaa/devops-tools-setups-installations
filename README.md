@@ -1,14 +1,8 @@
-# DevOps Tools Setup & Installation Guide
-
-<div align="center">
-
-<img src="public/placeholder-logo.svg" alt="DevOps Tools" width="290" height="70"/>
+# Ultimate DevOps Tools Setup & Installations
 
 ---
 
-<div align="center">
-  <img src="https://imgur.com/075cFZv.png" alt="banner" style="border-radius: 15px; border: 3px solid #e5e7eb; padding: 10px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-</div>
+<img src="https://imgur.com/8BKSTd7.png" alt="banner" width="100%">
 
 ### Master DevOps Tools Installation & Configuration
 
@@ -38,9 +32,7 @@ This repository serves as your one-stop solution for DevOps tools setup and conf
 
 ### What's Inside:
 
-<div align="center">
-  <img src="https://imgur.com/2Dw119R.png" alt="banner3" style="border-radius: 15px; border: 3px solid #e5e7eb; padding: 10px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-</div>
+<img src="https://imgur.com/oSXQDOc.png" alt="banner" width="100%">
 
 - 📚 **Comprehensive Documentation**: Detailed guides for all major DevOps tools
 - 🔧 **Installation Guides**: Step-by-step setup instructions for each tool
@@ -279,9 +271,7 @@ npm test         # Should pass all tests
 
 ## 📚 Documentation Categories
 
-<div align="center">
-  <img src="https://imgur.com/nSuDTSy.png" alt="banner2" style="border-radius: 15px; border: 3px solid #e5e7eb; padding: 10px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-</div>
+<img src="https://imgur.com/b1qbf7B.png" alt="banner" width="100%">
 
 <div align="center">
 
