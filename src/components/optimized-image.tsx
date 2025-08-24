@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useState } from "react";
+
 import { Loader2Icon } from "lucide-react";
 
 interface OptimizedImageProps {
