@@ -23,6 +23,11 @@ export const docsConfig = {
           href: "/docs/installation",
           items: [],
         },
+        {
+          title: "Contributing",
+          href: "/docs/contributing",
+          items: [],
+        },
       ],
     },
     {

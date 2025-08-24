@@ -1,169 +1,128 @@
-import { GithubIcon, LinkedinIcon, Send } from "lucide-react";
 import Link from "next/link";
-
+import { GithubIcon, TwitterIcon, LinkedinIcon, MailIcon, HeartIcon, TerminalIcon, SparklesIcon } from "lucide-react";
 import { PrivacyDialog } from "@/components/privacy-dialog";
 import { TermsDialog } from "@/components/terms-dialog";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { siteConfig } from "@/config/site";
+import { CookiesDialog } from "@/components/cookies-dialog";
 
 export function SiteFooter() {
+  const currentYear = new Date().getFullYear();
+
+  const footerLinks = {
+    "Documentation": [
+      { name: "Getting Started", href: "/docs" },
+      { name: "Installation Guides", href: "/docs/installation" },
+      { name: "Best Practices", href: "/docs" },
+      { name: "Troubleshooting", href: "/docs" },
+    ],
+    "Tools": [
+      { name: "Containers", href: "/docs/containers" },
+      { name: "CI/CD", href: "/docs/ci-cd" },
+      { name: "Infrastructure", href: "/docs/infrastructure" },
+      { name: "Monitoring", href: "/docs/monitoring" },
+    ],
+    "Resources": [
+      { name: "GitHub Repository", href: "https://github.com/NotHarshhaa/devops-tools-setups-installations" },
+      { name: "Contributing", href: "/docs/contributing" },
+      { name: "Changelog", href: "/docs/changelog" },
+      { name: "Support", href: "/docs/support" },
+    ],
+  };
+
+  const socialLinks = [
+    { name: "GitHub", href: "https://github.com/NotHarshhaa/devops-tools-setups-installations", icon: GithubIcon },
+    { name: "Twitter", href: "https://x.com/NotHarshhaa", icon: TwitterIcon },
+    { name: "LinkedIn", href: "https://www.linkedin.com/in/harshhaa-vardhan-reddy/", icon: LinkedinIcon },
+    { name: "Email", href: "mailto:prodevopsguytech@gmail.com", icon: MailIcon },
+  ];
+
   return (
-    <footer className="border-t border-dashed bg-card/50">
-      <div className="mx-auto max-w-screen-2xl space-y-8 px-4 py-12 md:px-8">
+    <footer className="border-t bg-muted/30">
+      <div className="mx-auto max-w-screen-2xl px-4 md:px-8 py-12 md:py-16">
         {/* Main Footer Content */}
-        <div className="container grid gap-8 lg:grid-cols-4">
-          {/* About Section */}
+        <div className="grid gap-8 md:gap-12 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+          {/* Brand Section with Enhanced Logo */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">About</h3>
-            <p className="text-sm text-muted-foreground">
-              Your comprehensive guide to DevOps tools installation and configuration. Making complex setups simple and accessible.
-            </p>
-          </div>
-
-          {/* Quick Links & Resources - Side by side on mobile, separate on desktop */}
-          <div className="grid grid-cols-2 gap-8 lg:col-span-2 lg:grid-cols-2">
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Quick Links</h3>
-              <ul className="grid gap-2 text-sm">
-                <li>
-                  <Link href="/docs" className="text-muted-foreground hover:text-foreground transition-colors">
-                    Documentation
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/docs/installation" className="text-muted-foreground hover:text-foreground transition-colors">
-                    Installation Guides
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/docs/components" className="text-muted-foreground hover:text-foreground transition-colors">
-                    Components
-                  </Link>
-                </li>
-              </ul>
+            <div className="flex items-center gap-3 group">
+              <div className="relative">
+                <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-primary to-secondary rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105">
+                  <TerminalIcon className="size-5 md:size-6 text-primary-foreground" />
+                </div>
+                {/* Glow effect */}
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              </div>
+              <div>
+                <span className="font-bold text-lg md:text-xl bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent">
+                  DevOps Tools Hub
+                </span>
+                <div className="flex items-center gap-1 mt-1">
+                  <SparklesIcon className="size-3 text-primary" />
+                  <span className="text-xs text-muted-foreground font-medium">Professional Setup Guides</span>
+                </div>
+              </div>
             </div>
-
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Resources</h3>
-              <ul className="grid gap-2 text-sm">
-                <li>
-          <a
-                    href={siteConfig.links.github}
-            target="_blank"
-            rel="noreferrer"
-                    className="text-muted-foreground hover:text-foreground transition-colors"
-          >
-                    GitHub Repository
-                  </a>
-                </li>
-                <li>
-          <a
-            href={siteConfig.links.githubShadcnUi}
-            target="_blank"
-            rel="noreferrer"
-                    className="text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    UI Components
-                  </a>
-                </li>
-                <li>
-                  <Link href="/changelog" className="text-muted-foreground hover:text-foreground transition-colors">
-                    Changelog
-                  </Link>
-                </li>
-              </ul>
+            <p className="text-muted-foreground text-sm leading-relaxed max-w-xs">
+              Your comprehensive guide to setting up a professional DevOps environment with step-by-step tutorials and best practices.
+            </p>
+            <div className="flex items-center gap-3 md:gap-4">
+              {socialLinks.map((social) => (
+                <Link
+                  key={social.name}
+                  href={social.href}
+                  className="text-muted-foreground hover:text-foreground transition-colors duration-200 hover:scale-110 transform p-2 rounded-lg hover:bg-muted/50"
+                  aria-label={social.name}
+                >
+                  <social.icon className="w-4 h-4 md:w-5 md:h-5" />
+                </Link>
+              ))}
             </div>
           </div>
 
-          {/* Newsletter */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Stay Updated</h3>
-            <p className="text-sm text-muted-foreground">
-              Follow us on social media for the latest updates and tips.
-            </p>
-            <div className="flex gap-2">
-              <Button variant="outline" size="icon" asChild>
-          <a
-            href={siteConfig.links.github}
-            target="_blank"
-            rel="noreferrer"
-                  className="hover:text-foreground transition-colors"
-                >
-                  <GithubIcon className="size-4" />
-                  <span className="sr-only">GitHub</span>
-                </a>
-              </Button>
-              <Button variant="outline" size="icon" asChild>
-                <a
-                  href={siteConfig.links.telegram}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="hover:text-foreground transition-colors"
-                >
-                  <Send className="size-4" />
-                  <span className="sr-only">Telegram</span>
-                </a>
-              </Button>
-              <Button variant="outline" size="icon" asChild>
-                <a
-                  href={siteConfig.links.linkedin}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="hover:text-foreground transition-colors"
-                >
-                  <LinkedinIcon className="size-4" />
-                  <span className="sr-only">LinkedIn</span>
-                </a>
-              </Button>
-            </div>
+          {/* Footer Links - Side by side on mobile */}
+          <div className="grid grid-cols-3 gap-4 md:gap-8 md:col-span-1 lg:col-span-3">
+            {Object.entries(footerLinks).map(([category, links]) => (
+              <div key={category} className="space-y-3 md:space-y-4">
+                <h3 className="font-semibold text-foreground text-sm md:text-base">{category}</h3>
+                <ul className="space-y-1 md:space-y-2">
+                  {links.map((link) => (
+                    <li key={link.name}>
+                      <Link
+                        href={link.href}
+                        className="text-xs md:text-sm text-muted-foreground hover:text-foreground transition-colors duration-200 hover:translate-x-1 transform inline-block py-1 px-1 -mx-1 rounded-md hover:bg-muted/50"
+                      >
+                        {link.name}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
         </div>
 
-        <Separator className="my-8" />
-
-        {/* Bottom Footer */}
-        <div className="container relative">
-          {/* Decorative background pattern */}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-muted/20 to-transparent rounded-lg" />
-          
-          <div className="relative flex flex-col gap-6 md:flex-row md:items-center md:justify-between p-6 border border-dashed border-muted/30 rounded-lg bg-background/50 backdrop-blur-sm">
-            {/* Copyright section with enhanced styling */}
-            <div className="flex flex-col gap-2">
-              <p className="text-sm text-muted-foreground font-medium">
-                © {new Date().getFullYear()} DevOps Tools Setup & Installations
-              </p>
-              <p className="text-xs text-muted-foreground/70">
-                Built with ❤️ by{" "}
-                <a
-                  href={siteConfig.links.githubProfile}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent hover:from-primary/80 hover:to-primary/40 transition-all duration-300 hover:scale-105 inline-block"
-                >
-                  H A R S H H A A
-                </a>
-              </p>
+        {/* Bottom Section */}
+        <div className="mt-8 md:mt-12 pt-6 md:pt-8 border-t border-border/40">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground text-center sm:text-left">
+              <span>© {currentYear} DevOps Tools Hub. Made with</span>
+              <HeartIcon className="w-4 h-4 text-red-500 fill-current animate-pulse" />
+              <span>for the DevOps community.</span>
             </div>
-
-            {/* Legal links with enhanced styling */}
-            <div className="flex gap-6 text-sm">
+            <div className="flex flex-wrap items-center gap-4 md:gap-6 text-sm text-muted-foreground justify-center sm:justify-end">
               <PrivacyDialog>
-                <button className="group relative px-3 py-2 rounded-md hover:bg-muted/50 transition-all duration-300 hover:scale-105">
-                  <span className="relative z-10 text-muted-foreground group-hover:text-foreground transition-colors">
-                    Privacy Policy
-                  </span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md" />
+                <button className="hover:text-foreground transition-colors duration-200 py-1 px-2 -mx-2 rounded-md hover:bg-muted/50 cursor-pointer">
+                  Privacy Policy
                 </button>
               </PrivacyDialog>
               <TermsDialog>
-                <button className="group relative px-3 py-2 rounded-md hover:bg-muted/50 transition-all duration-300 hover:scale-105">
-                  <span className="relative z-10 text-muted-foreground group-hover:text-foreground transition-colors">
-                    Terms of Service
-                  </span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md" />
+                <button className="hover:text-foreground transition-colors duration-200 py-1 px-2 -mx-2 rounded-md hover:bg-muted/50 cursor-pointer">
+                  Terms of Service
                 </button>
               </TermsDialog>
+              <CookiesDialog>
+                <button className="hover:text-foreground transition-colors duration-200 py-1 px-2 -mx-2 rounded-md hover:bg-muted/50 cursor-pointer">
+                  Cookie Policy
+                </button>
+              </CookiesDialog>
             </div>
           </div>
         </div>
