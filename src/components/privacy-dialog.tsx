@@ -1,5 +1,7 @@
 "use client";
 
+import { EyeIcon, LockIcon, ShieldIcon, UserIcon } from "lucide-react";
+
 import {
   Dialog,
   DialogContent,
@@ -8,8 +10,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { ShieldIcon, EyeIcon, LockIcon, UserIcon } from "lucide-react";
 
 interface PrivacyDialogProps {
   children: React.ReactNode;

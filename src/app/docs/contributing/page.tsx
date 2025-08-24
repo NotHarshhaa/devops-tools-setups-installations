@@ -1,23 +1,25 @@
 import Link from "next/link";
+
 import { 
-  GithubIcon, 
-  GitPullRequestIcon, 
-  GitCommitIcon, 
-  GitBranchIcon,
-  BookOpenIcon,
-  CodeIcon,
-  BugIcon,
-  LightbulbIcon,
-  UsersIcon,
-  StarIcon,
-  HeartIcon,
-  CheckCircleIcon,
   AlertCircleIcon,
-  InfoIcon
+  BookOpenIcon,
+  BugIcon,
+  CheckCircleIcon,
+  CodeIcon,
+  GitBranchIcon,
+  GitCommitIcon,
+  GitPullRequestIcon,
+  GithubIcon,
+  HeartIcon,
+  InfoIcon,
+  LightbulbIcon,
+  StarIcon,
+  UsersIcon
 } from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 
 export default function ContributingPage() {
   const contributionTypes = [
@@ -147,7 +149,7 @@ export default function ContributingPage() {
               Contribute to DevOps Tools Hub
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground leading-relaxed mb-8 max-w-3xl mx-auto px-4">
-              Help us build the most comprehensive DevOps tools documentation. Whether you're a beginner or expert, 
+              Help us build the most comprehensive DevOps tools documentation. Whether you&apos;re a beginner or expert, 
               there are many ways to contribute and make a difference.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center px-4">

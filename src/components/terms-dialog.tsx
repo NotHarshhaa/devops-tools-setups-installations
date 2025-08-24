@@ -1,5 +1,7 @@
 "use client";
 
+import { AlertTriangleIcon, CheckCircleIcon, FileTextIcon, ScaleIcon } from "lucide-react";
+
 import {
   Dialog,
   DialogContent,
@@ -8,8 +10,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { FileTextIcon, ScaleIcon, AlertTriangleIcon, CheckCircleIcon, XCircleIcon } from "lucide-react";
 
 interface TermsDialogProps {
   children: React.ReactNode;
@@ -68,7 +68,7 @@ export function TermsDialog({ children }: TermsDialogProps) {
               Disclaimer
             </h3>
             <p className="text-muted-foreground mb-3">
-              The materials on DevOps Tools Hub are provided on an 'as is' basis. DevOps Tools Hub makes no warranties, 
+              The materials on DevOps Tools Hub are provided on an &apos;as is&apos; basis. DevOps Tools Hub makes no warranties, 
               expressed or implied, and hereby disclaims and negates all other warranties including without limitation:
             </p>
             <ul className="list-disc list-inside space-y-2 text-muted-foreground ml-4">
@@ -103,7 +103,7 @@ export function TermsDialog({ children }: TermsDialogProps) {
             <p className="text-muted-foreground">
               DevOps Tools Hub has not reviewed all of the sites linked to its website and is not responsible for the 
               contents of any such linked site. The inclusion of any link does not imply endorsement by DevOps Tools Hub 
-              of the site. Use of any such linked website is at the user's own risk.
+              of the site. Use of any such linked website is at the user&apos;s own risk.
             </p>
           </section>
 

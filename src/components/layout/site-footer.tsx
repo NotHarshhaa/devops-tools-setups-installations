@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { GithubIcon, TwitterIcon, LinkedinIcon, MailIcon, HeartIcon, TerminalIcon, SparklesIcon } from "lucide-react";
+import { GithubIcon, HeartIcon, LinkedinIcon, MailIcon, SparklesIcon, TerminalIcon, TwitterIcon } from "lucide-react";
+
+import { CookiesDialog } from "@/components/cookies-dialog";
 import { PrivacyDialog } from "@/components/privacy-dialog";
 import { TermsDialog } from "@/components/terms-dialog";
-import { CookiesDialog } from "@/components/cookies-dialog";
 
 export function SiteFooter() {
   const currentYear = new Date().getFullYear();

@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { SearchIcon, FilterIcon, XIcon } from "lucide-react";
+import { useMemo, useState } from "react";
+
+import { SearchIcon, XIcon } from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 
 interface Tool {
   name: string;

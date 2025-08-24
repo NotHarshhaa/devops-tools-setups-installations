@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useEffect } from "react";
-import { ChevronDownIcon, SparklesIcon, TerminalIcon, BookOpenIcon, SettingsIcon } from "lucide-react";
+import { useEffect, useState } from "react";
+
+import { BookOpenIcon, ChevronDownIcon, SettingsIcon, SparklesIcon, TerminalIcon } from "lucide-react";
 
 import { CommandMenu } from "@/components/command-menu";
 import { GithubButton } from "@/components/github-button";
 import { ModeSwitcher } from "@/components/mode-switcher";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { UiXLogo } from "@/components/ui-x-logo";
 import { docsConfig } from "@/config/docs";
 import { cn } from "@/lib/utils";
 
@@ -58,13 +58,13 @@ export function SiteHeader() {
   return (
     <header className={cn(
       "sticky top-0 isolate z-50 border-b transition-all duration-500",
-      isScrolled 
-        ? "bg-background/95 backdrop-blur-xl border-border/40 shadow-lg shadow-black/5" 
+      isScrolled
+        ? "bg-background/95 backdrop-blur-xl border-border/40 shadow-lg shadow-black/5"
         : "bg-background/80 backdrop-blur-md border-transparent"
     )}>
       {/* Top accent bar */}
       <div className="h-1 bg-gradient-to-r from-primary via-secondary to-accent animate-pulse"></div>
-      
+
       <div className="mx-auto flex max-w-screen-2xl items-center justify-between gap-4 px-4 py-4">
         {/* Left side - Logo and Brand */}
         <div className="flex items-center gap-6">
@@ -86,7 +86,7 @@ export function SiteHeader() {
               </div>
             </div>
           </Link>
-          
+
           <SidebarTrigger className="md:hidden" />
         </div>
 
@@ -113,15 +113,15 @@ export function SiteHeader() {
                     activeDropdown === item.title ? "rotate-180" : ""
                   )} />
                 )}
-                
+
                 {/* Active indicator */}
                 {activeItem?.href === item.href && (
                   <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-secondary/10 rounded-lg border border-primary/20"></div>
                 )}
-                
+
                 {/* Hover effect */}
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                
+
                 {/* Shimmer effect */}
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
               </Link>
