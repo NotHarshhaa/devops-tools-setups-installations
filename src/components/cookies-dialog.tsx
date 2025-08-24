@@ -1,5 +1,7 @@
 "use client";
 
+import { CheckCircleIcon, CookieIcon, InfoIcon, SettingsIcon, ShieldIcon } from "lucide-react";
+
 import {
   Dialog,
   DialogContent,
@@ -8,8 +10,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { CookieIcon, SettingsIcon, ShieldIcon, InfoIcon, CheckCircleIcon } from "lucide-react";
 
 interface CookiesDialogProps {
   children: React.ReactNode;

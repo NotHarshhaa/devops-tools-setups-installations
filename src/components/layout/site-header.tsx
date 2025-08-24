@@ -1,10 +1,9 @@
 "use client";
 
+import { BookOpenIcon, ChevronDownIcon, SettingsIcon, SparklesIcon, TerminalIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-
-import { BookOpenIcon, ChevronDownIcon, SettingsIcon, SparklesIcon, TerminalIcon } from "lucide-react";
 
 import { CommandMenu } from "@/components/command-menu";
 import { GithubButton } from "@/components/github-button";

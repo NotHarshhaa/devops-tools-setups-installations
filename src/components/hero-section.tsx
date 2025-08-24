@@ -1,5 +1,5 @@
-import { ArrowRightIcon, BookOpenIcon, RocketIcon, TerminalIcon, ZapIcon, ShieldIcon } from "lucide-react";
 import Link from "next/link";
+import { ArrowRightIcon, BookOpenIcon, RocketIcon, TerminalIcon, ShieldIcon } from "lucide-react";
 
 import { CircleDecorator } from "@/components/circle-decorator";
 import {

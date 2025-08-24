@@ -1,7 +1,5 @@
 import Link from "next/link";
-
 import { 
-  AlertCircleIcon,
   BookOpenIcon,
   BugIcon,
   CheckCircleIcon,

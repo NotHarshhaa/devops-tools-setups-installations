@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
-
-import { Loader2Icon } from "lucide-react";
 import Image from "next/image";
+import { useState } from "react";
+import { Loader2Icon } from "lucide-react";
 
 interface OptimizedImageProps {
   src: string;

@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { GithubIcon, HeartIcon, LinkedinIcon, MailIcon, SparklesIcon, TerminalIcon, TwitterIcon } from "lucide-react";
+import Link from "next/link";
 
 import { CookiesDialog } from "@/components/cookies-dialog";
 import { PrivacyDialog } from "@/components/privacy-dialog";

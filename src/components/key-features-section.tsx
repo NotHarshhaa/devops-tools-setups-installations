@@ -1,14 +1,12 @@
 import {
+  BarChart3Icon,
   BookOpenCheckIcon,
   CommandIcon,
   ContainerIcon,
   GitBranchIcon,
   ServerIcon,
-  SettingsIcon,
-  ZapIcon,
-  ShieldIcon,
-  BarChart3Icon,
   WorkflowIcon,
+  ZapIcon,
 } from "lucide-react";
 
 export function KeyFeaturesSection() {

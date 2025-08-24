@@ -1,4 +1,4 @@
-import { UsersIcon, BookOpenIcon, CodeIcon, CheckCircleIcon } from "lucide-react";
+import { BookOpenIcon, CheckCircleIcon, CodeIcon, UsersIcon } from "lucide-react";
 
 export function StatsSection() {
   const stats = [
