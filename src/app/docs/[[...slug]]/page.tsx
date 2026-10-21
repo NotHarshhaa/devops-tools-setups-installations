@@ -100,7 +100,7 @@ export async function generateMetadata({
       title: doc.title,
       description: doc.description,
       type: "article",
-      url: doc.slug,
+      url: `${siteConfig.url}/docs/${doc.slugAsParams}`,
       images: [
         {
           url: siteConfig.ogImage,
@@ -115,7 +115,7 @@ export async function generateMetadata({
       title: doc.title,
       description: doc.description,
       images: [siteConfig.ogImage],
-      creator: "@shadcn",
+      creator: "@NotHarshhaa",
     },
   };
 }

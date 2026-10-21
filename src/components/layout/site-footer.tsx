@@ -1,126 +1,165 @@
-import { GithubIcon, HeartIcon, LinkedinIcon, MailIcon, SparklesIcon, TerminalIcon, TwitterIcon } from "lucide-react";
+import {
+  ExternalLinkIcon,
+  GithubIcon,
+  HeartIcon,
+  LinkedinIcon,
+  MailIcon,
+  SparklesIcon,
+  TerminalIcon,
+  TwitterIcon,
+} from "lucide-react";
 import Link from "next/link";
 
 import { CookiesDialog } from "@/components/cookies-dialog";
 import { PrivacyDialog } from "@/components/privacy-dialog";
 import { TermsDialog } from "@/components/terms-dialog";
+import { siteConfig } from "@/config/site";
+import { categories } from "@/config/tools";
 
 export function SiteFooter() {
   const currentYear = new Date().getFullYear();
 
-  const footerLinks = {
+  interface FooterLink {
+    name: string;
+    href: string;
+    external?: boolean;
+  }
+
+  const footerLinks: Record<string, FooterLink[]> = {
     "Documentation": [
-      { name: "Getting Started", href: "/docs" },
-      { name: "Installation Guides", href: "/docs/installation" },
-      { name: "Best Practices", href: "/docs" },
-      { name: "Troubleshooting", href: "/docs" },
-    ],
-    "Tools": [
-      { name: "Containers", href: "/docs/containers" },
-      { name: "CI/CD", href: "/docs/ci-cd" },
-      { name: "Infrastructure", href: "/docs/infrastructure" },
-      { name: "Monitoring", href: "/docs/monitoring" },
-    ],
-    "Resources": [
-      { name: "GitHub Repository", href: "https://github.com/NotHarshhaa/devops-tools-setups-installations" },
+      { name: "Introduction", href: "/docs" },
+      { name: "Installation hub", href: "/docs/installation" },
+      { name: "Best practices", href: "/docs#best-practices" },
+      { name: "Troubleshooting", href: "/docs#getting-help" },
       { name: "Contributing", href: "/docs/contributing" },
-      { name: "Changelog", href: "/docs/changelog" },
-      { name: "Support", href: "/docs/support" },
+    ],
+    "Categories": categories.map((category) => ({
+      name: category.title,
+      href: category.href,
+    })),
+    "Resources": [
+      {
+        name: "GitHub repository",
+        href: siteConfig.links.github,
+        external: true,
+      },
+      {
+        name: "Report an issue",
+        href: `${siteConfig.links.github}/issues/new`,
+        external: true,
+      },
+      {
+        name: "Telegram community",
+        href: siteConfig.links.telegram,
+        external: true,
+      },
+      {
+        name: "All guides",
+        href: "/docs/installation",
+      },
     ],
   };
 
   const socialLinks = [
-    { name: "GitHub", href: "https://github.com/NotHarshhaa/devops-tools-setups-installations", icon: GithubIcon },
-    { name: "Twitter", href: "https://x.com/NotHarshhaa", icon: TwitterIcon },
-    { name: "LinkedIn", href: "https://www.linkedin.com/in/harshhaa-vardhan-reddy/", icon: LinkedinIcon },
+    {
+      name: "GitHub",
+      href: siteConfig.links.github,
+      icon: GithubIcon,
+    },
+    { name: "Twitter", href: siteConfig.links.twitter, icon: TwitterIcon },
+    { name: "LinkedIn", href: siteConfig.links.linkedin, icon: LinkedinIcon },
     { name: "Email", href: "mailto:prodevopsguytech@gmail.com", icon: MailIcon },
   ];
 
   return (
     <footer className="border-t bg-muted/30">
-      <div className="mx-auto max-w-screen-2xl px-4 md:px-8 py-12 md:py-16">
-        {/* Main Footer Content */}
-        <div className="grid gap-8 md:gap-12 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
-          {/* Brand Section with Enhanced Logo */}
+      <div className="mx-auto max-w-screen-2xl px-4 py-12 md:px-8 md:py-16">
+        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-4">
+          {/* Brand */}
           <div className="space-y-4">
-            <div className="flex items-center gap-3 group">
-              <div className="relative">
-                <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-primary to-secondary rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105">
-                  <TerminalIcon className="size-5 md:size-6 text-primary-foreground" />
-                </div>
-                {/* Glow effect */}
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              </div>
-              <div>
-                <span className="font-bold text-lg md:text-xl bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent">
-                  DevOps Tools Hub
+            <Link href="/" className="group flex items-center gap-3">
+              <span className="flex size-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-md transition-transform duration-300 group-hover:scale-105">
+                <TerminalIcon className="size-5" />
+              </span>
+              <span>
+                <span className="block text-lg font-bold tracking-tight">
+                  {siteConfig.brand}
                 </span>
-                <div className="flex items-center gap-1 mt-1">
-                  <SparklesIcon className="size-3 text-primary" />
-                  <span className="text-xs text-muted-foreground font-medium">Professional Setup Guides</span>
-                </div>
-              </div>
-            </div>
-            <p className="text-muted-foreground text-sm leading-relaxed max-w-xs">
-              Your comprehensive guide to setting up a professional DevOps environment with step-by-step tutorials and best practices.
+                <span className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+                  <SparklesIcon className="size-3" />
+                  Professional setup guides
+                </span>
+              </span>
+            </Link>
+
+            <p className="max-w-xs text-sm leading-relaxed text-muted-foreground">
+              {siteConfig.description}
             </p>
-            <div className="flex items-center gap-3 md:gap-4">
+
+            <div className="flex items-center gap-2">
               {socialLinks.map((social) => (
                 <Link
                   key={social.name}
                   href={social.href}
-                  className="text-muted-foreground hover:text-foreground transition-colors duration-200 hover:scale-110 transform p-2 rounded-lg hover:bg-muted/50"
+                  target={social.href.startsWith("http") ? "_blank" : undefined}
+                  rel={social.href.startsWith("http") ? "noreferrer" : undefined}
+                  className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                   aria-label={social.name}
                 >
-                  <social.icon className="w-4 h-4 md:w-5 md:h-5" />
+                  <social.icon className="size-4" />
                 </Link>
               ))}
             </div>
           </div>
 
-          {/* Footer Links - Side by side on mobile */}
-          <div className="grid grid-cols-3 gap-4 md:gap-8 md:col-span-1 lg:col-span-3">
-            {Object.entries(footerLinks).map(([category, links]) => (
-              <div key={category} className="space-y-3 md:space-y-4">
-                <h3 className="font-semibold text-foreground text-sm md:text-base">{category}</h3>
-                <ul className="space-y-1 md:space-y-2">
-                  {links.map((link) => (
-                    <li key={link.name}>
-                      <Link
-                        href={link.href}
-                        className="text-xs md:text-sm text-muted-foreground hover:text-foreground transition-colors duration-200 hover:translate-x-1 transform inline-block py-1 px-1 -mx-1 rounded-md hover:bg-muted/50"
-                      >
-                        {link.name}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
+          {/* Link columns */}
+          {Object.entries(footerLinks).map(([category, links]) => (
+            <div key={category} className="space-y-3">
+              <h2 className="text-sm font-semibold tracking-wide uppercase">
+                {category}
+              </h2>
+              <ul className="space-y-1">
+                {links.map((link) => (
+                  <li key={link.name}>
+                    <Link
+                      href={link.href}
+                      target={link.external ? "_blank" : undefined}
+                      rel={link.external ? "noreferrer" : undefined}
+                      className="inline-flex items-center gap-1 rounded-md py-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                      {link.name}
+                      {link.external && (
+                        <ExternalLinkIcon className="size-3 opacity-60" />
+                      )}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
 
-        {/* Bottom Section */}
-        <div className="mt-8 md:mt-12 pt-6 md:pt-8 border-t border-border/40">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground text-center sm:text-left">
-              <span>© {currentYear} DevOps Tools Hub. Made with</span>
-              <HeartIcon className="w-4 h-4 text-red-500 fill-current animate-pulse" />
+        {/* Bottom bar */}
+        <div className="mt-10 border-t border-border/50 pt-6">
+          <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
+            <p className="flex items-center gap-2 text-center text-sm text-muted-foreground sm:text-left">
+              <span>© {currentYear} {siteConfig.brand}. Made with</span>
+              <HeartIcon className="size-4 fill-current text-red-500" />
               <span>for the DevOps community.</span>
-            </div>
-            <div className="flex flex-wrap items-center gap-4 md:gap-6 text-sm text-muted-foreground justify-center sm:justify-end">
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-muted-foreground sm:justify-end">
               <PrivacyDialog>
-                <button className="hover:text-foreground transition-colors duration-200 py-1 px-2 -mx-2 rounded-md hover:bg-muted/50 cursor-pointer">
+                <button className="cursor-pointer rounded-md py-1 transition-colors hover:text-foreground">
                   Privacy Policy
                 </button>
               </PrivacyDialog>
               <TermsDialog>
-                <button className="hover:text-foreground transition-colors duration-200 py-1 px-2 -mx-2 rounded-md hover:bg-muted/50 cursor-pointer">
+                <button className="cursor-pointer rounded-md py-1 transition-colors hover:text-foreground">
                   Terms of Service
                 </button>
               </TermsDialog>
               <CookiesDialog>
-                <button className="hover:text-foreground transition-colors duration-200 py-1 px-2 -mx-2 rounded-md hover:bg-muted/50 cursor-pointer">
+                <button className="cursor-pointer rounded-md py-1 transition-colors hover:text-foreground">
                   Cookie Policy
                 </button>
               </CookiesDialog>

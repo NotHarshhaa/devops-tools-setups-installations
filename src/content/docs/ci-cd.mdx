@@ -1,0 +1,54 @@
+---
+title: CI/CD Automation
+description: Set up GitHub Actions, GitLab CI and Jenkins with pipeline examples, runner configuration, caching strategies and deployment automation you can copy straight into your projects.
+---
+
+Continuous integration and delivery turns a manual release process into a repeatable, auditable
+pipeline. These guides walk you through installing each platform, wiring up your first job and
+hardening the pipeline for production use.
+
+<div className="grid gap-4 mt-6">
+  <Card>
+    <CardHeader>
+      <CardTitle>Available Guides</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <LinkedCard href="/docs/ci-cd/github-actions" className="flex items-center gap-2">
+          <IconGitHub className="h-4 w-4" />
+          GitHub Actions
+        </LinkedCard>
+        <LinkedCard href="/docs/ci-cd/gitlab-ci" className="flex items-center gap-2">
+          <IconGitLab className="h-4 w-4" />
+          GitLab CI
+        </LinkedCard>
+        <LinkedCard href="/docs/ci-cd/jenkins" className="flex items-center gap-2">
+          <IconJenkins className="h-4 w-4" />
+          Jenkins
+        </LinkedCard>
+      </div>
+    </CardContent>
+  </Card>
+</div>
+
+## What you will learn
+
+- **GitHub Actions** — write workflows, choose the right runner, cache dependencies and reuse
+  workflows across repositories.
+- **GitLab CI** — configure runners, structure jobs into stages and ship a pipeline with
+  `.gitlab-ci.yml`.
+- **Jenkins** — install the controller and agents, unlock the setup wizard and run a first
+  declarative pipeline.
+
+## Pipeline checklist
+
+1. Lint and unit test on every push
+2. Build an immutable artifact once and promote it through environments
+3. Cache dependencies to keep builds fast
+4. Store secrets in the platform secret store — never in the repository
+5. Gate deployments with approvals for production releases
+
+<Callout>
+  Looking for a quick reference? The <a href="/docs/ci-cd/github-actions">GitHub Actions guide</a>
+  includes a complete workflow you can copy into `.github/workflows/ci.yml`.
+</Callout>

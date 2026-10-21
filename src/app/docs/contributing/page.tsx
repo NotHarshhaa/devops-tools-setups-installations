@@ -18,6 +18,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { siteConfig } from "@/config/site";
 
 export default function ContributingPage() {
   const contributionTypes = [
@@ -133,7 +134,7 @@ export default function ContributingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="bg-background">
       {/* Hero Section */}
       <section className="relative overflow-hidden border-b">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5"></div>
@@ -152,7 +153,7 @@ export default function ContributingPage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center px-4">
               <Button asChild size="lg" className="gap-2">
-                <Link href="https://github.com">
+                <Link href={siteConfig.links.github}>
                   <GithubIcon className="size-5" />
                   View on GitHub
                 </Link>
@@ -383,7 +384,7 @@ export default function ContributingPage() {
             <CardContent className="text-center">
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button asChild size="lg" className="gap-2">
-                  <Link href="https://github.com">
+                  <Link href={siteConfig.links.github}>
                     <GithubIcon className="size-5" />
                     Start Contributing
                   </Link>

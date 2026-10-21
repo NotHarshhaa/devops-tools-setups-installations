@@ -1,166 +1,151 @@
-import { ArrowRightIcon, BookOpenIcon, RocketIcon, ShieldIcon, TerminalIcon } from "lucide-react";
+import {
+  ArrowRightIcon,
+  BookOpenIcon,
+  CheckCircle2Icon,
+  CopyIcon,
+  TerminalIcon,
+} from "lucide-react";
 import Link from "next/link";
 
-import { CircleDecorator } from "@/components/circle-decorator";
-import {
-  HorizontalLineDecorator,
-  VerticalLineDecorator,
-} from "@/components/line-decorator";
+import { CopyButton } from "@/components/copy-button";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { siteConfig } from "@/config/site";
+
+const QUICK_START_COMMANDS = [
+  {
+    label: "Install Docker",
+    command: "curl -fsSL https://get.docker.com | sh",
+  },
+  {
+    label: "Start the daemon",
+    command: "sudo systemctl enable --now docker",
+  },
+  {
+    label: "Verify the setup",
+    command: "docker run hello-world",
+  },
+];
+
+const HIGHLIGHTS = [
+  "Step-by-step, copy-paste ready commands",
+  "Production-ready configuration templates",
+  "Troubleshooting for the errors you will hit",
+];
 
 export function HeroSection() {
   return (
-    <section className="relative overflow-hidden">
-      {/* Enhanced Background Pattern */}
-      <div className="absolute inset-0 -z-10 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
-      
-      {/* Floating Elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-20 left-10 w-2 h-2 bg-primary/20 rounded-full animate-pulse"></div>
-        <div className="absolute top-40 right-20 w-3 h-3 bg-secondary/30 rounded-full animate-pulse delay-1000"></div>
-        <div className="absolute bottom-40 left-20 w-2 h-2 bg-accent/25 rounded-full animate-pulse delay-2000"></div>
-      </div>
-      
-      <div className="px-8 py-24">
-        <div className="mx-auto max-w-screen-2xl">
-          <div className="py-6 lg:py-8">
-            <div className="relative isolate">
-              <HorizontalLineDecorator
-                lineOffset={150}
-                className="absolute -top-px"
-              />
-              <CircleDecorator className="absolute top-0 left-0 -translate-x-1/2 -translate-y-1/2 delay-500" />
-              <VerticalLineDecorator
-                lineOffset={150}
-                className="absolute -left-px"
-              />
-              
-              {/* Main Content */}
-              <div className="grid gap-12 lg:grid-cols-2 lg:gap-8 items-center">
-                {/* Left Column - Text Content */}
-                <div className="flex flex-col gap-8">
-                  <div className="space-y-6">
-                    <div className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-green-500/10 to-emerald-500/10 px-4 py-1.5 text-sm font-medium border border-green-500/20">
-                      <span className="relative flex h-2 w-2">
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
-                        <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500"></span>
-                      </span>
-                      <span className="bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-                        Latest DevOps Tools & Best Practices
-                      </span>
-                    </div>
-                    <div>
-                      <h1 className="from-foreground via-primary to-muted-foreground bg-gradient-to-b bg-clip-text text-4xl font-bold tracking-tighter text-balance text-transparent sm:text-5xl md:text-6xl lg:leading-[1.1]">
-                        Master DevOps Tools Installation & Configuration
-                      </h1>
-                      <p className="mt-6 text-muted-foreground text-lg md:text-xl max-w-xl leading-relaxed">
-                        Your comprehensive guide to setting up a professional DevOps environment with step-by-step tutorials, best practices, and production-ready configurations.
-                      </p>
-                    </div>
-                    <div className="flex flex-col sm:flex-row gap-4">
-                      <Button asChild size="lg" className="gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
-                        <Link href="/docs">
-                          Get Started
-                          <ArrowRightIcon className="size-4 transition-transform group-hover:translate-x-1" />
-                        </Link>
-                      </Button>
-                      <Button variant="outline" size="lg" asChild className="border-2 hover:bg-primary/5 transition-all duration-300">
-                        <Link href="/docs/installation" className="gap-2">
-                          <TerminalIcon className="size-4" />
-                          View Installation Guides
-                        </Link>
-                      </Button>
-                    </div>
-                  </div>
+    <section className="relative overflow-hidden border-b">
+      {/* Background: grid + glow */}
+      <div
+        aria-hidden
+        className="absolute inset-0 -z-10 bg-[linear-gradient(to_right,#80808014_1px,transparent_1px),linear-gradient(to_bottom,#80808014_1px,transparent_1px)] bg-[size:28px_28px] [mask-image:radial-gradient(ellipse_at_top,black,transparent_72%)]"
+      />
+      <div
+        aria-hidden
+        className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,color-mix(in_oklab,var(--primary)_14%,transparent),transparent_62%)]"
+      />
 
-                  {/* Enhanced Feature Pills */}
-                  <div className="flex flex-wrap gap-3">
-                    {[
-                      { name: "Docker", color: "from-blue-500 to-cyan-500" },
-                      { name: "Kubernetes", color: "from-blue-600 to-indigo-600" },
-                      { name: "Jenkins", color: "from-red-500 to-pink-500" },
-                      { name: "Terraform", color: "from-purple-500 to-violet-500" },
-                      { name: "Ansible", color: "from-red-600 to-orange-600" },
-                      { name: "Git", color: "from-orange-500 to-red-500" },
-                      { name: "Prometheus", color: "from-orange-600 to-red-600" },
-                      { name: "ELK Stack", color: "from-green-500 to-teal-500" }
-                    ].map((tool) => (
-                      <div
-                        key={tool.name}
-                        className="group relative overflow-hidden rounded-full bg-gradient-to-r from-background to-muted px-3 py-1.5 text-sm border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-md cursor-pointer"
-                      >
-                        <span className="relative z-10 font-medium">{tool.name}</span>
-                        <div className={`absolute inset-0 bg-gradient-to-r ${tool.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300`}></div>
-                      </div>
-                    ))}
-                  </div>
+      <div className="mx-auto max-w-screen-2xl px-4 py-16 md:px-8 md:py-24">
+        <div className="grid items-center gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
+          {/* Copy */}
+          <div className="flex flex-col gap-7">
+            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3.5 py-1.5 text-sm font-medium">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+              </span>
+              <span className="text-foreground/90">
+                Freshly updated · {siteConfig.name}
+              </span>
+            </div>
+
+            <div className="space-y-5">
+              <h1 className="text-balance text-4xl font-bold tracking-tighter sm:text-5xl lg:text-[3.4rem] lg:leading-[1.08]">
+                Install and configure every{" "}
+                <span className="from-foreground via-primary to-muted-foreground bg-gradient-to-r bg-clip-text text-transparent">
+                  DevOps tool
+                </span>{" "}
+                without the guesswork
+              </h1>
+              <p className="max-w-xl text-lg leading-relaxed text-muted-foreground">
+                {siteConfig.description} Every guide is written for real
+                machines, with the exact commands, config files and verification
+                steps you need to go from zero to a working setup.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <Button asChild size="lg" className="group gap-2 shadow-lg shadow-primary/20">
+                <Link href="/docs/installation">
+                  Browse all guides
+                  <ArrowRightIcon className="size-4 transition-transform duration-300 group-hover:translate-x-1" />
+                </Link>
+              </Button>
+              <Button asChild size="lg" variant="outline" className="gap-2">
+                <Link href="/docs">
+                  <BookOpenIcon className="size-4" />
+                  Start learning
+                </Link>
+              </Button>
+            </div>
+
+            <ul className="grid gap-2.5 sm:grid-cols-1">
+              {HIGHLIGHTS.map((highlight) => (
+                <li
+                  key={highlight}
+                  className="flex items-center gap-2.5 text-sm text-muted-foreground"
+                >
+                  <CheckCircle2Icon className="size-4 shrink-0 text-emerald-500" />
+                  {highlight}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Terminal preview */}
+          <div className="relative">
+            <div
+              aria-hidden
+              className="absolute -inset-4 -z-10 rounded-3xl bg-[radial-gradient(ellipse_at_center,color-mix(in_oklab,var(--primary)_18%,transparent),transparent_70%)] blur-xl"
+            />
+            <div className="overflow-hidden rounded-2xl border border-border/80 bg-card/80 shadow-2xl shadow-black/10 backdrop-blur-xl">
+              <div className="flex items-center justify-between gap-3 border-b border-border/70 bg-muted/50 px-4 py-3">
+                <div className="flex items-center gap-1.5">
+                  <span className="size-3 rounded-full bg-red-400/80" />
+                  <span className="size-3 rounded-full bg-amber-400/80" />
+                  <span className="size-3 rounded-full bg-emerald-400/80" />
                 </div>
-
-                {/* Right Column - Enhanced Feature Cards */}
-                <div className="relative">
-                  <div className="grid gap-6">
-                    {[
-                      {
-                        icon: RocketIcon,
-                        title: "Quick Start Guides",
-                        description: "Get up and running quickly with our streamlined installation processes",
-                        gradient: "from-blue-500/10 to-cyan-500/10",
-                        iconColor: "text-blue-500"
-                      },
-                      {
-                        icon: TerminalIcon,
-                        title: "CLI Commands",
-                        description: "Copy-paste ready commands for smooth tool installation and setup",
-                        gradient: "from-green-500/10 to-emerald-500/10",
-                        iconColor: "text-green-500"
-                      },
-                      {
-                        icon: BookOpenIcon,
-                        title: "Detailed Documentation",
-                        description: "In-depth configuration guides with best practices and troubleshooting",
-                        gradient: "from-purple-500/10 to-violet-500/10",
-                        iconColor: "text-purple-500"
-                      },
-                      {
-                        icon: ShieldIcon,
-                        title: "Security Best Practices",
-                        description: "Production-ready security configurations and hardening guides",
-                        gradient: "from-orange-500/10 to-red-500/10",
-                        iconColor: "text-orange-500"
-                      }
-                    ].map((feature, index) => (
-                      <Card 
-                        key={feature.title} 
-                        className="relative overflow-hidden border bg-card p-6 transition-all duration-300 hover:bg-muted/50 hover:shadow-lg hover:scale-[1.02] group cursor-pointer"
-                        style={{ animationDelay: `${index * 100}ms` }}
-                      >
-                        <div className="flex items-start gap-4">
-                          <div className={`rounded-lg bg-gradient-to-br ${feature.gradient} p-2.5 group-hover:scale-110 transition-transform duration-300`}>
-                            <feature.icon className={`size-5 ${feature.iconColor}`} />
-                          </div>
-                          <div className="space-y-1">
-                            <h3 className="font-semibold group-hover:text-primary transition-colors duration-300">{feature.title}</h3>
-                            <p className="text-sm text-muted-foreground leading-relaxed">
-                              {feature.description}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-                      </Card>
-                    ))}
-                  </div>
+                <div className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
+                  <TerminalIcon className="size-3.5" />
+                  quick-start.sh
                 </div>
               </div>
 
-              <HorizontalLineDecorator
-                lineOffset={150}
-                className="absolute bottom-0 delay-200"
-              />
-              <VerticalLineDecorator
-                lineOffset={150}
-                className="absolute -right-px"
-              />
+              <div className="space-y-4 p-4 font-mono text-[13px] leading-relaxed sm:p-5">
+                {QUICK_START_COMMANDS.map((item) => (
+                  <div key={item.label} className="group/cmd relative">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-muted-foreground">
+                        <span className="mr-2 text-primary">$</span>
+                        {item.label}
+                      </span>
+                      <CopyButton
+                        value={item.command}
+                        variant="ghost"
+                        className="size-6 opacity-0 transition-opacity focus-visible:opacity-100 group-hover/cmd:opacity-100"
+                      />
+                    </div>
+                    <pre className="mt-1 overflow-x-auto rounded-lg bg-muted/60 px-3 py-2 text-foreground/90">
+                      <code>{item.command}</code>
+                    </pre>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-2 border-t border-border/70 bg-muted/30 px-4 py-3 text-xs text-muted-foreground">
+                <CopyIcon className="size-3.5" />
+                Copy any command straight into your terminal
+              </div>
             </div>
           </div>
         </div>

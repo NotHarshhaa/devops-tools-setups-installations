@@ -1,0 +1,52 @@
+---
+title: Cloud CLI Tools
+description: Install and configure the AWS, Azure and Google Cloud command line tools with authentication, profiles, completion and multi-account workflows for every major cloud provider.
+---
+
+Every major cloud provider ships a first-party command line client. These guides cover installing
+them, authenticating safely and configuring profiles so you can work across multiple accounts
+without leaking credentials.
+
+<div className="grid gap-4 mt-6">
+  <Card>
+    <CardHeader>
+      <CardTitle>Available Guides</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <LinkedCard href="/docs/cloud/aws-cli" className="flex items-center gap-2">
+          <IconAWS className="h-4 w-4" />
+          AWS CLI
+        </LinkedCard>
+        <LinkedCard href="/docs/cloud/azure-cli" className="flex items-center gap-2">
+          <IconAzure className="h-4 w-4" />
+          Azure CLI
+        </LinkedCard>
+        <LinkedCard href="/docs/cloud/gcloud-cli" className="flex items-center gap-2">
+          <IconGCP className="h-4 w-4" />
+          Google Cloud CLI
+        </LinkedCard>
+      </div>
+    </CardContent>
+  </Card>
+</div>
+
+## What you will learn
+
+- **AWS CLI** — install the client, configure named profiles, assume roles and enable completion.
+- **Azure CLI** — install the client, sign in interactively or with a service principal and manage
+  subscriptions.
+- **Google Cloud CLI** — install `gcloud`, authenticate with a service account and manage projects.
+
+## Credential hygiene
+
+1. Prefer short-lived credentials from the cloud provider's own identity service
+2. Use named profiles or service accounts per environment instead of exporting static keys
+3. Never commit credentials — add `.aws/`, `.azure/` and `gcloud` config directories to `.gitignore`
+4. Rotate keys on a schedule and remove unused ones
+5. Audit which principal performed each change with cloud audit logs
+
+<Callout>
+  Running the same scripts across providers? Standardise on the AWS CLI first — the
+  <a href="/docs/cloud/aws-cli">AWS CLI guide</a> covers profile handling in detail.
+</Callout>

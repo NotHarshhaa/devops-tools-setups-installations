@@ -7,7 +7,9 @@ export default function HomeLayout({
 }) {
   return (
     <div>
-      <AppSidebar className="data-[slot=sidebar-container]:hidden" />
+      {/* The docs navigation is only useful on mobile here — the desktop
+          sidebar (and the space it reserves) is hidden on the landing page. */}
+      <AppSidebar className="data-[slot=sidebar-container]:hidden [&_[data-slot=sidebar-gap]]:hidden" />
       {children}
     </div>
   );

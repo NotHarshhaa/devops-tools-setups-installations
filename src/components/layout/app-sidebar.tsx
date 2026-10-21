@@ -33,7 +33,7 @@ export function AppSidebar({
 
   return (
     <Sidebar
-      className={cn("sticky top-14 z-0 h-[calc(100vh-3.5rem)] border-x border-dashed", className)}
+      className={cn("sticky top-16 z-0 h-[calc(100vh-4rem)] border-x border-dashed", className)}
       {...props}
     >
       <SidebarContent className="h-full overflow-y-auto">

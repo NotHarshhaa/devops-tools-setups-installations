@@ -1,0 +1,68 @@
+---
+title: Containers & Orchestration
+description: Install and configure Docker, Kubernetes, Helm, Istio, Minikube and OpenShift with step-by-step guides, production-ready configuration examples and troubleshooting tips.
+---
+
+Container tooling is the backbone of modern delivery pipelines. These guides cover everything
+from installing the Docker Engine on your workstation to running a production Kubernetes cluster
+with a service mesh in front of it.
+
+<div className="grid gap-4 mt-6">
+  <Card>
+    <CardHeader>
+      <CardTitle>Available Guides</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <LinkedCard href="/docs/containers/docker" className="flex items-center gap-2">
+          <IconContainer className="h-4 w-4" />
+          Docker
+        </LinkedCard>
+        <LinkedCard href="/docs/containers/kubernetes" className="flex items-center gap-2">
+          <IconKubernetes className="h-4 w-4" />
+          Kubernetes
+        </LinkedCard>
+        <LinkedCard href="/docs/containers/helm" className="flex items-center gap-2">
+          <IconHelm className="h-4 w-4" />
+          Helm
+        </LinkedCard>
+        <LinkedCard href="/docs/containers/istio" className="flex items-center gap-2">
+          <IconIstio className="h-4 w-4" />
+          Istio
+        </LinkedCard>
+        <LinkedCard href="/docs/containers/minikube" className="flex items-center gap-2">
+          <IconKubernetes className="h-4 w-4" />
+          Minikube
+        </LinkedCard>
+        <LinkedCard href="/docs/containers/openshift" className="flex items-center gap-2">
+          <IconContainer className="h-4 w-4" />
+          OpenShift
+        </LinkedCard>
+      </div>
+    </CardContent>
+  </Card>
+</div>
+
+## What you will learn
+
+- **Docker** — install the Engine and Docker Desktop, run your first container, manage images,
+  volumes and networks, and harden the daemon for production use.
+- **Kubernetes** — set up a cluster, deploy and scale workloads, manage configuration and secrets,
+  and verify a cluster with `kubectl`.
+- **Helm** — package, version and release applications with charts, repositories and rollbacks.
+- **Istio** — install a service mesh, define traffic policies, and secure service-to-service traffic.
+- **Minikube** — run a fully featured Kubernetes cluster locally for fast iteration.
+- **OpenShift** — install the platform and learn the workflow for deploying containerised apps.
+
+## Prerequisites
+
+Most guides assume:
+
+- A 64-bit processor with at least 4 GB of RAM
+- Linux, macOS or Windows with administrator access
+- Basic familiarity with a terminal and shell scripting
+
+<Callout>
+  New to containers? Start with the <a href="/docs/containers/docker">Docker guide</a> — every other
+  guide in this category assumes you can build and run images confidently.
+</Callout>

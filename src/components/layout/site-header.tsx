@@ -1,6 +1,11 @@
 "use client";
 
-import { BookOpenIcon, ChevronDownIcon, SettingsIcon, SparklesIcon, TerminalIcon } from "lucide-react";
+import {
+  BookOpenIcon,
+  ChevronDownIcon,
+  SparklesIcon,
+  TerminalIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -9,163 +14,168 @@ import { CommandMenu } from "@/components/command-menu";
 import { GithubButton } from "@/components/github-button";
 import { ModeSwitcher } from "@/components/mode-switcher";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { docsConfig } from "@/config/docs";
+import { siteConfig } from "@/config/site";
+import { categories } from "@/config/tools";
 import { cn } from "@/lib/utils";
 
 export function SiteHeader() {
   const pathname = usePathname();
   const [isScrolled, setIsScrolled] = useState(false);
-  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
 
-  const activeItem = docsConfig.mainNav.findLast((item) =>
-    pathname.startsWith(item.href),
+  const isActive = (href: string) =>
+    href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
+
+  const isCategoryActive = categories.some((category) =>
+    pathname.startsWith(category.href),
   );
 
-  // Handle scroll effect
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
+      setIsScrolled(window.scrollY > 8);
     };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Enhanced navigation with categories
-  const enhancedNav = [
-    {
-      title: "Getting Started",
-      href: "/docs",
-      icon: BookOpenIcon,
-      description: "Begin your DevOps journey"
-    },
-    {
-      title: "Tools & Categories",
-      href: "/docs/installation",
-      icon: SettingsIcon,
-      description: "Browse all DevOps tools",
-      hasDropdown: true,
-      dropdownItems: [
-        { title: "Containers", href: "/docs/containers", icon: "🐳" },
-        { title: "CI/CD", href: "/docs/ci-cd", icon: "⚡" },
-        { title: "Infrastructure", href: "/docs/infrastructure", icon: "🏗️" },
-        { title: "Monitoring", href: "/docs/monitoring", icon: "📊" },
-        { title: "Version Control", href: "/docs/version-control", icon: "📝" },
-      ]
-    }
-  ];
+  // Close the dropdown whenever the route changes.
+  useEffect(() => {
+    setIsCategoriesOpen(false);
+  }, [pathname]);
 
   return (
-    <header className={cn(
-      "sticky top-0 isolate z-50 border-b transition-all duration-500",
-      isScrolled
-        ? "bg-background/95 backdrop-blur-xl border-border/40 shadow-lg shadow-black/5"
-        : "bg-background/80 backdrop-blur-md border-transparent"
-    )}>
-      {/* Top accent bar */}
-      <div className="h-1 bg-gradient-to-r from-primary via-secondary to-accent animate-pulse"></div>
-
-      <div className="mx-auto flex max-w-screen-2xl items-center justify-between gap-4 px-4 py-4">
-        {/* Left side - Logo and Brand */}
-        <div className="flex items-center gap-6">
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="relative">
-              <div className="w-8 h-8 bg-gradient-to-br from-primary to-secondary rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-110">
-                <TerminalIcon className="size-5 text-primary-foreground" />
-              </div>
-              {/* Glow effect */}
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-            </div>
-            <div className="hidden lg:block">
-              <span className="font-bold text-lg bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent">
-                DevOps Tools Hub
+    <header
+      className={cn(
+        "sticky top-0 z-50 border-b transition-all duration-300",
+        isScrolled
+          ? "border-border/60 bg-background/85 shadow-sm backdrop-blur-xl"
+          : "border-transparent bg-background/60 backdrop-blur-md",
+      )}
+    >
+      <div className="mx-auto flex h-16 max-w-screen-2xl items-center justify-between gap-4 px-4 md:px-8">
+        {/* Brand */}
+        <div className="flex items-center gap-3">
+          <SidebarTrigger className="md:hidden" />
+          <Link href="/" className="group flex items-center gap-2.5">
+            <span className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-md transition-transform duration-300 group-hover:scale-105">
+              <TerminalIcon className="size-5" />
+            </span>
+            <span className="hidden flex-col leading-tight sm:flex">
+              <span className="text-base font-bold tracking-tight">{siteConfig.brand}</span>
+              <span className="hidden items-center gap-1 text-[11px] text-muted-foreground lg:flex">
+                <SparklesIcon className="size-3" />
+                Professional setup guides
               </span>
-              <div className="flex items-center gap-1 mt-0.5">
-                <SparklesIcon className="size-3 text-primary" />
-                <span className="text-xs text-muted-foreground font-medium">Professional Setup Guides</span>
-              </div>
-            </div>
+            </span>
+          </Link>
+        </div>
+
+        {/* Desktop navigation */}
+        <nav className="hidden items-center gap-1 text-sm lg:flex">
+          <Link
+            href="/docs"
+            className={cn(
+              "rounded-lg px-3 py-2 font-medium transition-colors",
+              pathname === "/docs"
+                ? "bg-primary/10 text-foreground"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground",
+            )}
+          >
+            Documentation
+          </Link>
+          <Link
+            href="/docs/installation"
+            className={cn(
+              "rounded-lg px-3 py-2 font-medium transition-colors",
+              isActive("/docs/installation")
+                ? "bg-primary/10 text-foreground"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground",
+            )}
+          >
+            Installation
           </Link>
 
-          <SidebarTrigger className="md:hidden" />
-        </div>
-
-        {/* Center - Enhanced Navigation */}
-        <nav className="hidden items-center gap-1 text-sm lg:flex">
-          {enhancedNav.map((item) => (
-            <div key={item.title} className="relative group">
-              <Link
-                href={item.href}
+          <div
+            className="relative"
+            onMouseEnter={() => setIsCategoriesOpen(true)}
+            onMouseLeave={() => setIsCategoriesOpen(false)}
+          >
+            <button
+              type="button"
+              onClick={() => setIsCategoriesOpen((open) => !open)}
+              aria-expanded={isCategoriesOpen}
+              aria-haspopup="true"
+              className={cn(
+                "flex items-center gap-1.5 rounded-lg px-3 py-2 font-medium transition-colors",
+                isCategoriesOpen || isCategoryActive
+                  ? "bg-primary/10 text-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
+              )}
+            >
+              Categories
+              <ChevronDownIcon
                 className={cn(
-                  "flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all duration-300 group-hover:bg-muted/50 relative overflow-hidden",
-                  activeItem?.href === item.href
-                    ? "text-foreground font-medium bg-primary/10 border border-primary/20"
-                    : "text-foreground/70 hover:text-foreground"
+                  "size-3.5 transition-transform duration-200",
+                  isCategoriesOpen && "rotate-180",
                 )}
-                onMouseEnter={() => item.hasDropdown && setActiveDropdown(item.title)}
-                onMouseLeave={() => setActiveDropdown(null)}
-              >
-                <item.icon className="size-4" />
-                <span>{item.title}</span>
-                {item.hasDropdown && (
-                  <ChevronDownIcon className={cn(
-                    "size-3 transition-transform duration-200",
-                    activeDropdown === item.title ? "rotate-180" : ""
-                  )} />
-                )}
+              />
+            </button>
 
-                {/* Active indicator */}
-                {activeItem?.href === item.href && (
-                  <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-secondary/10 rounded-lg border border-primary/20"></div>
-                )}
-
-                {/* Hover effect */}
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-
-                {/* Shimmer effect */}
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-              </Link>
-
-              {/* Dropdown Menu */}
-              {item.hasDropdown && activeDropdown === item.title && (
-                <div className="absolute top-full left-0 mt-2 w-64 bg-background border border-border/40 rounded-xl shadow-xl backdrop-blur-xl z-50 animate-in slide-in-from-top-2 duration-200">
-                  <div className="p-2">
-                    <div className="px-3 py-2 border-b border-border/20 mb-2">
-                      <p className="text-sm font-medium text-foreground">{item.title}</p>
-                      <p className="text-xs text-muted-foreground">{item.description}</p>
-                    </div>
-                    <div className="space-y-1">
-                      {item.dropdownItems?.map((dropdownItem) => (
-                        <Link
-                          key={dropdownItem.title}
-                          href={dropdownItem.href}
-                          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all duration-200 group/item"
+            {isCategoriesOpen && (
+              <div className="absolute left-1/2 top-full z-50 w-[26rem] -translate-x-1/2 pt-2">
+                <div className="animate-in slide-in-from-top-2 rounded-xl border border-border/60 bg-popover p-2 shadow-xl shadow-black/5">
+                  <div className="grid grid-cols-2 gap-1">
+                    {categories.map((category) => (
+                      <Link
+                        key={category.slug}
+                        href={category.href}
+                        className={cn(
+                          "flex items-start gap-2.5 rounded-lg p-2.5 transition-colors hover:bg-muted",
+                          isActive(category.href) && "bg-muted",
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md bg-gradient-to-br text-white",
+                            category.accent,
+                          )}
                         >
-                          <span className="text-lg">{dropdownItem.icon}</span>
-                          <span className="group-hover/item:translate-x-1 transition-transform duration-200">
-                            {dropdownItem.title}
+                          <category.icon className="size-3.5" />
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block text-sm font-medium">
+                            {category.title}
                           </span>
-                        </Link>
-                      ))}
-                    </div>
+                          <span className="block truncate text-xs text-muted-foreground">
+                            {category.description}
+                          </span>
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
+                  <div className="mt-1 border-t border-border/60 pt-1">
+                    <Link
+                      href="/docs/contributing"
+                      className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                    >
+                      <BookOpenIcon className="size-4" />
+                      Contributing guide
+                    </Link>
                   </div>
                 </div>
-              )}
-            </div>
-          ))}
+              </div>
+            )}
+          </div>
         </nav>
 
-        {/* Right side - Actions */}
-        <div className="flex flex-1 items-center gap-4 sm:flex-none">
+        {/* Actions */}
+        <div className="flex items-center gap-2">
           <ModeSwitcher className="hidden lg:inline-flex" />
           <CommandMenu />
-          <div className="flex items-center gap-0.5">
-            <GithubButton />
-          </div>
+          <GithubButton />
         </div>
       </div>
-
-      {/* Bottom accent line */}
-      <div className="h-px bg-gradient-to-r from-transparent via-border/50 to-transparent"></div>
     </header>
   );
 }

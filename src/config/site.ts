@@ -1,5 +1,6 @@
 export const siteConfig = {
   name: "DevOps Tools Setup & Installations",
+  brand: "DevOps Tools Hub",
   url: "https://tools-setup.prodevopsguytech.com",
   ogImage: "https://tools-setup.prodevopsguytech.com/og.jpg",
   description:
@@ -8,8 +9,9 @@ export const siteConfig = {
     github: "https://github.com/NotHarshhaa/devops-tools-setups-installations",
     githubProfile: "https://github.com/NotHarshhaa",
     githubShadcnUi: "https://github.com/shadcn-ui/ui",
-    telegram: "https://t.me/NotHarshhaa",
-    linkedin: "https://linkedin.com/in/harshhaa-vardhan-reddy",
+    telegram: "https://t.me/prodevopsguy",
+    linkedin: "https://www.linkedin.com/in/harshhaa-vardhan-reddy/",
+    twitter: "https://x.com/NotHarshhaa",
   },
 } as const;
 

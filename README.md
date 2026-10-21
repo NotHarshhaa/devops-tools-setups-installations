@@ -104,6 +104,14 @@ This repository serves as your one-stop solution for DevOps tools setup and conf
 📦 src/
  ┣ 📂 content/
  ┃ ┗ 📂 docs/
+ ┃   ┣ 📄 index.mdx              # Landing page / introduction
+ ┃   ┣ 📄 installation.mdx       # Installation hub with all tools
+ ┃   ┣ 📄 containers.mdx         # Category overview page
+ ┃   ┣ 📄 ci-cd.mdx              # Category overview page
+ ┃   ┣ 📄 infrastructure.mdx     # Category overview page
+ ┃   ┣ 📄 cloud.mdx              # Category overview page
+ ┃   ┣ 📄 monitoring.mdx         # Category overview page
+ ┃   ┣ 📄 version-control.mdx    # Category overview page
  ┃   ┣ 🔄 ci-cd/
  ┃   ┃ ┣ 📄 github-actions.mdx    # GitHub Actions Workflows & Configuration
  ┃   ┃ ┣ 📄 gitlab-ci.mdx         # GitLab CI/CD Pipeline Setup
@@ -298,8 +306,10 @@ npm test         # Should pass all tests
 |---------|------------|
 | 🌓 **Theme Toggle** | Switch between light and dark modes |
 | 📱 **Responsive** | Mobile-first design approach |
-| 🔍 **Search** | Full-text search capabilities |
-| 📋 **Code Blocks** | Syntax highlighting & copy button |
+| 🔍 **Smart Search** | Full-text search across every guide, with category and topic filters |
+| 🗂️ **Category Pages** | Landing pages for Containers, CI/CD, Infrastructure, Cloud, Monitoring and Version Control |
+| 📋 **Code Blocks** | Syntax highlighting, copy button and wrapping on mobile |
+| 🧭 **Command Palette** | `⌘K` / `Ctrl+K` to jump to any guide instantly |
 | 🚀 **Performance** | Optimized loading & rendering |
 
 </div>

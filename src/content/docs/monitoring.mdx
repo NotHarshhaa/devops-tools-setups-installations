@@ -1,0 +1,56 @@
+---
+title: Monitoring & Observability
+description: Install and configure Prometheus, Grafana, the ELK stack and Nagios with scrape configurations, dashboards, alerting rules and centralised logging you can rely on in production.
+---
+
+You cannot improve what you cannot measure. These guides cover the four pillars of a modern
+observability stack — metrics, dashboards, logs and alerting — with configuration you can copy
+straight into production.
+
+<div className="grid gap-4 mt-6">
+  <Card>
+    <CardHeader>
+      <CardTitle>Available Guides</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <LinkedCard href="/docs/monitoring/prometheus" className="flex items-center gap-2">
+          <IconMonitoring className="h-4 w-4" />
+          Prometheus
+        </LinkedCard>
+        <LinkedCard href="/docs/monitoring/grafana" className="flex items-center gap-2">
+          <IconLineChart className="h-4 w-4" />
+          Grafana
+        </LinkedCard>
+        <LinkedCard href="/docs/monitoring/elk-stack" className="flex items-center gap-2">
+          <IconServer className="h-4 w-4" />
+          ELK Stack
+        </LinkedCard>
+        <LinkedCard href="/docs/monitoring/nagios" className="flex items-center gap-2">
+          <IconMonitoring className="h-4 w-4" />
+          Nagios
+        </LinkedCard>
+      </div>
+    </CardContent>
+  </Card>
+</div>
+
+## What you will learn
+
+- **Prometheus** — install the server, define scrape jobs, write recording and alerting rules.
+- **Grafana** — connect data sources, build dashboards and turn metrics into actionable alerts.
+- **ELK Stack** — deploy Elasticsearch, Logstash and Kibana and ship structured logs to them.
+- **Nagios** — install the core, define host and service checks and route notifications.
+
+## Observability checklist
+
+1. Instrument the four golden signals — latency, traffic, errors and saturation
+2. Alert on symptoms users feel, not on causes
+3. Keep an eye on the cost of retention before scaling logs
+4. Correlate metrics and logs with a shared trace or request identifier
+5. Test your alerts regularly with a synthetic check
+
+<Callout>
+  New to the stack? Follow the <a href="/docs/monitoring/prometheus">Prometheus guide</a> first, then
+  layer <a href="/docs/monitoring/grafana">Grafana</a> dashboards on top of the metrics.
+</Callout>

@@ -1,0 +1,52 @@
+---
+title: Version Control
+description: Set up Git and the GitHub and GitLab command line clients with authentication, branching strategies, credential helpers and the everyday commands every DevOps engineer relies on.
+---
+
+Version control is where every delivery workflow starts. These guides cover installing Git and the
+provider CLIs, configuring authentication that never breaks, and the branching habits that keep
+history readable.
+
+<div className="grid gap-4 mt-6">
+  <Card>
+    <CardHeader>
+      <CardTitle>Available Guides</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <LinkedCard href="/docs/version-control/git" className="flex items-center gap-2">
+          <IconGit className="h-4 w-4" />
+          Git
+        </LinkedCard>
+        <LinkedCard href="/docs/version-control/github-cli" className="flex items-center gap-2">
+          <IconGitHub className="h-4 w-4" />
+          GitHub CLI
+        </LinkedCard>
+        <LinkedCard href="/docs/version-control/gitlab-cli" className="flex items-center gap-2">
+          <IconGitLab className="h-4 w-4" />
+          GitLab CLI
+        </LinkedCard>
+      </div>
+    </CardContent>
+  </Card>
+</div>
+
+## What you will learn
+
+- **Git** — install it, configure your identity, understand the staging area and use a branching
+  model that scales with your team.
+- **GitHub CLI** — authenticate with `gh`, review pull requests and cut releases from the terminal.
+- **GitLab CLI** — authenticate with `glab` and work with merge requests, pipelines and projects.
+
+## Workflow recommendations
+
+1. Commit small, focused changes with messages that explain the *why*
+2. Rebase local work before opening a pull request
+3. Protect the default branch and require reviews
+4. Use signed commits or tags for releases
+5. Configure a credential helper or SSH keys once — never store tokens in plain text
+
+<Callout>
+  Set up <a href="/docs/version-control/git">Git</a> first — the provider CLIs in this category all
+  assume a working Git installation with a configured identity.
+</Callout>

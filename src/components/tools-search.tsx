@@ -1,183 +1,260 @@
 "use client";
 
-import { SearchIcon, XIcon } from "lucide-react";
+import { ArrowRightIcon, SearchIcon, XIcon } from "lucide-react";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  type CategorySlug,
+  categories,
+  categoryBySlug,
+} from "@/config/tools";
 
-interface Tool {
+export interface SearchableTool {
+  slug: string;
   name: string;
-  category: string;
   description: string;
+  category: CategorySlug;
   tags: string[];
 }
 
-const tools: Tool[] = [
-  { name: "Docker", category: "Containers", description: "Container platform for building, shipping, and running applications", tags: ["containers", "deployment", "microservices"] },
-  { name: "Kubernetes", category: "Containers", description: "Container orchestration platform for automating deployment", tags: ["containers", "orchestration", "scaling"] },
-  { name: "Jenkins", category: "CI/CD", description: "Automation server for building, testing, and deploying software", tags: ["automation", "pipeline", "integration"] },
-  { name: "Terraform", category: "Infrastructure", description: "Infrastructure as code tool for building, changing, and versioning infrastructure", tags: ["iac", "cloud", "provisioning"] },
-  { name: "Ansible", category: "Infrastructure", description: "Automation tool for configuration management and application deployment", tags: ["automation", "configuration", "orchestration"] },
-  { name: "Git", category: "Version Control", description: "Distributed version control system for tracking changes in source code", tags: ["version-control", "collaboration", "history"] },
-  { name: "Prometheus", category: "Monitoring", description: "Open-source monitoring and alerting toolkit", tags: ["monitoring", "metrics", "alerting"] },
-  { name: "Grafana", category: "Monitoring", description: "Open-source analytics and visualization platform", tags: ["visualization", "dashboards", "analytics"] },
-  { name: "ELK Stack", category: "Logging", description: "Elasticsearch, Logstash, and Kibana for log management", tags: ["logging", "search", "analytics"] },
-  { name: "Helm", category: "Containers", description: "Package manager for Kubernetes", tags: ["kubernetes", "packaging", "deployment"] },
-  { name: "Istio", category: "Containers", description: "Service mesh for microservices", tags: ["microservices", "networking", "security"] },
-  { name: "Vault", category: "Security", description: "Secret management and encryption tool", tags: ["secrets", "encryption", "security"] },
-];
+interface ToolsSearchProps {
+  tools: SearchableTool[];
+}
 
-const categories = ["All", "Containers", "CI/CD", "Infrastructure", "Version Control", "Monitoring", "Logging", "Security"];
+export function ToolsSearch({ tools }: ToolsSearchProps) {
+  const [query, setQuery] = useState("");
+  const [category, setCategory] = useState<CategorySlug | "all">("all");
+  const [topic, setTopic] = useState<string | null>(null);
 
-export function ToolsSearch() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const topics = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const tool of tools) {
+      for (const tag of tool.tags) {
+        counts.set(tag, (counts.get(tag) ?? 0) + 1);
+      }
+    }
+
+    return [...counts.entries()]
+      .filter(([, count]) => count >= 3)
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .slice(0, 8)
+      .map(([tag]) => tag);
+  }, [tools]);
 
   const filteredTools = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+
     return tools.filter((tool) => {
-      const matchesSearch = tool.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           tool.description.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesCategory = selectedCategory === "All" || tool.category === selectedCategory;
-      const matchesTags = selectedTags.length === 0 || 
-                         selectedTags.some(tag => tool.tags.includes(tag));
-      
-      return matchesSearch && matchesCategory && matchesTags;
+      const matchesQuery =
+        normalizedQuery.length === 0 ||
+        tool.name.toLowerCase().includes(normalizedQuery) ||
+        tool.description.toLowerCase().includes(normalizedQuery) ||
+        tool.tags.some((tag) => tag.toLowerCase().includes(normalizedQuery));
+
+      const matchesCategory = category === "all" || tool.category === category;
+      const matchesTopic = topic === null || tool.tags.includes(topic);
+
+      return matchesQuery && matchesCategory && matchesTopic;
     });
-  }, [searchQuery, selectedCategory, selectedTags]);
+  }, [tools, query, category, topic]);
 
-  const allTags = useMemo(() => {
-    const tags = new Set<string>();
-    tools.forEach(tool => tool.tags.forEach(tag => tags.add(tag)));
-    return Array.from(tags);
-  }, []);
+  const categoryCounts = useMemo(() => {
+    const counts = new Map<CategorySlug, number>();
+    for (const tool of tools) {
+      counts.set(tool.category, (counts.get(tool.category) ?? 0) + 1);
+    }
+    return counts;
+  }, [tools]);
 
-  const toggleTag = (tag: string) => {
-    setSelectedTags(prev => 
-      prev.includes(tag) 
-        ? prev.filter(t => t !== tag)
-        : [...prev, tag]
-    );
-  };
+  const hasActiveFilters =
+    query.trim().length > 0 || category !== "all" || topic !== null;
 
   const clearFilters = () => {
-    setSearchQuery("");
-    setSelectedCategory("All");
-    setSelectedTags([]);
+    setQuery("");
+    setCategory("all");
+    setTopic(null);
   };
 
   return (
-    <section className="py-24 bg-muted/30">
-      <div className="mx-auto max-w-screen-2xl px-8">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl mb-4">
-            Find the Right DevOps Tool
+    <section className="py-16 md:py-24" id="tools">
+      <div className="mx-auto max-w-screen-2xl px-4 md:px-8">
+        <div className="flex flex-col gap-4 text-center">
+          <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3.5 py-1.5 text-sm font-medium">
+            <SearchIcon className="size-4 text-primary" />
+            Find your tool
+          </div>
+          <h2 className="text-balance text-3xl font-bold tracking-tight sm:text-4xl">
+            Search every guide in one place
           </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Search and filter through our comprehensive collection of DevOps tools and installation guides
+          <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
+            Filter by category or topic and jump straight to the setup guide you
+            need.
           </p>
         </div>
 
-        {/* Search and Filters */}
-        <div className="space-y-6 mb-8">
-          {/* Search Input */}
-          <div className="relative max-w-2xl mx-auto">
-            <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
+        {/* Search field */}
+        <div className="mx-auto mt-10 max-w-2xl">
+          <div className="relative">
+            <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search for tools, commands, or concepts..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4 py-3 text-lg border-2 focus:border-primary"
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search Docker, Terraform, kubectl, monitoring…"
+              aria-label="Search guides"
+              className="h-12 pl-11 pr-11 text-base"
             />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                aria-label="Clear search"
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                <XIcon className="size-4" />
+              </button>
+            )}
           </div>
 
-          {/* Category Filter */}
-          <div className="flex flex-wrap justify-center gap-2">
-            {categories.map((category) => (
+          {/* Category filters */}
+          <div className="mt-5 flex flex-wrap justify-center gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant={category === "all" ? "default" : "outline"}
+              onClick={() => setCategory("all")}
+              className="rounded-full"
+            >
+              All
+              <span className="ml-1 text-xs opacity-70">{tools.length}</span>
+            </Button>
+            {categories.map((item) => (
               <Button
-                key={category}
-                variant={selectedCategory === category ? "default" : "outline"}
+                key={item.slug}
+                type="button"
                 size="sm"
-                onClick={() => setSelectedCategory(category)}
+                variant={category === item.slug ? "default" : "outline"}
+                onClick={() => setCategory(item.slug)}
                 className="rounded-full"
               >
-                {category}
+                {item.title}
+                <span className="ml-1 text-xs opacity-70">
+                  {categoryCounts.get(item.slug) ?? 0}
+                </span>
               </Button>
             ))}
           </div>
 
-          {/* Tag Filter */}
-          <div className="flex flex-wrap justify-center gap-2">
-            {allTags.map((tag) => (
-              <Badge
-                key={tag}
-                variant={selectedTags.includes(tag) ? "default" : "secondary"}
-                className={`cursor-pointer hover:opacity-80 transition-opacity ${
-                  selectedTags.includes(tag) ? "bg-primary" : "bg-secondary hover:bg-secondary/80"
-                }`}
-                onClick={() => toggleTag(tag)}
-              >
-                {tag}
-              </Badge>
-            ))}
-          </div>
-
-          {/* Clear Filters */}
-          {(searchQuery || selectedCategory !== "All" || selectedTags.length > 0) && (
-            <div className="text-center">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearFilters}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                <XIcon className="w-4 h-4 mr-2" />
-                Clear all filters
-              </Button>
+          {/* Topic filters */}
+          {topics.length > 0 && (
+            <div className="mt-3 flex flex-wrap justify-center gap-2">
+              {topics.map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => setTopic(topic === tag ? null : tag)}
+                  aria-pressed={topic === tag}
+                  className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
+                    topic === tag
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border/70 text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                  }`}
+                >
+                  {tag}
+                </button>
+              ))}
             </div>
           )}
         </div>
 
         {/* Results */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {filteredTools.map((tool) => (
-            <div
-              key={tool.name}
-              className="group bg-background border rounded-lg p-6 hover:border-primary/50 hover:shadow-lg transition-all duration-300 cursor-pointer"
+        <div className="mt-8 flex items-center justify-between gap-4">
+          <p className="text-sm text-muted-foreground" aria-live="polite">
+            {filteredTools.length} guide{filteredTools.length === 1 ? "" : "s"}
+            {hasActiveFilters ? " matching your filters" : " available"}
+          </p>
+          {hasActiveFilters && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={clearFilters}
+              className="text-muted-foreground hover:text-foreground"
             >
-              <div className="flex items-start justify-between mb-4">
-                <h3 className="text-lg font-semibold group-hover:text-primary transition-colors">
-                  {tool.name}
-                </h3>
-                <Badge variant="secondary" className="text-xs">
-                  {tool.category}
-                </Badge>
-              </div>
-              <p className="text-muted-foreground text-sm mb-4 leading-relaxed">
-                {tool.description}
-              </p>
-              <div className="flex flex-wrap gap-1">
-                {tool.tags.map((tag) => (
-                  <Badge
-                    key={tag}
-                    variant="outline"
-                    className="text-xs border-border/50 hover:border-primary/50 transition-colors"
-                  >
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          ))}
+              <XIcon className="mr-2 size-4" />
+              Clear filters
+            </Button>
+          )}
         </div>
 
-        {filteredTools.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground text-lg">
-              No tools found matching your criteria. Try adjusting your search or filters.
+        {filteredTools.length > 0 ? (
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {filteredTools.map((tool) => {
+              const meta = categoryBySlug[tool.category];
+
+              return (
+                <Link
+                  key={tool.slug}
+                  href={`/docs/${tool.slug}`}
+                  className="group flex flex-col gap-3 rounded-xl border border-border/70 bg-card p-5 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-lg"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-2.5">
+                      <span
+                        className={`flex size-8 items-center justify-center rounded-lg bg-gradient-to-br ${meta.accent} text-white`}
+                      >
+                        <meta.icon className="size-4" />
+                      </span>
+                      <h3 className="text-base font-semibold tracking-tight transition-colors group-hover:text-primary">
+                        {tool.name}
+                      </h3>
+                    </div>
+                    <Badge variant="secondary" className="shrink-0 text-xs">
+                      {meta.title}
+                    </Badge>
+                  </div>
+
+                  <p className="text-sm leading-relaxed text-muted-foreground">
+                    {tool.description}
+                  </p>
+
+                  <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-1">
+                    <div className="flex flex-wrap gap-1">
+                      {tool.tags.slice(0, 3).map((tag) => (
+                        <span
+                          key={tag}
+                          className="rounded-md border border-border/60 px-1.5 py-0.5 text-[11px] text-muted-foreground"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                    <ArrowRightIcon className="size-4 shrink-0 text-primary transition-transform duration-300 group-hover:translate-x-1" />
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="mt-10 rounded-xl border border-dashed border-border bg-muted/30 px-6 py-16 text-center">
+            <p className="text-lg font-medium">No guides match your search</p>
+            <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+              Try a different keyword, pick another category, or browse the full
+              list of installation guides.
             </p>
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
+              <Button type="button" variant="outline" onClick={clearFilters}>
+                <XIcon className="mr-2 size-4" />
+                Clear filters
+              </Button>
+              <Button asChild>
+                <Link href="/docs/installation">Browse all guides</Link>
+              </Button>
+            </div>
           </div>
         )}
       </div>

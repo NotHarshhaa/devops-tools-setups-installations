@@ -1,0 +1,67 @@
+---
+title: Infrastructure as Code
+description: Install and configure Terraform, Ansible, HashiCorp Vault, Consul, Vagrant and Packer with reproducible infrastructure examples, secret management patterns and safe rollout strategies.
+---
+
+Infrastructure as code turns hand-rolled servers into reviewed, repeatable and versioned changes.
+These guides cover the tools that make that possible — from provisioning to secret management and
+golden image building.
+
+<div className="grid gap-4 mt-6">
+  <Card>
+    <CardHeader>
+      <CardTitle>Available Guides</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <LinkedCard href="/docs/infrastructure/terraform" className="flex items-center gap-2">
+          <IconTerraform className="h-4 w-4" />
+          Terraform
+        </LinkedCard>
+        <LinkedCard href="/docs/infrastructure/ansible" className="flex items-center gap-2">
+          <IconAnsible className="h-4 w-4" />
+          Ansible
+        </LinkedCard>
+        <LinkedCard href="/docs/infrastructure/vault" className="flex items-center gap-2">
+          <IconVault className="h-4 w-4" />
+          HashiCorp Vault
+        </LinkedCard>
+        <LinkedCard href="/docs/infrastructure/consul" className="flex items-center gap-2">
+          <IconSettings className="h-4 w-4" />
+          Consul
+        </LinkedCard>
+        <LinkedCard href="/docs/infrastructure/vagrant" className="flex items-center gap-2">
+          <IconBox className="h-4 w-4" />
+          Vagrant
+        </LinkedCard>
+        <LinkedCard href="/docs/infrastructure/packer" className="flex items-center gap-2">
+          <IconPacker className="h-4 w-4" />
+          Packer
+        </LinkedCard>
+      </div>
+    </CardContent>
+  </Card>
+</div>
+
+## What you will learn
+
+- **Terraform** — initialise workspaces, model resources in HCL, plan safely and apply changes.
+- **Ansible** — write inventories and playbooks, and configure fleets of hosts idempotently.
+- **Vault** — enable secret engines, issue dynamic credentials and audit access.
+- **Consul** — provide service discovery and distributed configuration.
+- **Vagrant** — spin up reproducible development environments from code.
+- **Packer** — build golden machine images for every target platform.
+
+## Safe rollout principles
+
+1. Commit infrastructure code and review it like application code
+2. Always run `plan` (or `--check`) before applying
+3. Keep state in a remote, versioned backend
+4. Store credentials in Vault or your cloud secret manager — never in `.tfvars`
+5. Roll out incrementally with canaries and blue/green releases
+
+<Callout>
+  Start with <a href="/docs/infrastructure/terraform">Terraform</a> to learn the infrastructure as
+  code workflow, then add <a href="/docs/infrastructure/vault">Vault</a> to keep secrets out of your
+  state files.
+</Callout>

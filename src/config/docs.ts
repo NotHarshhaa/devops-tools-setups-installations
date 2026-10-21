@@ -34,6 +34,11 @@ export const docsConfig = {
       title: "Containers",
       items: [
         {
+          title: "Overview",
+          href: "/docs/containers",
+          items: [],
+        },
+        {
           title: "Docker",
           href: "/docs/containers/docker",
           items: [],
@@ -66,21 +71,26 @@ export const docsConfig = {
       ],
     },
     {
-      title: "Cloud",
+      title: "CI/CD",
       items: [
         {
-          title: "AWS CLI",
-          href: "/docs/cloud/aws-cli",
+          title: "Overview",
+          href: "/docs/ci-cd",
           items: [],
         },
         {
-          title: "Google Cloud CLI",
-          href: "/docs/cloud/gcloud-cli",
+          title: "GitHub Actions",
+          href: "/docs/ci-cd/github-actions",
           items: [],
         },
         {
-          title: "Azure CLI",
-          href: "/docs/cloud/azure-cli",
+          title: "GitLab CI/CD",
+          href: "/docs/ci-cd/gitlab-ci",
+          items: [],
+        },
+        {
+          title: "Jenkins",
+          href: "/docs/ci-cd/jenkins",
           items: [],
         },
       ],
@@ -88,6 +98,11 @@ export const docsConfig = {
     {
       title: "Infrastructure",
       items: [
+        {
+          title: "Overview",
+          href: "/docs/infrastructure",
+          items: [],
+        },
         {
           title: "Terraform",
           href: "/docs/infrastructure/terraform",
@@ -111,29 +126,42 @@ export const docsConfig = {
         {
           title: "Hashicorp Packer",
           href: "/docs/infrastructure/packer",
-        },  
+        },
       ],
     },
     {
-      title: "Version Control",
+      title: "Cloud",
       items: [
         {
-          title: "Git",
-          href: "/docs/version-control/git",
+          title: "Overview",
+          href: "/docs/cloud",
+          items: [],
         },
         {
-          title: "GitHub",
-          href: "/docs/version-control/github-cli",
+          title: "AWS CLI",
+          href: "/docs/cloud/aws-cli",
+          items: [],
         },
         {
-          title: "GitLab",
-          href: "/docs/version-control/gitlab-cli",
+          title: "Google Cloud CLI",
+          href: "/docs/cloud/gcloud-cli",
+          items: [],
+        },
+        {
+          title: "Azure CLI",
+          href: "/docs/cloud/azure-cli",
+          items: [],
         },
       ],
     },
     {
       title: "Monitoring",
       items: [
+        {
+          title: "Overview",
+          href: "/docs/monitoring",
+          items: [],
+        },
         {
           title: "Prometheus",
           href: "/docs/monitoring/prometheus",
@@ -153,19 +181,24 @@ export const docsConfig = {
       ],
     },
     {
-      title: "CI/CD",
+      title: "Version Control",
       items: [
         {
-          title: "Jenkins",
-          href: "/docs/ci-cd/jenkins",
+          title: "Overview",
+          href: "/docs/version-control",
+          items: [],
         },
         {
-          title: "GitLab CI/CD",
-          href: "/docs/ci-cd/gitlab-ci",
+          title: "Git",
+          href: "/docs/version-control/git",
         },
         {
-          title: "GitHub Actions",
-          href: "/docs/ci-cd/github-actions",
+          title: "GitHub CLI",
+          href: "/docs/version-control/github-cli",
+        },
+        {
+          title: "GitLab CLI",
+          href: "/docs/version-control/gitlab-cli",
         },
       ],
     },

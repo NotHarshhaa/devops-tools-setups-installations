@@ -1,89 +1,66 @@
-import { BookOpenIcon, CheckCircleIcon, CodeIcon, UsersIcon } from "lucide-react";
+import {
+  BookOpenIcon,
+  BoxesIcon,
+  CloudIcon,
+  HeartIcon,
+  type LucideIcon,
+  TerminalIcon,
+} from "lucide-react";
 
-export function StatsSection() {
-  const stats = [
+interface StatsSectionProps {
+  guides: number;
+  categories: number;
+}
+
+export function StatsSection({ guides, categories }: StatsSectionProps) {
+  const stats: { icon: LucideIcon; value: string; label: string; description: string }[] = [
     {
       icon: BookOpenIcon,
-      value: "50+",
+      value: `${guides}+`,
       label: "Installation Guides",
-      description: "Comprehensive setup tutorials"
+      description: "One guide per tool, start to finish",
     },
     {
-      icon: CodeIcon,
-      value: "200+",
-      label: "CLI Commands",
-      description: "Ready-to-use commands"
+      icon: BoxesIcon,
+      value: `${categories}`,
+      label: "Tool Categories",
+      description: "Containers, CI/CD, cloud, infra and more",
     },
     {
-      icon: CheckCircleIcon,
-      value: "100%",
-      label: "Production Ready",
-      description: "Tested configurations"
+      icon: TerminalIcon,
+      value: "Copy-paste",
+      label: "Ready Commands",
+      description: "Verified commands you can run as-is",
     },
     {
-      icon: UsersIcon,
-      value: "24/7",
-      label: "Always Available",
-      description: "Access anytime, anywhere"
-    }
+      icon: HeartIcon,
+      value: "MIT",
+      label: "Open Source",
+      description: "Free for personal and commercial use",
+    },
   ];
 
   return (
-    <section className="relative py-24 overflow-hidden">
-      {/* Background */}
-      <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-secondary/5"></div>
-      
-      <div className="relative mx-auto max-w-screen-2xl px-8">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            Trusted by DevOps Engineers Worldwide
-          </h2>
-          <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-            Our comprehensive guides help teams deploy and manage production environments with confidence
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
-          {stats.map((stat, index) => (
-            <div
-              key={stat.label}
-              className="group relative text-center"
-              style={{ animationDelay: `${index * 150}ms` }}
-            >
-              <div className="relative">
-                {/* Animated background circle */}
-                <div className="absolute inset-0 mx-auto w-20 h-20 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-full blur-xl group-hover:blur-2xl transition-all duration-500"></div>
-                
-                {/* Icon container */}
-                <div className="relative mx-auto w-20 h-20 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                  <stat.icon className="w-10 h-10 text-primary" />
-                </div>
+    <section className="border-b bg-muted/30">
+      <div className="mx-auto max-w-screen-2xl px-4 py-12 md:px-8 md:py-14">
+        <dl className="grid grid-cols-2 gap-6 lg:grid-cols-4">
+          {stats.map((stat) => (
+            <div key={stat.label} className="group flex flex-col items-center gap-3 text-center">
+              <div className="flex size-11 items-center justify-center rounded-xl border border-border/70 bg-background text-primary shadow-sm transition-transform duration-300 group-hover:scale-110">
+                <stat.icon className="size-5" />
               </div>
-              
-              <div className="space-y-2">
-                <div className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                  {stat.value}
-                </div>
-                <div className="text-lg font-semibold">
-                  {stat.label}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  {stat.description}
-                </div>
+              <div className="space-y-1">
+                <dd className="text-2xl font-bold tracking-tight sm:text-3xl">{stat.value}</dd>
+                <dt className="text-sm font-medium">{stat.label}</dt>
+                <p className="text-xs text-muted-foreground">{stat.description}</p>
               </div>
             </div>
           ))}
-        </div>
-
-        {/* Additional info */}
-        <div className="mt-16 text-center">
-          <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-6 py-3 border border-primary/20">
-            <CheckCircleIcon className="w-5 h-5 text-primary" />
-            <span className="text-sm font-medium text-primary">
-              Continuously Updated & Maintained
-            </span>
-          </div>
-        </div>
+        </dl>
+        <p className="mt-10 flex items-center justify-center gap-2 text-center text-sm text-muted-foreground">
+          <CloudIcon className="size-4 text-primary" />
+          Works on Linux, macOS and Windows · Updated continuously by the community
+        </p>
       </div>
     </section>
   );

@@ -7,7 +7,7 @@ import { SiteHeader } from "@/components/layout/site-header";
 import { ThemeProvider } from "@/components/theme-provider";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
-import { siteConfig } from "@/config/site";
+import { META_THEME_COLORS, siteConfig } from "@/config/site";
 import { cn } from "@/lib/utils";
 import { BProgressProvider } from "@/registry/new-york/components/bprogress-provider-next-app";
 import { Confirmer } from "@/registry/new-york/ui/confirmer";
@@ -30,19 +30,29 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
   description: siteConfig.description,
   keywords: [
-    "Next.js",
-    "React",
-    "Tailwind CSS",
-    "Server Components",
-    "Radix UI",
+    "devops",
+    "devops tools",
+    "installation guide",
+    "docker",
+    "kubernetes",
+    "terraform",
+    "ansible",
+    "ci/cd",
+    "github actions",
+    "jenkins",
+    "prometheus",
+    "grafana",
+    "monitoring",
+    "infrastructure as code",
+    "cloud cli",
   ],
   authors: [
     {
-      name: "junwen-k",
-      url: "https://junwen-k.dev",
+      name: "NotHarshhaa",
+      url: "https://github.com/NotHarshhaa",
     },
   ],
-  creator: "junwen-k",
+  creator: "NotHarshhaa",
   openGraph: {
     type: "website",
     locale: "en_US",
@@ -59,6 +69,13 @@ export const metadata: Metadata = {
       },
     ],
   },
+  twitter: {
+    card: "summary_large_image",
+    title: siteConfig.name,
+    description: siteConfig.description,
+    images: [siteConfig.ogImage],
+    creator: "@NotHarshhaa",
+  },
   icons: {
     icon: "/favicon.ico",
     apple: "/apple-touch-icon.png",
@@ -68,8 +85,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "white" },
-    { media: "(prefers-color-scheme: dark)", color: "black" },
+    { media: "(prefers-color-scheme: light)", color: META_THEME_COLORS.light },
+    { media: "(prefers-color-scheme: dark)", color: META_THEME_COLORS.dark },
   ],
 };
 

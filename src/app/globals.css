@@ -463,6 +463,8 @@
   
   html {
     scroll-behavior: smooth;
+    /* Keep anchored headings clear of the sticky site header. */
+    scroll-padding-top: 5rem;
   }
   
   body {
@@ -472,7 +474,7 @@
 
   /* Enhanced focus styles */
   :focus-visible {
-    outline: 2px solid hsl(var(--ring));
+    outline: 2px solid var(--ring);
     outline-offset: 2px;
   }
 
@@ -507,8 +509,20 @@
 
   /* Selection styles */
   ::selection {
-    background-color: hsl(var(--primary) / 0.2);
-    color: hsl(var(--primary-foreground));
+    background-color: color-mix(in oklab, var(--primary) 22%, transparent);
+    color: var(--primary-foreground);
+  }
+
+  /* Respect users who prefer reduced motion. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 
@@ -657,16 +671,29 @@
 
 [data-rehype-pretty-code-figure] pre {
   @apply rounded-xl bg-zinc-950 py-4 dark:bg-zinc-900;
+  /* Keep long lines inside the block on small screens instead of forcing the
+     whole page to scroll horizontally. */
+  grid-template-columns: minmax(0, 1fr);
 }
 
 [data-rehype-pretty-code-figure] code {
   @apply grid min-w-full rounded-none border-0 bg-transparent p-0 break-words;
   counter-reset: line;
   box-decoration-break: clone;
+  /* Let long commands wrap inside the block instead of scrolling the page. */
+  grid-template-columns: minmax(0, 1fr);
 }
 
 [data-rehype-pretty-code-figure] [data-line] {
   @apply inline-block min-h-[1rem] w-full px-4 py-0.5;
+}
+
+/* On small screens long commands wrap instead of scrolling out of view. */
+@media (max-width: 640px) {
+  [data-rehype-pretty-code-figure] code,
+  [data-rehype-pretty-code-figure] [data-line] {
+    white-space: pre-wrap;
+  }
 }
 
 [data-rehype-pretty-code-figure] [data-line-numbers] [data-line] {
@@ -684,7 +711,6 @@
 }
 
 /* Highlighted */
-
 [data-rehype-pretty-code-figure] [data-line].highlighted {
   @apply bg-zinc-700/50;
 }
