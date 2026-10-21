@@ -1,105 +1,189 @@
 ---
 title: GitHub Actions Setup Guide
-description: Comprehensive guide for setting up and using GitHub Actions for CI/CD workflows in your repositories.
+description: Set up GitHub Actions with the current action versions, run your first workflow, configure GitHub-hosted and self-hosted runners and secure your pipelines with OIDC.
 ---
 
-This guide provides detailed instructions for setting up GitHub Actions in your repositories and creating efficient CI/CD workflows.
+GitHub Actions runs your CI/CD pipelines directly from your repository. This guide takes
+you from an empty repository to a working, secured pipeline using the **current action
+versions** and the **current runner release**.
+
+<Callout title="Versions used in this guide">
+  GitHub Actions runner **v2.338.0** · `actions/checkout@v7` · `actions/setup-node@v7` ·
+  `actions/cache@v6` · `actions/upload-artifact@v7` · `actions/download-artifact@v8` ·
+  `docker/login-action@v4` · `docker/build-push-action@v7` · `docker/setup-buildx-action@v4`
+</Callout>
+
+<Callout title="Node 20 has been removed from the runner image">
+  The runner's own tooling now runs on **Node 24**, and Node 20 was removed from the hosted
+  runner images on 23 September 2026. Your workflow still needs `actions/setup-node` to
+  install the Node.js version your project targets.
+</Callout>
 
 ## Requirements
 
-- GitHub account
-- Repository with code to build/test/deploy
-- Appropriate permissions on the repository
-- (Optional) Self-hosted runners for custom environments
+- A GitHub account with write access to the repository
+- A repository with the code you want to build, test and deploy
+- `contents: read` permission for the workflow (the default for most events)
+- Optional: self-hosted runners for custom hardware, private networks or specific OS versions
 
-## Basic Setup
+## How Actions Work
 
-### Workflow File Structure
+| Concept | What it is |
+| --- | --- |
+| **Workflow** | A YAML file in `.github/workflows/` that defines one or more jobs |
+| **Event** | What triggers the workflow — `push`, `pull_request`, `schedule`, `workflow_dispatch` |
+| **Job** | A set of steps that run on a single runner, optionally in parallel with a matrix |
+| **Step** | One action or shell command inside a job |
+| **Runner** | The machine that executes the job — GitHub-hosted or self-hosted |
+
+## Your First Workflow
+
+Create `.github/workflows/ci.yml` in your repository:
 
 ```yaml
-name: CI/CD Pipeline
+name: CI
+
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
+  workflow_dispatch: # Adds a "Run workflow" button in the Actions tab
+
+permissions:
+  contents: read
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Check out the repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
         with:
-          node-version: '20'
+          node-version: '24'
+          cache: 'npm'
+
       - run: npm ci
+      - run: npm run build --if-present
       - run: npm test
 ```
 
+Push the file and watch the run in the **Actions** tab of your repository.
+
 ## Runner Types
 
-<Tabs defaultValue="cloud">
+<Tabs defaultValue="hosted">
   <TabsList>
-    <TabsTrigger value="cloud">Cloud Runners</TabsTrigger>
-    <TabsTrigger value="self-hosted">Self-Hosted Runners</TabsTrigger>
-    <TabsTrigger value="enterprise">Enterprise Runners</TabsTrigger>
+    <TabsTrigger value="hosted">GitHub-Hosted</TabsTrigger>
+    <TabsTrigger value="self-hosted">Self-Hosted</TabsTrigger>
+    <TabsTrigger value="larger">Larger Runners</TabsTrigger>
   </TabsList>
 
-  <TabsContent value="cloud">
+  <TabsContent value="hosted">
     ### GitHub-Hosted Runners
-    
-    Available runners:
+
+    GitHub provides the virtual machine. Pick an image with `runs-on`:
+
     ```yaml
-    runs-on: ubuntu-latest    # Ubuntu Linux
-    runs-on: windows-latest   # Windows
-    runs-on: macos-latest     # macOS
+    runs-on: ubuntu-24.04    # Ubuntu (ubuntu-latest currently resolves to 24.04)
+    runs-on: windows-latest   # Windows Server
+    runs-on: macos-latest     # macOS (Apple silicon on macos-14+)
+    runs-on: ubuntu-24.04-arm # ARM64 Linux — free for public repositories
     ```
 
-    #### Usage Limits
-    - 2,000 minutes/month (Free)
-    - 3,000 minutes/month (Pro)
-    - 50,000 minutes/month (Team)
+    Standard runners give you 2 CPU cores, 7 GB RAM and 14 GB of SSD. They are billed per
+    minute; GitHub-hosted minutes are free for public repositories.
+
+    <Callout title="Pin the image when it matters">
+      `ubuntu-latest` moves when GitHub updates it. Pin `ubuntu-24.04` in production
+      pipelines so a base-image change never breaks your build.
+    </Callout>
   </TabsContent>
 
   <TabsContent value="self-hosted">
-    ### Self-Hosted Runner Setup
+    ### Self-Hosted Runners
+
+    Use a self-hosted runner when you need specific hardware, an internal network, or a
+    custom operating system.
+
+    #### 1. Download the runner (v2.338.0)
 
     ```bash
-    # 1. Create runner directory
-    mkdir actions-runner && cd actions-runner
+    # Linux x64
+    mkdir -p ~/actions-runner && cd ~/actions-runner
+    curl -O -L https://github.com/actions/runner/releases/download/v2.338.0/actions-runner-linux-x64-2.338.0.tar.gz
+    tar xzf ./actions-runner-linux-x64-2.338.0.tar.gz
 
-    # 2. Download runner package
-    curl -o actions-runner-linux-x64-2.311.0.tar.gz -L \
-      https://github.com/actions/runner/releases/download/v2.311.0/actions-runner-linux-x64-2.311.0.tar.gz
+    # Linux ARM64
+    curl -O -L https://github.com/actions/runner/releases/download/v2.338.0/actions-runner-linux-arm64-2.338.0.tar.gz
+    tar xzf ./actions-runner-linux-arm64-2.338.0.tar.gz
 
-    # 3. Extract runner
-    tar xzf ./actions-runner-linux-x64-2.311.0.tar.gz
-
-    # 4. Configure runner
-    ./config.sh --url https://github.com/[OWNER]/[REPO] --token [TOKEN]
-
-    # 5. Run the runner
-    ./run.sh
+    # macOS (Apple silicon)
+    curl -O -L https://github.com/actions/runner/releases/download/v2.338.0/actions-runner-osx-arm64-2.338.0.tar.gz
+    tar xzf ./actions-runner-osx-arm64-2.338.0.tar.gz
     ```
 
-    #### Runner Configuration
+    On Windows, use `actions-runner-win-x64-2.338.0.zip` from the same release page.
+
+    #### 2. Configure the runner
+
+    ```bash
+    # Interactive configuration
+    ./config.sh --url https://github.com/OWNER/REPO --token YOUR_RUNNER_TOKEN
+
+    # Or non-interactively
+    ./config.sh --url https://github.com/OWNER/REPO \
+      --token YOUR_RUNNER_TOKEN \
+      --name my-runner \
+      --labels linux,x64 \
+      --work _work
+    ```
+
+    The token comes from **Settings → Actions → Runners → New self-hosted runner**.
+
+    #### 3. Run it
+
+    ```bash
+    # Foreground (good for testing)
+    ./run.sh
+
+    # As a service (recommended on Linux)
+    sudo ./svc.sh install
+    sudo ./svc.sh start
+    ```
+
+    #### 4. Use it in a workflow
+
     ```yaml
-    runs-on: self-hosted
+    jobs:
+      build:
+        runs-on: [self-hosted, linux, x64]
+        steps:
+          - uses: actions/checkout@v7
+          - run: ./scripts/build.sh
     ```
   </TabsContent>
 
-  <TabsContent value="enterprise">
-    ### Enterprise Runner Setup
+  <TabsContent value="larger">
+    ### Larger Runners
+
+    GitHub-hosted runners with more CPU, RAM and SSD are available for GitHub Team and
+    Enterprise Cloud. Create them under **Settings → Actions → Larger runners**.
 
     ```yaml
-    # Enterprise runner with labels
-    runs-on:
-      group: enterprise
-      labels: ubuntu-latest
+    jobs:
+      build:
+        runs-on: ubuntu-latest-16-cores
+        steps:
+          - uses: actions/checkout@v7
+          - run: npm ci
     ```
 
-    Requires GitHub Enterprise Cloud subscription.
+    Common sizes: `ubuntu-latest-4-cores`, `-8-cores`, `-16-cores`, `-32-cores` and
+    `-64-cores`. They are billed per minute, like standard runners.
   </TabsContent>
 </Tabs>
 
@@ -108,27 +192,34 @@ jobs:
 <Accordion type="single">
   <AccordionItem value="workflow-1">
     <AccordionTrigger>
-      Node.js Application
+      Node.js CI with a test matrix
     </AccordionTrigger>
     <AccordionContent>
       ```yaml
-      name: Node.js CI
-      on: [push, pull_request]
-      
+      name: Node CI
+
+      on:
+        push:
+          branches: [main]
+        pull_request:
+
       jobs:
         test:
           runs-on: ubuntu-latest
           strategy:
+            fail-fast: false
             matrix:
-              node-version: [16, 18, 20]
-          
+              node-version: [22, 24]
+              os: [ubuntu-24.04, windows-latest]
           steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v7
+
             - name: Use Node.js ${{ matrix.node-version }}
-              uses: actions/setup-node@v4
+              uses: actions/setup-node@v7
               with:
                 node-version: ${{ matrix.node-version }}
                 cache: 'npm'
+
             - run: npm ci
             - run: npm run build --if-present
             - run: npm test
@@ -138,63 +229,255 @@ jobs:
 
   <AccordionItem value="workflow-2">
     <AccordionTrigger>
-      Docker Build and Push
+      Build and push a container image
     </AccordionTrigger>
     <AccordionContent>
       ```yaml
-      name: Docker Build
+      name: Docker
+
       on:
         push:
-          branches: [ main ]
-      
+          branches: [main]
+
+      permissions:
+        contents: read
+        packages: write
+
       jobs:
         build:
           runs-on: ubuntu-latest
           steps:
-            - uses: actions/checkout@v4
-            
-            - name: Login to Docker Hub
-              uses: docker/login-action@v3
+            - uses: actions/checkout@v7
+
+            - name: Set up QEMU
+              uses: docker/setup-qemu-action@v4
+
+            - name: Set up Buildx
+              uses: docker/setup-buildx-action@v4
+
+            - name: Log in to GitHub Container Registry
+              uses: docker/login-action@v4
               with:
-                username: ${{ secrets.DOCKERHUB_USERNAME }}
-                password: ${{ secrets.DOCKERHUB_TOKEN }}
-            
+                registry: ghcr.io
+                username: ${{ github.actor }}
+                password: ${{ secrets.GITHUB_TOKEN }}
+
             - name: Build and push
-              uses: docker/build-push-action@v5
+              uses: docker/build-push-action@v7
               with:
+                context: .
                 push: true
-                tags: user/app:latest
+                platforms: linux/amd64,linux/arm64
+                tags: |
+                  ghcr.io/${{ github.repository }}:latest
+                  ghcr.io/${{ github.repository }}:${{ github.sha }}
+                cache-from: type=gha
+                cache-to: type=gha,mode=max
+      ```
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="workflow-3">
+    <AccordionTrigger>
+      Build artifacts and download them in another job
+    </AccordionTrigger>
+    <AccordionContent>
+      ```yaml
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - uses: actions/checkout@v7
+            - run: npm ci && npm run build
+
+            - name: Upload the build output
+              uses: actions/upload-artifact@v7
+              with:
+                name: dist
+                path: dist/
+                retention-days: 7
+
+        deploy:
+          needs: build
+          runs-on: ubuntu-latest
+          steps:
+            - name: Download the build output
+              uses: actions/download-artifact@v8
+              with:
+                name: dist
+                path: dist/
+      ```
+
+      <Callout title="artifact v3 is gone">
+        `actions/upload-artifact@v3` was retired because of the vulnerable artifact
+        service. Use v4 or newer (v7 is current) on both the upload and the download side.
+      </Callout>
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="workflow-4">
+    <AccordionTrigger>
+      Reusable workflows
+    </AccordionTrigger>
+    <AccordionContent>
+      A reusable workflow lives in its own file and is called from other workflows:
+
+      ```yaml
+      # .github/workflows/reusable-build.yml
+      name: Reusable build
+
+      on:
+        workflow_call:
+          inputs:
+            node-version:
+              description: The Node.js version to use
+              required: false
+              default: '24'
+              type: string
+
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          steps:
+            - uses: actions/checkout@v7
+            - uses: actions/setup-node@v7
+              with:
+                node-version: ${{ inputs.node-version }}
+            - run: npm ci && npm test
+      ```
+
+      ```yaml
+      # .github/workflows/ci.yml
+      jobs:
+        build:
+          uses: OWNER/REPO/.github/workflows/reusable-build.yml@main
+          with:
+            node-version: '24'
+      ```
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="workflow-5">
+    <AccordionTrigger>
+      Deploy to an environment with approval rules
+    </AccordionTrigger>
+    <AccordionContent>
+      ```yaml
+      jobs:
+        deploy-production:
+          runs-on: ubuntu-latest
+        environment:
+          name: production
+          url: https://app.example.com
+        steps:
+          - uses: actions/checkout@v7
+          - run: ./deploy.sh
+      ```
+
+      Configure required reviewers, wait timers and branch restrictions for the
+      `production` environment under **Settings → Environments**.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="workflow-6">
+    <AccordionTrigger>
+      Concurrency — cancel superseded runs
+    </AccordionTrigger>
+    <AccordionContent>
+      ```yaml
+      name: CI
+
+      on:
+        pull_request:
+
+      concurrency:
+        group: ci-${{ github.ref }}
+        cancel-in-progress: true
+
+      jobs:
+        test:
+          runs-on: ubuntu-latest
+          steps:
+            - uses: actions/checkout@v7
+            - run: npm test
       ```
     </AccordionContent>
   </AccordionItem>
 </Accordion>
 
+## Caching Dependencies
+
+`actions/setup-node` can cache npm, pnpm and Yarn caches for you:
+
+```yaml
+- uses: actions/setup-node@v7
+  with:
+    node-version: '24'
+    cache: 'npm'
+    cache-dependency-path: '**/package-lock.json'
+```
+
+For anything else, use `actions/cache`:
+
+```yaml
+- uses: actions/cache@v6
+  with:
+    path: |
+      ~/.cache/pip
+      ~/.cache/uv
+    key: ${{ runner.os }}-python-${{ hashFiles('**/requirements.txt') }}
+    restore-keys: |
+      ${{ runner.os }}-python-
+```
+
+<Callout title="Do not cache the runner tool cache">
+  Caching `~/.cache/actions` or the tool cache itself slows the job down and can break the
+  runner. Cache your project dependencies, not the runner.
+</Callout>
+
 ## Security Best Practices
 
-1. **Secrets Management**
+1. **Set the least-privilege permissions** on every workflow
    ```yaml
-   steps:
-     - name: Use secret
-       env:
-         API_KEY: ${{ secrets.API_KEY }}
+   permissions:
+     contents: read
    ```
 
-2. **OIDC Integration**
+2. **Pin third-party actions to a commit SHA**
    ```yaml
-   jobs:
-     deploy:
-       permissions:
-         id-token: write
-         contents: read
+   - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v7.0.1
+   ```
+   Tags can be moved to a malicious commit; a SHA cannot.
+
+3. **Use OIDC instead of long-lived cloud credentials**
+   ```yaml
+   permissions:
+     id-token: write
+     contents: read
+     steps:
+       - uses: aws-actions/configure-aws-credentials@v6
+         with:
+           role-to-assume: arn:aws:iam::123456789012:role/gha-deploy
+   ```
+   GitHub mints a short-lived token per job — there is no secret to leak or rotate.
+
+4. **Protect the `GITHUB_TOKEN`** — it is a secret that expires with the job and can be
+   scoped down per workflow.
+
+5. **Sign and attest your builds**
+   ```yaml
+   - uses: actions/attest-build-provenance@v4
+     with:
+       subject-name: ghcr.io/${{ github.repository }}
+       subject-digest: sha256:${{ steps.build.outputs.digest }}
+       push-to-registry: true
    ```
 
-3. **Dependency Caching**
+6. **Scan with CodeQL**
    ```yaml
-   steps:
-     - uses: actions/cache@v3
-       with:
-         path: ~/.npm
-         key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+   - uses: github/codeql-action@v4
+     with:
+       languages: javascript-typescript
    ```
 
 ## Troubleshooting
@@ -202,47 +485,115 @@ jobs:
 <Accordion type="single">
   <AccordionItem value="issue-1">
     <AccordionTrigger>
-      Workflow Debugging
+      The workflow does not trigger
     </AccordionTrigger>
     <AccordionContent>
-      Enable debug logging:
-      ```yaml
-      env:
-        ACTIONS_RUNNER_DEBUG: true
-        ACTIONS_STEP_DEBUG: true
-      ```
+      Check the file location and name — it must be `.github/workflows/<file>.yml`. Then
+      verify the trigger:
+      - `push` and `pull_request` only fire from the branch or pattern you declared
+      - Workflows in a fork do not run by default on `pull_request`
+      - `workflow_dispatch` adds a manual trigger in the Actions tab
+      - A `paths` filter excludes files that do not match
     </AccordionContent>
   </AccordionItem>
 
   <AccordionItem value="issue-2">
     <AccordionTrigger>
-      Common Error: Resource Limits
+      The job stays queued with "Waiting for a runner"
     </AccordionTrigger>
     <AccordionContent>
-      1. Check usage in repository settings
-      2. Optimize workflow to reduce runtime
-      3. Consider self-hosted runners
-      4. Clean up artifacts regularly
+      No runner matched the requested labels:
+      ```yaml
+      runs-on: [self-hosted, linux, x64]
+      ```
+      Each label must exist on the runner. List the labels of your runners under
+      **Settings → Actions → Runners**, and check that the runner is not offline.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-3">
+    <AccordionTrigger>
+      An action fails with "Unable to resolve action" or a version error
+    </AccordionTrigger>
+    <AccordionContent>
+      The action version does not exist or was retired:
+      ```yaml
+      # Retired — use v4 or newer (v7 is current)
+      - uses: actions/upload-artifact@v3
+      ```
+      Check the action's releases page for the current major version and update every
+      reference in the repository.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-4">
+    <AccordionTrigger>
+      Permission or OIDC errors when deploying
+    </AccordionTrigger>
+    <AccordionContent>
+      The workflow or job needs the `id-token: write` permission:
+      ```yaml
+      permissions:
+        id-token: write
+        contents: read
+      ```
+      Also confirm the cloud provider trusts the repository and the environment you
+      reference in the job.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-5">
+    <AccordionTrigger>
+      Debugging a workflow
+    </AccordionTrigger>
+    <AccordionContent>
+      Turn on step and runner debug logging:
+      ```yaml
+      env:
+        ACTIONS_STEP_DEBUG: true
+        ACTIONS_RUNNER_DEBUG: true
+      ```
+      You can also enable "Debug logging" for a self-hosted runner in `.env`:
+      ```
+      ACTIONS_RUNNER_DEBUG=true
+      ```
+      Run a workflow locally with [`act`](https://github.com/nektos/act) before pushing.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-6">
+    <AccordionTrigger>
+      Rate limits or sudden failures on the GitHub API
+    </AccordionTrigger>
+    <AccordionContent>
+      Authenticated requests get a higher limit — always use `GITHUB_TOKEN` instead of an
+      anonymous token:
+      ```bash
+      curl -H "Authorization: Bearer $GITHUB_TOKEN" https://api.github.com/user
+      ```
+      Secondary rate limits are triggered by bursts of concurrent requests; add a retry
+      with exponential backoff around API calls.
     </AccordionContent>
   </AccordionItem>
 </Accordion>
 
 ## Best Practices
 
-1. **Workflow Optimization**
-   - Use matrix builds for parallel testing
-   - Implement caching strategies
-   - Minimize unnecessary steps
-   - Use composite actions for reusable steps
+1. **Pin actions to commit SHAs** in production pipelines and let Dependabot keep them
+   updated.
+2. **Set `permissions` explicitly** on every workflow — never rely on the default.
+3. **Use environments** for anything that touches production.
+4. **Cache dependencies, not build outputs** — build outputs change on every commit.
+5. **Keep workflows small and composable** — use reusable workflows and composite actions.
+6. **Use `concurrency`** to cancel superseded runs and save minutes.
+7. **Scan with CodeQL and dependency review** on every pull request.
+8. **Treat the `GITHUB_TOKEN` as a secret** — never print it in logs.
 
-2. **Security**
-   - Regular secret rotation
-   - Minimal permissions principle
-   - Dependencies scanning
-   - Code signing for releases
+## Next Steps
 
-3. **Maintenance**
-   - Keep actions versions updated
-   - Document workflow configurations
-   - Monitor workflow analytics
-   - Set up status badges 
+- [GitHub Actions Documentation](https://docs.github.com/actions)
+- [Workflow Syntax Reference](https://docs.github.com/actions/reference/workflows-and-actions/workflow-syntax)
+- [Security Hardening for GitHub Actions](https://docs.github.com/actions/security-guides/security-hardening-for-github-actions)
+- [Self-hosted Runners](https://docs.github.com/actions/hosting-your-own-runners)
+- [GitLab CI/CD Setup Guide](/docs/ci-cd/gitlab-ci)
+- [Jenkins Installation Guide](/docs/ci-cd/jenkins)

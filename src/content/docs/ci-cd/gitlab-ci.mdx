@@ -1,122 +1,237 @@
 ---
 title: GitLab CI/CD Setup Guide
-description: Comprehensive guide for setting up and configuring GitLab CI/CD pipelines in your projects.
+description: Configure GitLab CI/CD pipelines with GitLab 19, install and register GitLab Runner 19.5 with the new authentication tokens, and build secure multi-stage pipelines.
 ---
 
-This guide provides detailed instructions for setting up GitLab CI/CD in your projects and creating efficient pipelines.
+GitLab CI/CD is built into every GitLab project. You describe your pipeline in a
+`.gitlab-ci.yml` file, and GitLab Runner executes the jobs on a machine you control.
+
+<Callout title="Versions used in this guide">
+  GitLab **19.x** (GitLab.com and Self-Managed) · GitLab Runner **19.5.0** ·
+  runner authentication tokens (`glrt-`) · `rules:` instead of `only:` / `except:`
+</Callout>
+
+<Callout title="Runner registration tokens are deprecated">
+  The legacy runner registration token (`--registration-token`) and the registration
+  workflow it belongs to are **deprecated and scheduled for removal in GitLab 20.0**.
+  Create the runner first, copy its `glrt-` authentication token, and register with
+  `--token`. This guide uses the new method throughout.
+</Callout>
 
 ## Requirements
 
-- GitLab account (Cloud or Self-hosted)
-- Repository with code to build/test/deploy
-- `.gitlab-ci.yml` file in repository root
-- GitLab Runner (Cloud or Self-hosted)
+- A GitLab account (GitLab.com, Self-Managed or Dedicated)
+- A project with the code you want to build, test and deploy
+- A `.gitlab-ci.yml` file in the project root
+- A GitLab Runner — GitLab.com shared runners, your own runner, or a containerised runner
 
-## Basic Setup
+## How a Pipeline Works
 
-### Pipeline Configuration
+| Keyword | Purpose |
+| --- | --- |
+| `stages` | The phases of your pipeline — jobs in a later stage wait for the earlier ones |
+| `jobs` | The units of work; each runs a `script` in a container |
+| `rules` | Decides whether a job runs, based on the branch, tags and pipeline source |
+| `needs` | Builds a dependency graph so jobs can start as soon as their dependencies finish |
+| `include` | Reuses configuration from other files or projects |
+| `workflow` | Rules that decide whether a pipeline is created at all |
+
+## Your First Pipeline
+
+Create `.gitlab-ci.yml` in your project root:
 
 ```yaml
-# .gitlab-ci.yml
 stages:
   - build
   - test
-  - deploy
+
+default:
+  image: node:24
+  cache:
+    key:
+      files:
+        - package-lock.json
+    paths:
+      - node_modules/
 
 build:
   stage: build
-  image: node:20
   script:
     - npm ci
-    - npm run build
+    - npm run build --if-present
+  artifacts:
+    paths:
+      - dist/
+    expire_in: 1 week
 
 test:
   stage: test
-  image: node:20
   script:
     - npm ci
     - npm test
+  coverage: '/Coverage: \d+\.\d+/'
 ```
 
-## Runner Setup
+Push it and open **CI/CD → Pipelines** to watch the run.
+
+## Setting Up Runners
 
 <Tabs defaultValue="shared">
   <TabsList>
     <TabsTrigger value="shared">Shared Runners</TabsTrigger>
-    <TabsTrigger value="specific">Specific Runners</TabsTrigger>
-    <TabsTrigger value="docker">Docker Runners</TabsTrigger>
+    <TabsTrigger value="own">Your Own Runner</TabsTrigger>
+    <TabsTrigger value="docker">Docker Runner</TabsTrigger>
+    <TabsTrigger value="kubernetes">Kubernetes Runner</TabsTrigger>
   </TabsList>
 
   <TabsContent value="shared">
     ### GitLab.com Shared Runners
-    
-    Enable in Project Settings:
-    1. Settings → CI/CD → Runners
-    2. Enable shared runners
-    
-    #### Usage Limits
+
+    Shared runners are provided by GitLab and are enabled per project under
+    **Settings → CI/CD → Runners**.
+
     ```yaml
-    # Free tier
-    - 400 CI/CD minutes/month
-    # Premium
-    - 10,000 CI/CD minutes/month
-    # Ultimate
-    - 50,000 CI/CD minutes/month
+    # No tags required — any shared runner can pick the job up
+    test:
+      stage: test
+      script:
+        - npm test
     ```
+
+    Shared runners are free for public projects. Private projects get a monthly minute
+    allowance that depends on the plan.
   </TabsContent>
 
-  <TabsContent value="specific">
-    ### Specific Runner Installation
+  <TabsContent value="own">
+    ### Installing Your Own Runner
+
+    #### 1. Install the package
 
     ```bash
-    # 1. Install GitLab Runner
+    # Debian / Ubuntu
     curl -L "https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.deb.sh" | sudo bash
-
-    # 2. Install the runner package
     sudo apt-get install gitlab-runner
 
-    # 3. Register the runner
-    sudo gitlab-runner register \
-      --url "https://gitlab.com/" \
-      --registration-token "PROJECT_REGISTRATION_TOKEN" \
-      --description "my-runner" \
-      --executor "docker" \
-      --docker-image "docker:stable"
+    # RHEL / CentOS / Rocky
+    curl -L "https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.rpm.sh" | sudo bash
+    sudo dnf install gitlab-runner
 
-    # 4. Start the runner
-    sudo gitlab-runner start
+    # Verify
+    gitlab-runner --version
     ```
 
-    #### Runner Tags
+    Or download the binary directly:
+
+    ```bash
+    curl -L --output /usr/local/bin/gitlab-runner \
+      "https://gitlab-runner-downloads.s3.amazonaws.com/v19.5.0/binaries/gitlab-runner-linux-amd64"
+    sudo chmod +x /usr/local/bin/gitlab-runner
+    ```
+
+    #### 2. Create the runner in GitLab
+
+    Go to **Settings → CI/CD → Runners → New project runner**, choose the executor and
+    copy the authentication token. It starts with `glrt-`.
+
+    #### 3. Register the runner
+
+    ```bash
+    sudo gitlab-runner register \
+      --non-interactive \
+      --url "https://gitlab.com/" \
+      --token "glrt-YOUR_AUTHENTICATION_TOKEN" \
+      --executor "docker" \
+      --docker-image "alpine:latest" \
+      --docker-pull-policy "if-not-present" \
+      --description "my-runner"
+    ```
+
+    The configuration is written to `/etc/gitlab-runner/config.toml`.
+
+    #### 4. Run it as a service
+
+    ```bash
+    sudo gitlab-runner start
+    sudo gitlab-runner status
+    ```
+
+    #### Runner tags
+
+    Tags let a job target a specific runner:
+
     ```yaml
-    job:
+    deploy:
       tags:
-        - my-runner
+        - production
+      script:
+        - ./deploy.sh
     ```
   </TabsContent>
 
   <TabsContent value="docker">
-    ### Docker Runner Setup
+    ### Docker Executor
 
     ```bash
-    # Run GitLab Runner in Docker
+    # Run the runner in Docker
     docker run -d --name gitlab-runner --restart always \
       -v /srv/gitlab-runner/config:/etc/gitlab-runner \
       -v /var/run/docker.sock:/var/run/docker.sock \
       gitlab/gitlab-runner:latest
 
-    # Register the runner
+    # Register it from inside the container
     docker exec -it gitlab-runner gitlab-runner register
     ```
 
-    #### Docker Configuration
     ```yaml
     build:
-      image: docker:stable
+      image: docker:27-cli
       services:
-        - docker:dind
+        - docker:27-dind
       variables:
         DOCKER_TLS_CERTDIR: ""
+      script:
+        - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA .
+        - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+    ```
+  </TabsContent>
+
+  <TabsContent value="kubernetes">
+    ### Kubernetes Executor
+
+    The Kubernetes executor runs each job in a pod, which scales automatically with the
+    number of parallel jobs.
+
+    ```bash
+    sudo gitlab-runner register \
+      --non-interactive \
+      --url "https://gitlab.com/" \
+      --token "glrt-YOUR_AUTHENTICATION_TOKEN" \
+      --executor "kubernetes" \
+      --kubernetes-namespace "gitlab-runner" \
+      --kubernetes-service-account "gitlab-runner" \
+      --kubernetes-pull-policy "if-not-present" \
+      --description "kubernetes-runner"
+    ```
+
+    Give the service account permission to create pods, and configure the runner to use
+    your own registry for job images:
+
+    ```yaml
+    concurrent: 10
+
+    [[runners]]
+      name = "kubernetes-runner"
+      url = "https://gitlab.com"
+      token = "glrt-YOUR_AUTHENTICATION_TOKEN"
+      executor = "kubernetes"
+      [runners.kubernetes]
+        namespace = "gitlab-runner"
+        service_account = "gitlab-runner"
+        [runners.kubernetes.pod_labels]
+          "job-type" = "ci"
+        [runners.kubernetes.image_pull_secrets]
+          [runners.kubernetes.image_pull_secrets.name]
+            name = "registry-credentials"
     ```
   </TabsContent>
 </Tabs>
@@ -126,7 +241,7 @@ test:
 <Accordion type="single">
   <AccordionItem value="pipeline-1">
     <AccordionTrigger>
-      Multi-Stage Pipeline
+      Multi-stage pipeline with rules
     </AccordionTrigger>
     <AccordionContent>
       ```yaml
@@ -134,59 +249,186 @@ test:
         - build
         - test
         - deploy
-      
+
       variables:
         NODE_ENV: "test"
-      
+
+      default:
+        image: node:24
+
       build:
         stage: build
-        image: node:20
         script:
           - npm ci
           - npm run build
         artifacts:
           paths:
             - dist/
-      
+          expire_in: 1 week
+
       test:
         stage: test
-        image: node:20
         script:
           - npm ci
           - npm test
         coverage: '/Coverage: \d+\.\d+/'
-      
+        rules:
+          - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+          - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
       deploy:
         stage: deploy
-        image: alpine
         script:
-          - echo "Deploying application..."
+          - ./deploy.sh
         environment:
           name: production
-        only:
-          - main
+        rules:
+          - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+            when: manual
       ```
+
+      <Callout title="Use rules, not only and except">
+        `only:` and `except:` are soft-deprecated in favour of `rules:`. Rules are
+        evaluated in order, the first match wins, and they can change variables, run
+        inside a `workflow` block, or restrict by pipeline source.
+      </Callout>
     </AccordionContent>
   </AccordionItem>
 
   <AccordionItem value="pipeline-2">
     <AccordionTrigger>
-      Docker Build Pipeline
+      Push a container image to the GitLab registry
     </AccordionTrigger>
     <AccordionContent>
       ```yaml
       build_image:
-        image: docker:stable
+        stage: build
+        image: docker:27-cli
         services:
-          - docker:dind
+          - docker:27-dind
         variables:
           DOCKER_TLS_CERTDIR: ""
         script:
-          - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-          - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA .
-          - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
-        only:
-          - main
+          - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+          - docker build -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA" .
+          - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA"
+        rules:
+          - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      ```
+
+      `$CI_REGISTRY_USER` and `$CI_REGISTRY_PASSWORD` are predefined variables that
+      authenticate against the project's own registry — no extra secrets required.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="pipeline-3">
+    <AccordionTrigger>
+      Parallel jobs with a matrix
+    </AccordionTrigger>
+    <AccordionContent>
+      ```yaml
+      test:
+        parallel:
+          matrix:
+            RUBY: ["3.3", "3.4"]
+            DB: ["postgres-16", "mysql-8"]
+        script:
+          - bundle install
+          - bundle exec rspec
+      ```
+
+      The same job runs once per combination of the matrix values.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="pipeline-4">
+    <AccordionTrigger>
+      Merge request pipeline with a review app
+    </AccordionTrigger>
+    <AccordionContent>
+      ```yaml
+      workflow:
+        rules:
+          - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+          - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+      review-app:
+        stage: deploy
+        script:
+          - ./deploy-review-app.sh
+        environment:
+          name: review/$CI_COMMIT_REF_SLUG
+          url: https://$CI_COMMIT_REF_SLUG.example.com
+          on_stop: stop-review-app
+        rules:
+          - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+      stop-review-app:
+        stage: deploy
+        script:
+          - ./stop-review-app.sh
+        environment:
+          name: review/$CI_COMMIT_REF_SLUG
+          action: stop
+        rules:
+          - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+            when: manual
+      ```
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="pipeline-5">
+    <AccordionTrigger>
+      Reuse configuration with include
+    </AccordionTrigger>
+    <AccordionContent>
+      ```yaml
+      include:
+        - template: Security/SAST.gitlab-ci.yml
+        - local: /templates/node-build.yml
+        - project: group/shared-config
+          ref: v1.2.0
+          file:
+            - /templates/security.yml
+      ```
+
+      Templates ship ready-made jobs: SAST, code quality, dependency scanning, container
+      scanning and license compliance.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="pipeline-6">
+    <AccordionTrigger>
+      Speed up the pipeline with needs
+    </AccordionTrigger>
+    <AccordionContent>
+      By default a job waits for **all** jobs in the previous stage. `needs` creates an
+      explicit dependency graph so jobs start as soon as they can:
+
+      ```yaml
+      stages:
+        - build
+        - test
+
+      frontend:
+        stage: build
+        script:
+          - npm run build:frontend
+
+      backend:
+        stage: build
+        script:
+          - go build ./...
+
+      unit:
+        stage: test
+        needs:
+          - job: frontend
+            artifacts: true
+          - job: backend
+            artifacts: true
+        script:
+          - ./run-tests.sh
       ```
     </AccordionContent>
   </AccordionItem>
@@ -194,48 +436,49 @@ test:
 
 ## CI/CD Variables
 
-<Accordion type="single">
-  <AccordionItem value="vars-1">
-    <AccordionTrigger>
-      Predefined Variables
-    </AccordionTrigger>
-    <AccordionContent>
-      ```yaml
-      job:
-        script:
-          - echo $CI_COMMIT_SHA        # The commit SHA
-          - echo $CI_COMMIT_REF_NAME   # Branch or tag name
-          - echo $CI_PROJECT_PATH      # Project path
-          - echo $CI_REGISTRY_IMAGE    # Container registry image
-      ```
-    </AccordionContent>
-  </AccordionItem>
+```yaml
+variables:
+  STAGING_API: "https://api.staging.example.com"
+  PROD_API: "https://api.example.com"
 
-  <AccordionItem value="vars-2">
-    <AccordionTrigger>
-      Custom Variables
-    </AccordionTrigger>
-    <AccordionContent>
-      ```yaml
-      variables:
-        STAGING_API: "https://api.staging.example.com"
-        PROD_API: "https://api.example.com"
-      
-      deploy_staging:
-        script:
-          - curl $STAGING_API/deploy
-        environment:
-          name: staging
-      ```
-    </AccordionContent>
-  </AccordionItem>
-</Accordion>
+deploy_staging:
+  script:
+    - curl -H "Authorization: Bearer $DEPLOY_TOKEN" "$STAGING_API/deploy"
+  environment:
+    name: staging
+```
+
+| Scope | Where to define it |
+| --- | --- |
+| Project | **Settings → CI/CD → Variables** |
+| Group | **Group → Settings → CI/CD → Variables** |
+| Instance | **Admin Area → CI/CD → Variables** |
+
+<Callout title="Mark secrets as masked and protected">
+  Tick **Masked** so the value is hidden in job logs, and **Protected** so it is only
+  exposed to pipelines running on protected branches or tags.
+</Callout>
+
+### OIDC and ID Tokens
+
+Instead of storing a long-lived cloud key, let GitLab mint a short-lived token:
+
+```yaml
+deploy:
+  id_tokens:
+    AWS_ID_TOKEN:
+      aud: https://gitlab.com
+  script:
+    - aws configure export-credentials --profile oidc --web-identity-token "$AWS_ID_TOKEN" ...
+```
 
 ## Cache and Artifacts
 
 ```yaml
 cache:
-  key: ${CI_COMMIT_REF_SLUG}
+  key:
+    files:
+      - package-lock.json
   paths:
     - node_modules/
     - .npm/
@@ -246,59 +489,130 @@ artifacts:
   reports:
     coverage: coverage/lcov.info
     junit: junit.xml
+  expire_in: 1 week
 ```
+
+- `cache` speeds up the **next** job in the same pipeline. It is not uploaded as an
+  artifact and is not visible in the UI.
+- `artifacts` are uploaded, downloadable from the job page, and passed to later stages
+  through `needs`.
 
 ## Troubleshooting
 
 <Accordion type="single">
   <AccordionItem value="issue-1">
     <AccordionTrigger>
-      Pipeline Debugging
+      The job is stuck in "pending" with no runner
     </AccordionTrigger>
     <AccordionContent>
-      1. Enable debug logging:
-      ```yaml
-      job:
-        variables:
-          CI_DEBUG_TRACE: "true"
-      ```
-      2. Check runner status:
+      No runner matched the job's tags, or every matching runner is busy or offline:
       ```bash
-      gitlab-runner status
-      gitlab-runner verify
+      # On the runner host
+      sudo gitlab-runner status
+      sudo gitlab-runner verify
+
+      # List the runners and their tags in GitLab:
+      # Settings -> CI/CD -> Runners
       ```
+      A runner that has not contacted GitLab for a while is shown as offline and is not
+      offered new jobs.
     </AccordionContent>
   </AccordionItem>
 
   <AccordionItem value="issue-2">
     <AccordionTrigger>
-      Common Runner Issues
+      Error: 410 Gone — runner registration disallowed
     </AccordionTrigger>
     <AccordionContent>
-      1. Check runner connectivity
-      2. Verify runner tags match job tags
-      3. Ensure sufficient runner resources
-      4. Check Docker socket permissions
+      Registration with the legacy token has been disabled. Use the new workflow:
+      1. Create the runner in **Settings → CI/CD → Runners** and copy the `glrt-` token
+      2. Register with `--token "glrt-..."` instead of `--registration-token`
+      3. If you manage a self-hosted instance, an admin can re-enable the legacy flow in
+      the Admin Area, but it is removed in GitLab 20.0
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-3">
+    <AccordionTrigger>
+      The pipeline does not run at all
+    </AccordionTrigger>
+    <AccordionContent>
+      A `workflow: rules:` block can prevent the pipeline from being created. Validate the
+      file in the CI Lint editor (**CI/CD → Pipeline editor**) and check the `if`
+      conditions — remember that a rule without `when: always` stops the evaluation at
+      the first match.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-4">
+    <AccordionTrigger>
+      The job fails with a YAML or script error
+    </AccordionTrigger>
+    <AccordionContent>
+      Enable the shell trace to see every command:
+      ```yaml
+      job:
+        variables:
+          CI_DEBUG_TRACE: "true"
+      ```
+      The job log then shows the exact command that failed. Remember that GitLab runs
+      every `script` line in a single shell session, so a `cd` in one line affects the
+      next.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-5">
+    <AccordionTrigger>
+      Docker-in-Docker jobs fail to connect
+    </AccordionTrigger>
+    <AccordionContent>
+      The daemon needs TLS certificates disabled and the service started explicitly:
+      ```yaml
+      variables:
+        DOCKER_TLS_CERTDIR: ""
+        DOCKER_HOST: tcp://docker:2375
+      services:
+        - docker:27-dind
+      before_script:
+        - docker info
+      ```
+      Privileged mode is required for DinD — use a dedicated runner for it rather than a
+      shared one.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-6">
+    <AccordionTrigger>
+      The cache is never restored
+    </AccordionTrigger>
+    <AccordionContent>
+      The cache key must match between jobs and it is scoped to the branch and the
+      pipeline. Check that:
+      - the `cache.key` is derived from a file that exists in the repository
+      - `cache:unprotect` is set if you want the cache shared across branches
+      - the runner is not a protected runner while the branch is not protected
     </AccordionContent>
   </AccordionItem>
 </Accordion>
 
 ## Best Practices
 
-1. **Pipeline Optimization**
-   - Use parallel jobs when possible
-   - Implement caching strategy
-   - Use dependencies wisely
-   - Keep build times under 10 minutes
+1. **Version control your pipeline** — `.gitlab-ci.yml` is reviewed like code.
+2. **Use `rules:`** instead of `only:` / `except:`.
+3. **Pin container images** to a digest or an exact tag, never `latest`.
+4. **Mask and protect every secret**, and prefer OIDC for cloud access.
+5. **Use `needs`** to parallelise independent jobs and keep the pipeline fast.
+6. **Set `resource_group`** for jobs that deploy to the same environment, so they cannot
+   run concurrently.
+7. **Expire artifacts** with `expire_in` so the runner disk does not fill up.
+8. **Run the Security templates** — SAST, dependency scanning and container scanning are
+   a single `include` away.
 
-2. **Security**
-   - Use masked variables for secrets
-   - Implement review apps
-   - Scan for vulnerabilities
-   - Use protected branches
+## Next Steps
 
-3. **Maintenance**
-   - Regular runner updates
-   - Clean old artifacts
-   - Monitor pipeline metrics
-   - Document CI/CD configurations 
+- [GitLab CI/CD Documentation](https://docs.gitlab.com/ci/)
+- [GitLab Runner Documentation](https://docs.gitlab.com/runner/)
+- [Pipeline Configuration Reference](https://docs.gitlab.com/ee/ci/yaml/)
+- [Migrate to the new runner registration workflow](https://docs.gitlab.com/ci/runners/new_creation_workflow/)
+- [GitHub Actions Setup Guide](/docs/ci-cd/github-actions)
+- [Jenkins Installation Guide](/docs/ci-cd/jenkins)

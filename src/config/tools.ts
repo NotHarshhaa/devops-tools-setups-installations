@@ -164,7 +164,7 @@ export const tools: ToolMeta[] = [
     slug: "ci-cd/github-actions",
     name: "GitHub Actions",
     description:
-      "Create workflows, runners and reusable actions to automate your CI/CD pipeline.",
+      "Build CI/CD workflows with the current action versions, run GitHub-hosted or self-hosted runners and secure pipelines with OIDC.",
     category: "ci-cd",
     tags: ["ci-cd", "automation", "pipeline", "github"],
   },
@@ -172,7 +172,7 @@ export const tools: ToolMeta[] = [
     slug: "ci-cd/gitlab-ci",
     name: "GitLab CI",
     description:
-      "Configure GitLab runners, pipelines and job stages for continuous integration.",
+      "Configure GitLab 19 pipelines with rules, install GitLab Runner 19.5 and register runners with the new authentication tokens.",
     category: "ci-cd",
     tags: ["ci-cd", "automation", "pipeline", "gitlab"],
   },
@@ -180,7 +180,7 @@ export const tools: ToolMeta[] = [
     slug: "ci-cd/jenkins",
     name: "Jenkins",
     description:
-      "Install Jenkins, add the plugins you need and run your first pipeline.",
+      "Install Jenkins 2.580 LTS on Linux, Windows, macOS, Docker and Kubernetes, then add agents and run your first pipeline.",
     category: "ci-cd",
     tags: ["ci-cd", "automation", "pipeline", "jenkins"],
   },

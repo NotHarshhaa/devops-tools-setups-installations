@@ -1,194 +1,475 @@
 ---
 title: Jenkins Installation Guide
-description: Comprehensive guide for installing Jenkins CI/CD server across different operating systems with package manager specific commands.
+description: Install Jenkins 2.580 LTS on Linux, Windows, macOS, Docker and Kubernetes, configure it with Configuration as Code, add agents and build your first pipeline.
 ---
 
-This guide provides detailed instructions for installing Jenkins on various operating systems using their native package managers.
+Jenkins is a self-hosted automation server. This guide installs the current **Jenkins
+LTS line**, configures it with Configuration as Code, adds build agents and runs a first
+pipeline.
+
+<Callout title="Versions used in this guide">
+  Jenkins **2.580.1 LTS** (weekly builds are also available) · **Java 21 or newer** is
+  required · the `jenkins.io-2026.key` signing key · `jenkins/jenkins:lts-jdk21` image
+</Callout>
+
+<Callout title="Java 11 is no longer supported">
+  Jenkins now requires **Java 21 or later**. Install Java *before* Jenkins — if the
+  service is installed first and Java added afterwards, the service fails to start with
+  `jenkins: failed to find a valid Java installation`.
+</Callout>
 
 ## System Requirements
 
-- 256 MB RAM (minimum)
-- 1 GB RAM (recommended)
-- 10 GB disk space (for Jenkins and Docker)
-- Java 11 or Java 17 (either JRE or JDK)
-- Internet connection for package downloads
+| Component | Minimum | Recommended |
+| --- | --- | --- |
+| RAM | 256 MB | 4 GB or more for a small team |
+| Disk | 1 GB | 50 GB or more |
+| Java | 21 | 21 (the LTS release with the longest support) |
+| OS | Any Linux with systemd, Windows, macOS | Ubuntu 24.04 / Rocky 9 |
 
 ## Installation Instructions
 
 <Tabs defaultValue="ubuntu">
   <TabsList>
     <TabsTrigger value="ubuntu">Ubuntu/Debian</TabsTrigger>
-    <TabsTrigger value="centos">CentOS/RHEL</TabsTrigger>
+    <TabsTrigger value="rpm">RHEL/CentOS</TabsTrigger>
     <TabsTrigger value="fedora">Fedora</TabsTrigger>
     <TabsTrigger value="docker">Docker</TabsTrigger>
     <TabsTrigger value="windows">Windows</TabsTrigger>
+    <TabsTrigger value="macos">macOS</TabsTrigger>
   </TabsList>
 
   <TabsContent value="ubuntu">
-    ### Ubuntu/Debian Installation
-    
-    ```bash
-    # Add Jenkins repository key
-    curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key | sudo tee \
-      /usr/share/keyrings/jenkins-keyring.asc > /dev/null
+    ### Ubuntu / Debian (apt)
 
-    # Add Jenkins repository
-    echo deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] \
+    ```bash
+    # 1. Install Java 21 first
+    sudo apt update
+    sudo apt install -y fontconfig openjdk-21-jre
+    java -version
+
+    # 2. Add the signing key
+    sudo mkdir -p -m 755 /etc/apt/keyrings
+    sudo wget -O /etc/apt/keyrings/jenkins-keyring.asc \
+      https://pkg.jenkins.io/debian-stable/jenkins.io-2026.key
+
+    # 3. Add the LTS repository
+    echo "deb [signed-by=/etc/apt/keyrings/jenkins-keyring.asc]" \
       https://pkg.jenkins.io/debian-stable binary/ | sudo tee \
       /etc/apt/sources.list.d/jenkins.list > /dev/null
 
-    # Update package index
+    # 4. Install Jenkins
     sudo apt update
-
-    # Install Java
-    sudo apt install -y openjdk-17-jre
-
-    # Install Jenkins
     sudo apt install -y jenkins
 
-    # Start Jenkins service
-    sudo systemctl start jenkins
+    # 5. Start it and enable it at boot
     sudo systemctl enable jenkins
-
-    # Check status
+    sudo systemctl start jenkins
     sudo systemctl status jenkins
     ```
 
-    ### Post-Installation Steps
+    To track the weekly releases instead of the LTS line, use
+    `https://pkg.jenkins.io/debian` with `https://pkg.jenkins.io/debian/jenkins.io-2026.key`.
 
-    1. Get the initial admin password:
-    ```bash
-    sudo cat /var/lib/jenkins/secrets/initialAdminPassword
-    ```
-
-    2. Open Jenkins in your browser:
-    ```
-    http://localhost:8080
-    ```
+    <Callout title="The key file name changes">
+      The signing key is rotated periodically. If the key is outdated, `apt update` fails
+      with a `NO_PUBKEY` error — download the current `jenkins.io-YYYY.key` from the
+      repository you are using.
+    </Callout>
   </TabsContent>
 
-  <TabsContent value="centos">
-    ### CentOS/RHEL Installation
+  <TabsContent value="rpm">
+    ### RHEL / CentOS / Rocky / Alma (dnf)
 
     ```bash
-    # Add Jenkins repository
+    # 1. Install Java 21
+    sudo dnf upgrade -y
+    sudo dnf install -y fontconfig java-21-openjdk
+    java -version
+
+    # 2. Add the LTS repository
     sudo wget -O /etc/yum.repos.d/jenkins.repo \
-      https://pkg.jenkins.io/redhat-stable/jenkins.repo
-    sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+      https://pkg.jenkins.io/rpm-stable/jenkins.repo
 
-    # Install Java
-    sudo dnf install -y java-17-openjdk-devel
-
-    # Install Jenkins
+    # 3. Install Jenkins
     sudo dnf install -y jenkins
+    sudo systemctl daemon-reload
 
-    # Start Jenkins service
-    sudo systemctl start jenkins
+    # 4. Start it and enable it at boot
     sudo systemctl enable jenkins
-
-    # Configure firewall
-    sudo firewall-cmd --permanent --add-port=8080/tcp
-    sudo firewall-cmd --reload
+    sudo systemctl start jenkins
+    sudo systemctl status jenkins
     ```
+
+    Use `https://pkg.jenkins.io/rpm/jenkins.repo` for the weekly release line.
   </TabsContent>
 
   <TabsContent value="fedora">
-    ### Fedora Installation
+    ### Fedora (dnf)
 
     ```bash
-    # Add Jenkins repository
+    sudo dnf upgrade -y
+    sudo dnf install -y fontconfig java-21-openjdk
+
     sudo wget -O /etc/yum.repos.d/jenkins.repo \
-      https://pkg.jenkins.io/redhat-stable/jenkins.repo
-    sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+      https://pkg.jenkins.io/rpm-stable/jenkins.repo
 
-    # Install Java
-    sudo dnf install -y java-17-openjdk-devel
-
-    # Install Jenkins
     sudo dnf install -y jenkins
-
-    # Start Jenkins service
-    sudo systemctl start jenkins
+    sudo systemctl daemon-reload
     sudo systemctl enable jenkins
-
-    # Configure firewall
-    sudo firewall-cmd --permanent --add-port=8080/tcp
-    sudo firewall-cmd --reload
+    sudo systemctl start jenkins
     ```
   </TabsContent>
 
   <TabsContent value="docker">
-    ### Docker Installation
+    ### Docker
 
     ```bash
-    # Create a network for Jenkins
+    # Create a network and a volume for the controller
     docker network create jenkins
+    docker volume create jenkins-data
 
-    # Run Jenkins container
-    docker run --name jenkins-server --restart=on-failure \
-      --detach \
+    # Run the controller
+    docker run -d --name jenkins-controller --restart=on-failure \
       --network jenkins \
-      --env DOCKER_HOST=tcp://docker:2376 \
-      --env DOCKER_CERT_PATH=/certs/client \
-      --env DOCKER_TLS_VERIFY=1 \
       --publish 8080:8080 \
       --publish 50000:50000 \
       --volume jenkins-data:/var/jenkins_home \
-      --volume jenkins-docker-certs:/certs/client:ro \
-      jenkins/jenkins:lts-jdk17
+      --user root \
+      jenkins/jenkins:lts-jdk21
 
-    # Get initial admin password
-    docker exec jenkins-server cat /var/jenkins_home/secrets/initialAdminPassword
+    # Read the initial admin password
+    docker exec jenkins-controller cat /var/jenkins_home/secrets/initialAdminPassword
     ```
+
+    <Callout title="Use the lts-jdk21 image">
+      The `lts-jdk17` images are no longer supported because Jenkins now requires Java 21.
+      Use `jenkins/jenkins:lts-jdk21` (or `lts-jdk25` for the newest builds) and pin the
+      version in production: `jenkins/jenkins:2.580.1-lts-jdk21`.
+    </Callout>
+
+    #### Run the Controller as a Kubernetes Deployment
+
+    ```bash
+    helm repo add jenkins https://charts.jenkins.io
+    helm install jenkins jenkins/jenkins --version 5.9.72
+    ```
+
+    The chart provisions the controller, agents, persistent storage and an Ingress.
   </TabsContent>
 
   <TabsContent value="windows">
-    ### Windows Installation
+    ### Windows
 
     ```powershell
-    # Install using Chocolatey
-    choco install jenkins
+    # Install the MSI from https://www.jenkins.io/download/
+    # It installs the service and leaves it stopped
 
-    # Alternative: Download and install manually
-    # 1. Download Jenkins.msi from https://www.jenkins.io/download/
-    # 2. Run the installer
-    # 3. Follow installation wizard
+    # Install OpenJDK 21
+    choco install openjdk21
+
+    # Start the service
+    Start-Service Jenkins
     ```
 
-    #### Java Installation
-    ```powershell
-    # Install OpenJDK 17
-    choco install openjdk17
+    The WAR file also works on Windows: download `jenkins.war` from
+    [jenkins.io/download](https://www.jenkins.io/download/) and run it with
+    `java -jar jenkins.war --httpPort=8080`.
+  </TabsContent>
+
+  <TabsContent value="macos">
+    ### macOS
+
+    ```bash
+    # Install with Homebrew (installs OpenJDK 21 as a dependency)
+    brew install jenkins-lts
+
+    # Start it
+    brew services start jenkins-lts
+
+    # Or run the WAR directly
+    java -jar jenkins.war --httpPort=8080
     ```
   </TabsContent>
 </Tabs>
 
-## Initial Setup
+## Post-Installation Setup
 
-After installation, follow these steps to complete Jenkins setup:
+### 1. Unlock Jenkins
 
-1. Access Jenkins web interface at `http://localhost:8080`
-2. Enter the initial admin password
-3. Install suggested plugins or select specific plugins
-4. Create first admin user
-5. Configure Jenkins URL
+Open `http://localhost:8080` and paste the initial admin password:
 
-## Security Configuration
+```bash
+# Linux package
+sudo cat /var/lib/jenkins/secrets/initialAdminPassword
 
-<Accordion type="single">
-  <AccordionItem value="security-1">
-    <AccordionTrigger>
-      Recommended Security Settings
-    </AccordionTrigger>
-    <AccordionContent>
-      1. Use HTTPS with valid SSL certificate
-      2. Enable security realm (e.g., Jenkins own database)
-      3. Use project-based matrix authorization
-      4. Configure CSRF protection
-      5. Enable agent-to-controller security
-    </AccordionContent>
-  </AccordionItem>
-</Accordion>
+# Docker
+docker exec jenkins-controller cat /var/jenkins_home/secrets/initialAdminPassword
+```
+
+### 2. Configure the Service
+
+Jenkins runs as a systemd service. The package sets the defaults in the unit file:
+
+```bash
+# Inspect the configuration
+sudo systemctl cat jenkins
+
+# Change the port, JVM options or JENKINS_HOME
+sudo systemctl edit jenkins
+```
+
+```ini
+[Service]
+Environment="JENKINS_PORT=8081"
+Environment="JENKINS_HOME=/var/lib/jenkins"
+Environment="JAVA_OPTS=-Djenkins.install.runSetupWizard=false -Xmx2g"
+```
+
+```bash
+# Apply the changes
+sudo systemctl daemon-reload
+sudo systemctl restart jenkins
+
+# Follow the logs
+sudo journalctl -u jenkins -f
+```
+
+### 3. Configure Jenkins as Code
+
+Configuration as Code (JCasC) turns your setup into a version-controlled file instead of
+clicking through the UI.
+
+```yaml
+# casc.yaml
+jenkins:
+  systemMessage: "Managed by Configuration as Code"
+  numExecutors: 2
+  mode: EXCLUSIVE
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "admin"
+          password: "${JENKINS_ADMIN_PASSWORD}"
+  authorizationStrategy:
+    globalMatrix:
+      permissions:
+        - "Overall/Administer:admin"
+        - "Overall/Read:authenticated"
+  remotingSecurity:
+    enabled: true
+
+unclassified:
+  location:
+    url: "https://jenkins.example.com/"
+    adminAddress: "devops@example.com"
+
+tool:
+  git:
+    installations:
+      - name: "Default"
+        home: "git"
+
+node:
+  builtins:
+    - remoteLauncher: "hudson.slaves.SSHLauncher"
+      name: "built-in"
+      numExecutors: 2
+      labelString: "built-in"
+```
+
+```bash
+# Apply the configuration
+sudo systemctl stop jenkins
+sudo JENKINS_HOME=/var/lib/jenkins \
+  java -jar /usr/share/java/jenkins.war \
+  --configuration-as-code=/etc/jenkins/casc.yaml
+```
+
+<Callout title="Use the plugin, not the WAR flag, in production">
+  The **Configuration as Code plugin** lets you apply a file from the running instance
+  (`Manage Jenkins → Configuration as Code → View Configuration`) and to reload it without
+  a restart. Keep the YAML in Git and let the plugin apply it on boot with
+  `CASC_JENKINS_CONFIG`.
+</Callout>
+
+## Build Agents
+
+Jenkins runs jobs on **agents**. The controller itself has two executors by default; the
+recommended setup is to set the controller's executors to **0** and run every job on
+dedicated agents.
+
+```yaml
+# In the Configuration as Code file — the controller only coordinates
+jenkins:
+  numExecutors: 0
+```
+
+Agents are matched to jobs by **labels** — for example `linux`, `docker`, `aarch64` or
+`production`.
+
+### Agents over SSH
+
+```bash
+# 1. Create the key pair (on the controller or your workstation)
+ssh-keygen -f ~/.ssh/jenkins_agent_key
+
+# 2. On the agent host, create the user and install the public key
+sudo useradd -m -s /bin/bash jenkins
+sudo mkdir -p /home/jenkins/.ssh
+cat jenkins_agent_key.pub | sudo tee /home/jenkins/.ssh/authorized_keys
+sudo chown -R jenkins:jenkins /home/jenkins/.ssh
+sudo chmod 700 /home/jenkins/.ssh
+sudo chmod 600 /home/jenkins/.ssh/authorized_keys
+```
+
+In Jenkins: **Manage Jenkins → Credentials → Add Credentials** with the kind
+**SSH username with private key**, then create the node under **Manage Jenkins → Nodes →
+New Node → Permanent Agent** and select that credential.
+
+### Agents as Docker containers
+
+```bash
+# Start an agent container that the controller connects to over SSH
+docker run -d --rm --name=agent1 -p 22:22 \
+  -e "JENKINS_AGENT_SSH_PUBKEY=$(cat ~/.ssh/jenkins_agent_key.pub)" \
+  jenkins/ssh-agent:alpine-jdk25
+```
+
+### Agents via inbound (JNLP) connection
+
+For agents behind NAT, run the inbound agent container and paste the secret from
+**Manage Jenkins → Nodes → New Node → Inbound agent**:
+
+```bash
+docker run -d --rm --name=agent1 \
+  -e "JENKINS_URL=http://controller:8080" \
+  -e "JENKINS_SECRET=<AGENT_SECRET>" \
+  jenkins/inbound-agent:latest
+```
+
+### Kubernetes Agents
+
+The Kubernetes plugin creates a pod per build and removes it afterwards:
+
+```yaml
+# Configure a Kubernetes cloud under Manage Jenkins -> Clouds
+```
+
+```groovy
+// Jenkinsfile
+pipeline {
+  agent {
+    kubernetes {
+      yaml '''
+        apiVersion: v1
+        kind: Pod
+        spec:
+          containers:
+            - name: builder
+              image: maven:3.9-eclipse-temurin-21
+          restartPolicy: Never
+      '''
+      label "k8s-agent"
+    }
+  }
+  stages {
+    stage('Build') {
+      steps {
+        sh 'mvn -B verify'
+      }
+    }
+  }
+}
+```
+
+## Your First Pipeline
+
+Create a `Jenkinsfile` in your repository:
+
+```groovy
+pipeline {
+    agent any
+
+    options {
+        timeout(time: 30, unit: 'MINUTES')
+        buildDiscarder(logRotator(numToKeepStr: '20'))
+        disableConcurrentBuilds()
+    }
+
+    environment {
+        NODE_ENV = 'test'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Install dependencies') {
+            steps {
+                sh 'npm ci'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                sh 'npm test'
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'Build finished'
+        }
+        failure {
+            echo 'Build failed'
+        }
+    }
+}
+```
+
+Create the job with **Pipeline → Pipeline script from SCM**, point it at your repository
+and the `Jenkinsfile`.
+
+## Useful Plugins
+
+| Plugin | What it does |
+| --- | --- |
+| Configuration as Code | Manage the controller from a YAML file in Git |
+| Pipeline | Declarative and scripted pipelines (built in) |
+| Credentials | Store tokens, passwords and SSH keys |
+| Kubernetes | Dynamic agents on a Kubernetes cluster |
+| GitHub Branch Source | Trigger pipelines from pull requests |
+| Warnings Next Generation | Collect compiler and linter warnings |
+| SonarQube | Run code quality analysis in the pipeline |
+| Prometheus | Export build metrics |
+
+## Upgrading
+
+```bash
+# 1. Back up JENKINS_HOME before every upgrade
+sudo systemctl stop jenkins
+sudo tar -czf /var/backups/jenkins-$(date +%F).tar.gz -C /var/lib/jenkins .
+sudo systemctl start jenkins
+
+# 2. Upgrade the package
+sudo apt update && sudo apt install -y --only-upgrade jenkins
+
+# 3. Restart and watch the log
+sudo systemctl restart jenkins
+sudo journalctl -u jenkins -f
+```
+
+<Callout title="Follow the LTS upgrade guide">
+  Each LTS release has an upgrade guide listing the plugins that need to be updated and
+  the configuration changes that come with it. Read it before upgrading — plugin
+  compatibility is the most common cause of a broken upgrade.
+</Callout>
 
 ## Troubleshooting
 
@@ -198,42 +479,121 @@ After installation, follow these steps to complete Jenkins setup:
       Jenkins fails to start
     </AccordionTrigger>
     <AccordionContent>
-      Check Java installation and version:
+      Check the Java version and the service log:
       ```bash
       java -version
+      sudo systemctl status jenkins
+      sudo journalctl -u jenkins -n 100 --no-pager
       ```
-      Ensure Java 11 or 17 is installed and JAVA_HOME is set correctly.
+      `failed to find a valid Java installation` means Java 21 is missing or `JAVA_HOME`
+      points at the wrong JDK. A `UnsupportedClassVersionError` means an old Java is on
+      the path.
     </AccordionContent>
   </AccordionItem>
 
   <AccordionItem value="issue-2">
     <AccordionTrigger>
-      Cannot access Jenkins web interface
+      The web interface is not reachable
     </AccordionTrigger>
     <AccordionContent>
-      1. Verify Jenkins is running:
       ```bash
+      # Is the service running and on which port?
       sudo systemctl status jenkins
+      sudo ss -tlnp | grep 8080
+
+      # Open the port in the firewall
+      sudo firewall-cmd --permanent --add-port=8080/tcp
+      sudo firewall-cmd --reload
       ```
-      2. Check firewall settings
-      3. Ensure port 8080 is not in use
+      If the port is taken, override it with `systemctl edit jenkins` and set
+      `JENKINS_PORT`.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-3">
+    <AccordionTrigger>
+      Permission errors in JENKINS_HOME
+    </AccordionTrigger>
+    <AccordionContent>
+      The service runs as the `jenkins` user; the directory must belong to it:
+      ```bash
+      sudo chown -R jenkins:jenkins /var/lib/jenkins
+      sudo systemctl restart jenkins
+      ```
+      Check the ownership of `JENKINS_HOME` after every restore from a backup.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-4">
+    <AccordionTrigger>
+      An agent stays offline
+    </AccordionTrigger>
+    <AccordionContent>
+      Check that the agent service is running and that it can reach the controller:
+      ```bash
+      sudo systemctl status jenkins-agent
+      # On the agent
+      curl -I http://controller:8080/login
+      ```
+      For inbound agents the controller URL must be reachable **from** the agent, and for
+      SSH agents the key must be in `~/.ssh/authorized_keys` with the right permissions
+      (`600`).
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-5">
+    <AccordionTrigger>
+      A plugin fails to load after an upgrade
+    </AccordionTrigger>
+    <AccordionContent>
+      Check the compatibility matrix for the plugin and the Jenkins version. The usual
+      fixes are to disable the plugin, update it, or revert to the previous Jenkins
+      version:
+      ```bash
+      # Disable a plugin from the CLI
+      java -jar /usr/share/java/jenkins.war \
+        --plugin-file /var/lib/jenkins/plugins.txt \
+        --disable-plugin <plugin-name>
+      ```
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-6">
+    <AccordionTrigger>
+      "Jenkins is almost ready" — the setup wizard keeps restarting
+    </AccordionTrigger>
+    <AccordionContent>
+      The wizard is waiting for the instance to finish starting. It usually resolves on
+      its own within a minute. If it persists, the controller cannot complete startup —
+      check the log for plugin or network errors, and make sure the time zone is set
+      (`sudo timedatectl set-timezone UTC`), because a missing time zone causes
+      exactly this loop.
     </AccordionContent>
   </AccordionItem>
 </Accordion>
 
-## Best Practices
+## Security Best Practices
 
-1. **Backup Configuration**
-   - Regularly backup JENKINS_HOME directory
-   - Use Configuration as Code plugin
-   - Store job configurations in version control
+1. **Never run jobs as root** — create a dedicated user and use the matrix authorization
+   strategy so nobody is a full administrator.
+2. **Enable agent-to-controller security** so agents cannot open a reverse channel to
+   the controller (`Manage Jenkins → Security`).
+3. **Keep CSRF protection enabled** and use the CSRF proxy setting when the UI is behind
+   a reverse proxy.
+4. **Store secrets in the Credentials store**, never in a `Jenkinsfile` or a shell
+   command.
+5. **Serve Jenkins over HTTPS** — terminate TLS at the reverse proxy.
+6. **Restrict who can trigger pipelines** and require approval for deployments to
+   production jobs.
+7. **Keep the controller and plugins up to date**, and subscribe to the Jenkins security
+   advisories.
+8. **Back up `JENKINS_HOME`** on a schedule and test the restore.
 
-2. **Performance Tuning**
-   - Adjust Java heap size settings
-   - Monitor resource usage
-   - Clean up old builds regularly
+## Next Steps
 
-3. **Plugin Management**
-   - Keep plugins updated
-   - Remove unused plugins
-   - Use LTS versions when possible 
+- [Jenkins Documentation](https://www.jenkins.io/doc/)
+- [Pipeline Syntax Reference](https://www.jenkins.io/doc/book/pipeline/syntax/)
+- [Configuration as Code Reference](https://www.jenkins.io/doc/book/managing/configuration-as-code/)
+- [Jenkins LTS Upgrade Guide](https://www.jenkins.io/upgrade-guide/)
+- [GitHub Actions Setup Guide](/docs/ci-cd/github-actions)
+- [GitLab CI/CD Setup Guide](/docs/ci-cd/gitlab-ci)
