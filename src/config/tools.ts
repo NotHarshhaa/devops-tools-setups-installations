@@ -188,7 +188,7 @@ export const tools: ToolMeta[] = [
     slug: "infrastructure/terraform",
     name: "Terraform",
     description:
-      "Initialise workspaces, write infrastructure as code and apply changes safely.",
+      "Install Terraform 1.16, configure providers and remote backends, lock provider versions and test your stacks with terraform test.",
     category: "infrastructure",
     tags: ["iac", "cloud", "provisioning", "automation"],
   },
@@ -196,7 +196,7 @@ export const tools: ToolMeta[] = [
     slug: "infrastructure/ansible",
     name: "Ansible",
     description:
-      "Install Ansible, write playbooks and configure hosts idempotently.",
+      "Install Ansible 14 with ansible-core 2.21, build an inventory, write playbooks and encrypt your secrets with Ansible Vault.",
     category: "infrastructure",
     tags: ["automation", "configuration", "provisioning"],
   },
@@ -204,7 +204,7 @@ export const tools: ToolMeta[] = [
     slug: "infrastructure/vault",
     name: "HashiCorp Vault",
     description:
-      "Deploy Vault, enable secret engines and manage credentials safely.",
+      "Install Vault 2.2, initialise and unseal the server, enable secrets engines and configure AppRole authentication and audit logging.",
     category: "infrastructure",
     tags: ["security", "secrets", "encryption", "automation"],
   },
@@ -212,7 +212,7 @@ export const tools: ToolMeta[] = [
     slug: "infrastructure/consul",
     name: "HashiCorp Consul",
     description:
-      "Run service discovery and distributed configuration with Consul.",
+      "Install Consul 2.0, run an ACL-enabled cluster with TLS, register services with health checks and configure service intentions.",
     category: "infrastructure",
     tags: ["service-discovery", "configuration", "networking"],
   },
@@ -220,7 +220,7 @@ export const tools: ToolMeta[] = [
     slug: "infrastructure/vagrant",
     name: "Vagrant",
     description:
-      "Create reproducible development environments with Vagrant boxes and VMs.",
+      "Install Vagrant 2.4.9, add boxes, manage VirtualBox, VMware, Hyper-V and libvirt providers and provision machines with Ansible.",
     category: "infrastructure",
     tags: ["virtualization", "development", "automation"],
   },
@@ -228,7 +228,7 @@ export const tools: ToolMeta[] = [
     slug: "infrastructure/packer",
     name: "HashiCorp Packer",
     description:
-      "Build golden images for cloud and virtual machine platforms.",
+      "Install Packer 1.16, build machine images for AWS, Azure and GCP from HCL2 templates and sign your builds with provenance attestations.",
     category: "infrastructure",
     tags: ["images", "automation", "provisioning"],
   },

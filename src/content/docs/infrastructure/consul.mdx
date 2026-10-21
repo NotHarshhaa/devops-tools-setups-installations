@@ -1,275 +1,500 @@
 ---
-title: "HashiCorp Consul Installation Guide"
-description: "Complete guide for installing and configuring HashiCorp Consul, a service networking platform that provides service discovery, configuration, and segmentation functionality."
+title: HashiCorp Consul Installation Guide
+description: Install Consul 2.0, run a client-server cluster with ACLs and TLS, register services with health checks, and set up service discovery and the service mesh.
 ---
 
-Consul is a service networking platform that provides service discovery, configuration, and segmentation functionality. It enables you to connect and secure services across any runtime platform and public or private cloud.
+Consul is a service networking platform. It provides service discovery, distributed
+configuration, health checking and — with Connect — mutual TLS between every service in
+your mesh.
 
-## Prerequisites
+<Callout title="Versions used in this guide">
+  Consul **2.0.4** (2.1 is in release candidate) · client/server cluster with
+  Integrated Storage · ACLs with a `default_policy` of `deny` · `service-intentions`
+  config entries · **transparent proxy now uses nftables instead of iptables**
+</Callout>
 
-- A 64-bit operating system
-- Minimum 2GB RAM
-- Administrative/sudo privileges
-- Network connectivity between nodes (if running in cluster mode)
+<Callout title="Consul 2.0 changed transparent proxy to nftables">
+  The transparent proxy no longer manages `iptables`/`ip6tables` rules — it uses
+  `nftables` and needs the `nft` binary plus a kernel with stateful NAT support in the
+  `inet` family (Linux 5.2+, or a distribution that backports it). There is **no
+  fallback** to iptables, and the old iptables rules are **not** cleaned up
+  automatically. When upgrading an existing host, remove the old Consul-managed
+  iptables rules first, or traffic will be redirected twice.
+</Callout>
+
+## System Requirements
+
+- A 64-bit operating system (Linux, macOS, Windows, FreeBSD)
+- 2 GB RAM for a small cluster, 4 GB or more per server in production
+- Ports 8300 (server RPC), 8301 (serf LAN/WAN), 8302 (Serf), 8500 (HTTP API and UI),
+  8600 (DNS) and 443/8200 (Consul Connect)
+- A writable data directory for each agent
 
 ## Installation Instructions
 
 <Tabs defaultValue="ubuntu">
   <TabsList>
     <TabsTrigger value="ubuntu">Ubuntu/Debian</TabsTrigger>
-    <TabsTrigger value="centos">CentOS/RHEL</TabsTrigger>
+    <TabsTrigger value="rpm">RHEL/CentOS</TabsTrigger>
     <TabsTrigger value="fedora">Fedora</TabsTrigger>
     <TabsTrigger value="macos">macOS</TabsTrigger>
     <TabsTrigger value="windows">Windows</TabsTrigger>
+    <TabsTrigger value="k8s">Kubernetes</TabsTrigger>
   </TabsList>
 
   <TabsContent value="ubuntu">
-    ### Ubuntu/Debian Installation
+    ### Ubuntu / Debian (apt)
 
     ```bash
-    # Add HashiCorp GPG key
-    wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+    # Add the HashiCorp signing key
+    wget -O - https://apt.releases.hashicorp.com/gpg \
+      | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
 
-    # Add HashiCorp repository
-    echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+    # Add the repository
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(grep -oP '(?<=UBUNTU_CODENAME=).*' /etc/os-release || lsb_release -cs) main" \
+      | sudo tee /etc/apt/sources.list.d/hashicorp.list
 
-    # Update and install Consul
+    # Install
     sudo apt update
-    sudo apt install consul
+    sudo apt install -y consul
+
+    consul version
     ```
   </TabsContent>
 
-  <TabsContent value="centos">
-    ### CentOS/RHEL Installation
+  <TabsContent value="rpm">
+    ### RHEL / CentOS / Rocky / Alma (dnf)
 
     ```bash
-    # Add HashiCorp repository
-    sudo yum install -y yum-utils
-    sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo
+    sudo dnf install -y dnf-plugins-core
+    sudo dnf config-manager --add-repo https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo
 
-    # Install Consul
-    sudo yum install consul
+    sudo dnf install -y consul
+
+    consul version
     ```
   </TabsContent>
 
   <TabsContent value="fedora">
-    ### Fedora Installation
+    ### Fedora (dnf)
 
     ```bash
-    # Add HashiCorp repository
     sudo dnf install -y dnf-plugins-core
     sudo dnf config-manager --add-repo https://rpm.releases.hashicorp.com/fedora/hashicorp.repo
 
-    # Install Consul
-    sudo dnf install consul
+    sudo dnf install -y consul
+
+    consul version
     ```
   </TabsContent>
 
   <TabsContent value="macos">
-    ### macOS Installation
+    ### macOS (Homebrew)
 
     ```bash
-    # Using Homebrew
     brew tap hashicorp/tap
     brew install hashicorp/tap/consul
 
-    # Update if already installed
+    # Update later with
     brew upgrade hashicorp/tap/consul
     ```
   </TabsContent>
 
   <TabsContent value="windows">
-    ### Windows Installation
+    ### Windows
 
     ```powershell
-    # Install using Chocolatey
+    # Chocolatey
     choco install consul
 
-    # Alternative: Download from official website
-    # Navigate to: https://www.consul.io/downloads
-    # Download the Windows binary
-    # Add to PATH environment variable
+    # Windows Package Manager
+    winget install Hashicorp.Consul
+
+    consul version
+    ```
+
+    Or download the ZIP from
+    [releases.hashicorp.com/consul](https://releases.hashicorp.com/consul/) and add it to
+    your `PATH`.
+  </TabsContent>
+
+  <TabsContent value="k8s">
+    ### Kubernetes (Helm)
+
+    ```bash
+    helm repo add hashicorp https://helm.releases.hashicorp.com
+    helm repo update
+
+    helm search repo hashicorp/consul
+
+    # Install into a dedicated namespace
+    helm install consul hashicorp/consul \
+      --set global.name=consul \
+      --create-namespace \
+      --namespace consul
     ```
   </TabsContent>
 </Tabs>
 
-## Basic Configuration
+## Configuration
 
-### 1. Create Configuration Directory
-
-```bash
-sudo mkdir -p /etc/consul.d
-sudo chown -R consul:consul /etc/consul.d
-```
-
-### 2. Basic Server Configuration
+### Server
 
 Create `/etc/consul.d/server.hcl`:
 
 ```hcl
 datacenter = "dc1"
-data_dir = "/opt/consul"
-client_addr = "0.0.0.0"
-ui_config{
+data_dir   = "/opt/consul"
+node_name  = "consul-server-1"
+
+server = true
+bootstrap_expect = 3
+
+bind_addr        = "{{GetPrivateIP}}"
+client_addr      = "0.0.0.0"
+advertise_addr   = "{{GetInterfaceIP \"ens5\"}}"
+
+retry_join = [
+  "10.0.0.11",
+  "10.0.0.12",
+  "10.0.0.13",
+]
+
+ui_config {
   enabled = true
 }
 
-server = true
-bootstrap_expect = 1  # For development only
-bind_addr = "{{GetPrivateIP}}"
+# Deny by default — every service needs an explicit intention
+acl {
+  enabled                  = true
+  default_policy           = "deny"
+  enable_token_persistence = true
+}
 ```
 
-### 3. Basic Client Configuration
+### Client
 
 Create `/etc/consul.d/client.hcl`:
 
 ```hcl
 datacenter = "dc1"
-data_dir = "/opt/consul"
+data_dir   = "/opt/consul"
+node_name  = "app-server-1"
+
 server = false
+
 bind_addr = "{{GetPrivateIP}}"
-retry_join = ["CONSUL_SERVER_IP"]
+
+retry_join = [
+  "10.0.0.11",
+  "10.0.0.12",
+  "10.0.0.13",
+]
 ```
 
-## Starting Consul
+```bash
+# Prepare the data directory
+sudo mkdir -p /opt/consul
+sudo chown -R consul:consul /opt/consul
+sudo chmod 750 /opt/consul
 
-### Development Mode
+# Start the service
+sudo systemctl enable --now consul
+sudo systemctl status consul
+```
+
+## Development Mode
 
 ```bash
-# Start Consul in development mode
+# Start a single agent with everything enabled
 consul agent -dev
 
-# Access UI
-# Visit http://localhost:8500
-```
-
-### Production Mode
-
-```bash
-# Start Consul server
-sudo systemctl start consul
-
-# Enable Consul to start at boot
-sudo systemctl enable consul
-
-# Check status
-sudo systemctl status consul
+# The UI is on http://localhost:8500
+consul members
+consul services
 ```
 
 ## Security Configuration
 
-### 1. Enable ACLs
+### TLS
 
-Add to server configuration:
+```bash
+# Generate a CA and a server certificate
+consul tls ca create
+consul tls cert create -server -dc=dc1
+```
 
 ```hcl
-acl = {
-  enabled = true
-  default_policy = "deny"
-  enable_token_persistence = true
+verify_incoming        = true
+verify_outgoing        = true
+verify_server_hostname = true
+ca_file   = "consul-agent-ca.pem"
+cert_file = "dc1-server-consul-0.pem"
+key_file  = "dc1-server-consul-0-key.pem"
+```
+
+### ACLs
+
+```bash
+# Bootstrap the ACL system — this prints the initial management token
+consul acl bootstrap
+
+# Store the token so the agent can use it
+echo "CONSUL_HTTP_TOKEN=..." | sudo tee /etc/consul.d/consul.env
+
+# Create a policy for a service
+consul acl policy create -name "web-policy" -rules @web-policy.hcl
+```
+
+```hcl
+# web-policy.hcl
+service_prefix "web" {
+  policy = "write"
+}
+
+node_prefix "" {
+  policy = "read"
 }
 ```
 
-### 2. Initialize ACL System
-
 ```bash
-# Bootstrap ACL system
-consul acl bootstrap
-
-# Save the generated master token securely
+# Create a token for the service
+consul acl token create -description "web service" -policy-name web-policy
 ```
 
-### 3. Configure TLS
-
-```bash
-# Generate certificates
-consul tls ca create
-consul tls cert create -server
-
-# Add TLS configuration
-verify_incoming = true
-verify_outgoing = true
-verify_server_hostname = true
-ca_file = "consul-agent-ca.pem"
-cert_file = "dc1-server-consul-0.pem"
-key_file = "dc1-server-consul-0-key.pem"
-```
+<Callout title="Consul 2.0 requires mesh:write for escape hatches">
+  Attaching Envoy extensions (`builtin/lua`, `builtin/wasm`) or the
+  `envoy_*_json` escape-hatch overrides to a service now requires `mesh:write` in
+  addition to `service:write`. Grant it only to operators who really need it.
+</Callout>
 
 ## Service Registration
-
-### 1. Service Definition
 
 Create `/etc/consul.d/web-service.hcl`:
 
 ```hcl
 service {
   name = "web"
-  port = 80
+  port = 8080
+
+  tags = ["prod", "http"]
+
   check {
-    http = "http://localhost:80/health"
+    http = "http://localhost:8080/health"
     interval = "10s"
+    timeout  = "2s"
   }
 }
 ```
 
-### 2. Register Service
+```bash
+# Reload the agent configuration
+consul reload
+
+# Check that the service is registered and healthy
+consul services
+consul health checks service web
+```
+
+### Service Intentions
+
+Service intentions define who may talk to whom. They are the heart of the mesh
+security model:
+
+```hcl
+# /etc/consul.d/intentions.hcl
+Kind = "service-intentions"
+Name = "web"
+Sources = [
+  {
+    Name = "api"
+    Action = "allow"
+  },
+  {
+    Name = "*"
+    Action = "deny"
+  }
+]
+```
 
 ```bash
-# Reload Consul configuration
-consul reload
+# Write the config entry
+consul config write /etc/consul.d/intentions.hcl
+
+# List the intentions
+consul config list -kind service-intentions
 ```
+
+## Service Mesh (Consul Connect)
+
+```bash
+# Enable Connect on a service
+consul config write -kind service-defaults -name web <<EOF
+{
+  "Protocol": "http",
+  "Kind": "service-defaults",
+  "Name": "web"
+}
+EOF
+
+# Start a sidecar proxy for a service instance
+consul connect proxy -sidecar-for web
+
+# Check the proxy status
+consul connect proxy-status
+```
+
+<Callout title="Transparent proxy now needs nftables">
+  On Consul 2.x, `consul connect redirect-traffic` uses nftables. Install the `nft`
+  package, make sure the kernel supports stateful NAT in the `inet` family, and remove
+  any Consul-managed iptables rules left over from Consul 1.x before you start the new
+  version.
+</Callout>
+
+## Upgrading
+
+```bash
+# 1. Back up the data directory
+sudo systemctl stop consul
+sudo tar -czf /var/backups/consul-$(date +%F).tar.gz -C /opt/consul data
+sudo systemctl start consul
+
+# 2. Upgrade the package
+sudo apt update && sudo apt install --only-upgrade consul
+
+# 3. Restart one server at a time and check the cluster
+sudo systemctl restart consul
+consul members
+consul leader
+```
+
+<Callout title="Upgrade Consul servers one at a time">
+  Never upgrade all servers at the same time. Upgrade the followers first, check the
+  leader and the Raft health, and only then upgrade the leader.
+</Callout>
 
 ## Troubleshooting
 
-### Common Issues
+<Accordion type="single">
+  <AccordionItem value="issue-1">
+    <AccordionTrigger>
+      The cluster does not form
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # Who is in the cluster?
+      consul members
+      consul monitor
 
-1. **Cluster Formation Issues**
-   - Check network connectivity
-   - Verify server addresses in retry_join
-   - Ensure consistent datacenter names
+      # Check the ports between the nodes
+      nc -vz 10.0.0.11 8301
+      ```
+      Every node needs the same `datacenter` name, the same `cluster_name` (it defaults
+      to the datacenter) and a reachable `retry_join` address. Only one node may have
+      `bootstrap_expect` set.
+    </AccordionContent>
+  </AccordionItem>
 
-2. **Permission Issues**
-   ```bash
-   # Fix data directory permissions
-   sudo chown -R consul:consul /opt/consul
-   sudo chmod 750 /opt/consul
-   ```
+  <AccordionItem value="issue-2">
+    <AccordionTrigger>
+      "Permission denied" on every command
+    </AccordionTrigger>
+    <AccordionContent>
+      ACLs are enabled and the agent has no valid token:
+      ```bash
+      export CONSUL_HTTP_TOKEN=<token>
+      consul members
+      ```
+      Check the token with `consul acl token read -self`. With a `default_policy` of
+      `deny`, an agent without a token can do almost nothing.
+    </AccordionContent>
+  </AccordionItem>
 
-3. **Service Discovery Problems**
-   - Verify service definitions
-   - Check DNS configuration
-   - Validate health check endpoints
+  <AccordionItem value="issue-3">
+    <AccordionTrigger>
+      The service shows up but the health check is failing
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      consul health checks service web
+      consul agent monitor
+      ```
+      The check runs from the agent, not from your workstation — make sure the endpoint
+      is reachable from the agent's network.
+    </AccordionContent>
+  </AccordionItem>
 
-### Logging
+  <AccordionItem value="issue-4">
+    <AccordionTrigger>
+      The UI is not reachable
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # Is the UI enabled?
+      consul config read ui_config
+      # Is the agent listening?
+      ss -tlnp | grep 8500
+      ```
+      `client_addr` must include the address you connect to, and `ui_config.enabled` has
+      to be `true` in the server configuration.
+    </AccordionContent>
+  </AccordionItem>
 
-```bash
-# Enable debug logging
-consul agent -log-level=DEBUG
+  <AccordionItem value="issue-5">
+    <AccordionTrigger>
+      Transparent proxy fails to set up
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # nftables is required on Consul 2.x
+      which nft && nft --version
+      sudo nft list ruleset
 
-# View logs
-sudo journalctl -u consul
-```
+      # Check the kernel version
+      uname -r
+      ```
+      You need Linux 5.2 or newer (or a backported kernel) for stateful NAT in the
+      `inet` family, and the `nft` binary installed. On Consul 1.x hosts, remove the old
+      Consul-managed iptables rules before switching.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-6">
+    <AccordionTrigger>
+      Service discovery returns no results
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # Query the DNS interface
+      dig @127.0.0.1 -p 8600 web.service.consul
+
+      # Or the HTTP interface
+      consul catalog services
+      ```
+      DNS on port 8600 must reach the agent. Check that the client is not using a
+      resolver that forwards `.consul` queries elsewhere.
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>
 
 ## Best Practices
 
-1. **Production Deployment**
-   - Use at least 3 servers for high availability
-   - Enable ACLs and TLS
-   - Implement proper backup strategy
+1. **Run at least three servers** spread across failure domains, plus the clients.
+2. **Enable ACLs with `default_policy = "deny"`** and issue scoped tokens per service.
+3. **Always use TLS** for gossip and RPC, and rotate the certificates.
+4. **Define service intentions explicitly** — they are your mesh authorisation policy.
+5. **Use `service-intentions` config entries**, not the deprecated legacy intention API.
+6. **Register services with meaningful health checks** so discovery only returns
+   healthy instances.
+7. **Upgrade one server at a time** and check `consul members` in between.
+8. **Back up the data directory** before every upgrade.
+9. **Use the Helm chart on Kubernetes** with the official Consul image.
 
-2. **Security**
-   - Use minimal privilege tokens
-   - Rotate ACL tokens regularly
-   - Secure gossip encryption
+## Next Steps
 
-3. **Monitoring**
-   - Set up metrics collection
-   - Monitor cluster health
-   - Configure alerting
-
-## Additional Resources
-
-- [Official Consul Documentation](https://www.consul.io/docs)
-- [Consul API Reference](https://www.consul.io/api-docs)
-- [HashiCorp Learn - Consul](https://learn.hashicorp.com/consul)
-- [Consul Security Guide](https://www.consul.io/docs/security) 
+- [Consul Documentation](https://developer.hashicorp.com/consul/docs)
+- [Consul API Reference](https://developer.hashicorp.com/consul/api-docs)
+- [Consul Tutorials](https://developer.hashicorp.com/consul/tutorials)
+- [HashiCorp Learn — Consul](https://learn.hashicorp.com/consul)
+- [Vault Installation Guide](/docs/infrastructure/vault)
+- [Terraform Installation Guide](/docs/infrastructure/terraform)

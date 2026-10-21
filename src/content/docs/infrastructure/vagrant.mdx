@@ -1,329 +1,428 @@
 ---
-title: "Vagrant Installation Guide"
-description: "Comprehensive guide for installing and using Vagrant, a tool for building and managing virtual machine environments in a single workflow, with support for VirtualBox, VMware, and other providers."
+title: Vagrant Installation Guide
+description: Install Vagrant 2.4.9, add boxes, manage VirtualBox, VMware, Hyper-V and libvirt providers, share folders and provision machines with Ansible or shell scripts.
 ---
 
-Vagrant is a tool for building and managing virtual machine environments in a single workflow. It provides easy to configure, reproducible, and portable work environments.
+Vagrant builds and manages reproducible development environments. One `Vagrantfile`
+describes the machine, and Vagrant takes care of creating, provisioning, connecting to
+and tearing it down.
 
-## Prerequisites
+<Callout title="Versions used in this guide">
+  Vagrant **2.4.9** · the official HashiCorp `apt`/`rpm` repositories ·
+  Vagrant Box **v2** format · providers for VirtualBox, VMware, Hyper-V, libvirt, Docker
+  and Podman
+</Callout>
 
-- 64-bit operating system
-- Virtualization enabled in BIOS/UEFI
-- Minimum 4GB RAM
-- One of these hypervisors:
-  - VirtualBox (recommended for beginners)
-  - VMware
-  - Hyper-V
-  - Docker
+## System Requirements
+
+- A 64-bit operating system with hardware virtualization enabled (Intel VT-x or AMD-V)
+- 4 GB RAM or more, 2 GB of it available for the guest
+- One of the supported providers:
+
+| Provider | Notes |
+| --- | --- |
+| VirtualBox | Free, works everywhere, slower than KVM |
+| libvirt / KVM | The fastest option on Linux |
+| VMware Workstation / Fusion | Good performance, needs a licence for some features |
+| Hyper-V | The built-in option on Windows |
+| Docker / Podman | Container-based, no virtual machine |
 
 ## Installation Instructions
 
 <Tabs defaultValue="ubuntu">
   <TabsList>
     <TabsTrigger value="ubuntu">Ubuntu/Debian</TabsTrigger>
-    <TabsTrigger value="centos">CentOS/RHEL</TabsTrigger>
+    <TabsTrigger value="rpm">RHEL/CentOS</TabsTrigger>
     <TabsTrigger value="fedora">Fedora</TabsTrigger>
     <TabsTrigger value="macos">macOS</TabsTrigger>
     <TabsTrigger value="windows">Windows</TabsTrigger>
+    <TabsTrigger value="hyperv">Hyper-V</TabsTrigger>
   </TabsList>
 
   <TabsContent value="ubuntu">
-    ### Ubuntu/Debian Installation
+    ### Ubuntu / Debian (apt)
 
     ```bash
-    # Add HashiCorp GPG key
-    wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+    # Add the HashiCorp signing key
+    wget -O - https://apt.releases.hashicorp.com/gpg \
+      | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
 
-    # Add HashiCorp repository
-    echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+    # Add the repository
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(grep -oP '(?<=UBUNTU_CODENAME=).*' /etc/os-release || lsb_release -cs) main" \
+      | sudo tee /etc/apt/sources.list.d/hashicorp.list
 
-    # Update and install Vagrant
+    # Install Vagrant
     sudo apt update
-    sudo apt install vagrant
+    sudo apt install -y vagrant
 
-    # Install VirtualBox (if needed)
-    sudo apt install virtualbox
+    # Install a provider (VirtualBox is the easiest starting point)
+    sudo apt install -y virtualbox
+
+    vagrant --version
     ```
   </TabsContent>
 
-  <TabsContent value="centos">
-    ### CentOS/RHEL Installation
+  <TabsContent value="rpm">
+    ### RHEL / CentOS / Rocky / Alma (dnf)
 
     ```bash
-    # Add HashiCorp repository
-    sudo yum install -y yum-utils
-    sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo
+    sudo dnf install -y dnf-plugins-core
+    sudo dnf config-manager --add-repo https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo
 
-    # Install Vagrant
-    sudo yum install vagrant
+    sudo dnf install -y vagrant
 
-    # Install VirtualBox (if needed)
-    sudo dnf config-manager --add-repo=https://download.virtualbox.org/virtualbox/rpm/el/virtualbox.repo
-    sudo dnf install VirtualBox-6.1
+    vagrant --version
     ```
   </TabsContent>
 
   <TabsContent value="fedora">
-    ### Fedora Installation
+    ### Fedora (dnf)
 
     ```bash
-    # Add HashiCorp repository
     sudo dnf install -y dnf-plugins-core
     sudo dnf config-manager --add-repo https://rpm.releases.hashicorp.com/fedora/hashicorp.repo
 
-    # Install Vagrant
-    sudo dnf install vagrant
+    sudo dnf install -y vagrant
 
-    # Install VirtualBox (if needed)
-    sudo dnf install VirtualBox
+    vagrant --version
     ```
   </TabsContent>
 
   <TabsContent value="macos">
-    ### macOS Installation
+    ### macOS (Homebrew)
 
     ```bash
-    # Using Homebrew
-    brew install vagrant
+    brew install --cask vagrant
 
-    # Install VirtualBox (if needed)
-    brew install --cask virtualbox
+    vagrant --version
     ```
   </TabsContent>
 
   <TabsContent value="windows">
-    ### Windows Installation
+    ### Windows (Chocolatey or the installer)
 
     ```powershell
-    # Install using Chocolatey
+    # Chocolatey
     choco install vagrant
-    choco install virtualbox
 
-    # Alternative: Download from official website
-    # Navigate to: https://www.vagrantup.com/downloads
-    # Download the Windows installer
-    # Run the installer and follow the prompts
-    # Install VirtualBox from https://www.virtualbox.org/
+    # Windows Package Manager
+    winget install Hashicorp.Vagrant
+
+    vagrant --version
+    ```
+
+    Or download the MSI from
+    [releases.hashicorp.com/vagrant](https://releases.hashicorp.com/vagrant/).
+  </TabsContent>
+
+  <TabsContent value="hyperv">
+    ### Windows with Hyper-V
+
+    Enable Hyper-V before installing Vagrant:
+
+    ```powershell
+    Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All
+    ```
+
+    Then install Vagrant and select the provider:
+
+    ```bash
+    vagrant up --provider=hyperv
     ```
   </TabsContent>
 </Tabs>
 
-## Basic Usage
-
-### 1. Initialize a Project
+## Verifying the Installation
 
 ```bash
-# Create and enter project directory
-mkdir my_vagrant_project
-cd my_vagrant_project
+# Version
+vagrant --version
 
-# Initialize Vagrant project
-vagrant init hashicorp/bionic64
+# List the providers Vagrant can use
+vagrant provider --list
 ```
 
-### 2. Basic Vagrantfile
+## Your First Vagrantfile
+
+```ruby
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+  # The box the machine is created from
+  config.vm.box = "bento/ubuntu-24.04"
+
+  # Provider specific settings
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = 4096
+    vb.cpus = 2
+  end
+
+  # A private network so the host can reach the guest
+  config.vm.network "forwarded_port", guest: 80, host: 8080
+  config.vm.network "private_network", ip: "192.168.56.10"
+
+  # Synchronise the project folder into the guest
+  config.vm.synced_folder ".", "/vagrant", type: "virtualbox"
+
+  # Provision with a shell script
+  config.vm.provision "shell", inline: <<-SHELL
+    sudo apt-get update
+    sudo apt-get install -y nginx
+  SHELL
+end
+```
+
+```bash
+# Add the box (downloads it once)
+vagrant box add bento/ubuntu-24.04
+
+# Validate the configuration
+vagrant validate
+
+# Create and start the machine
+vagrant up
+
+# SSH into it
+vagrant ssh
+
+# Stop it (keeps the disk)
+vagrant halt
+
+# Destroy it (removes everything)
+vagrant destroy -f
+```
+
+## Boxes
+
+A box is a pre-built base image. The catalogue lives on
+[Vagrant Cloud](https://app.vagrantup.com/boxes/search).
+
+```bash
+# Search for a box
+vagrant search ubuntu
+
+# Add a specific version
+vagrant box add bento/ubuntu-24.04 --box-version 20241002
+
+# List the boxes you have
+vagrant box list
+
+# Update a box
+vagrant box update
+```
+
+<Callout title="Pin the box version">
+  A box tag such as `bento/ubuntu-24.04` is a moving target. Pin an exact
+  `--box-version` in your Vagrantfile so every developer and CI job starts from the
+  same image.
+</Callout>
+
+## Common Commands
+
+```bash
+# Global status
+vagrant status
+
+# SSH details for the connection
+vagrant ssh-config
+
+# Port forwarding
+vagrant port --guest 80
+
+# Run a command inside the machine
+vagrant ssh -c "systemctl status nginx"
+
+# Copy a file in or out
+vagrant ssh -c "cat /var/log/syslog"
+vagrant copy ./file.txt /tmp/file.txt
+
+# Suspend and resume
+vagrant suspend
+vagrant resume
+```
+
+## Provisioning with Ansible
 
 ```ruby
 Vagrant.configure("2") do |config|
-  config.vm.box = "hashicorp/bionic64"
-  config.vm.network "private_network", ip: "192.168.33.10"
-  config.vm.provider "virtualbox" do |vb|
-    vb.memory = "1024"
-    vb.cpus = 2
+  config.vm.box = "bento/ubuntu-24.04"
+
+  # Point Vagrant at your Ansible playbooks
+  config.vm.provision "ansible" do |ansible|
+    ansible.playbook = "playbooks/site.yml"
+    ansible.compatibility_mode = "2.0"
+    ansible.extra_vars = { vagrant: true }
   end
 end
 ```
 
-### 3. Common Commands
-
 ```bash
-# Start VM
-vagrant up
-
-# SSH into VM
-vagrant ssh
-
-# Stop VM
-vagrant halt
-
-# Destroy VM
-vagrant destroy
-
-# Check status
-vagrant status
+# Re-provision an existing machine
+vagrant provision --provision-with ansible
 ```
 
-## Advanced Configuration
-
-### 1. Multi-Machine Setup
+## Multi-Machine Environments
 
 ```ruby
 Vagrant.configure("2") do |config|
+  config.vm.box = "bento/ubuntu-24.04"
+
   config.vm.define "web" do |web|
-    web.vm.box = "ubuntu/focal64"
-    web.vm.network "private_network", ip: "192.168.33.10"
+    web.vm.hostname = "web"
+    web.vm.network "private_network", ip: "192.168.56.10"
   end
 
   config.vm.define "db" do |db|
-    db.vm.box = "ubuntu/focal64"
-    db.vm.network "private_network", ip: "192.168.33.11"
+    db.vm.hostname = "db"
+    db.vm.network "private_network", ip: "192.168.56.11"
   end
 end
 ```
 
-### 2. Provisioning
+```bash
+# Bring up everything
+vagrant up
 
-```ruby
-Vagrant.configure("2") do |config|
-  config.vm.box = "ubuntu/focal64"
-  
-  # Shell provisioning
-  config.vm.provision "shell", inline: <<-SHELL
-    apt-get update
-    apt-get install -y nginx
-  SHELL
-  
-  # Ansible provisioning
-  config.vm.provision "ansible" do |ansible|
-    ansible.playbook = "playbook.yml"
-  end
-end
+# Bring up one machine
+vagrant up web
+
+# Run a command on a specific machine
+vagrant ssh db
 ```
 
-### 3. Synced Folders
-
-```ruby
-Vagrant.configure("2") do |config|
-  config.vm.box = "ubuntu/focal64"
-  
-  # Basic synced folder
-  config.vm.synced_folder ".", "/vagrant"
-  
-  # NFS synced folder (better performance)
-  config.vm.synced_folder ".", "/vagrant", type: "nfs"
-end
-```
-
-## Box Management
-
-### 1. Working with Boxes
+## Choosing a Provider
 
 ```bash
-# Add a box
-vagrant box add ubuntu/focal64
+# List the installed providers
+vagrant provider --list
 
-# List boxes
-vagrant box list
-
-# Update boxes
-vagrant box update
-
-# Remove boxes
-vagrant box remove ubuntu/focal64
+# Use a specific provider
+vagrant up --provider=libvirt
 ```
 
-### 2. Creating Custom Boxes
-
-```bash
-# Package current VM as a box
-vagrant package --output custom.box
-
-# Add custom box
-vagrant box add my-custom-box custom.box
-```
-
-## Plugins
-
-### 1. Managing Plugins
-
-```bash
-# List installed plugins
-vagrant plugin list
-
-# Install a plugin
-vagrant plugin install vagrant-vbguest
-
-# Update plugins
-vagrant plugin update
-
-# Uninstall plugin
-vagrant plugin uninstall vagrant-vbguest
-```
-
-### 2. Useful Plugins
-
-```bash
-# VirtualBox Guest Additions
-vagrant plugin install vagrant-vbguest
-
-# AWS provider
-vagrant plugin install vagrant-aws
-
-# Automatic box updates
-vagrant plugin install vagrant-vbguest
-```
+On Linux, **libvirt/KVM** is dramatically faster than VirtualBox. On Windows, use
+**Hyper-V**. On macOS, **VMware Fusion** or **UTM** are the fastest options.
 
 ## Troubleshooting
 
-### Common Issues
+<Accordion type="single">
+  <AccordionItem value="issue-1">
+    <AccordionTrigger>
+      The machine does not start
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # Check the provider
+      vagrant provider --list
 
-1. **Network Issues**
-   ```bash
-   # Reset network
-   vagrant reload
-   
-   # Check network status
-   vagrant ssh -c "ip addr"
-   ```
+      # See the detailed error
+      vagrant up --debug
 
-2. **Provider Issues**
-   ```bash
-   # Check provider status
-   vagrant status
-   
-   # Debug provider
-   VAGRANT_LOG=debug vagrant up
-   ```
+      # Verify virtualization is enabled in the BIOS/UEFI
+      egrep -c '(vmx|svm)' /proc/cpuinfo
+      ```
+      On Windows, Hyper-V must be enabled before the VirtualBox provider works.
+    </AccordionContent>
+  </AccordionItem>
 
-3. **Synced Folder Issues**
-   ```bash
-   # Reinstall VirtualBox Guest Additions
-   vagrant plugin install vagrant-vbguest
-   vagrant vbguest
-   ```
+  <AccordionItem value="issue-2">
+    <AccordionTrigger>
+      The box fails to download
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # Check for a proxy or firewall problem
+      curl -I https://app.vagrantup.com
 
-### Error Resolution
+      # Retry, or install the box from a local file
+      vagrant box add bento/ubuntu-24.04 --file ./ubuntu-24.04.box
+      ```
+    </AccordionContent>
+  </AccordionItem>
 
-1. **SSH Issues**
-   - Check network configuration
-   - Verify SSH key permissions
-   - Ensure host-only network is configured
+  <AccordionItem value="issue-3">
+    <AccordionTrigger>
+      Synced folders are empty or broken
+    </AccordionTrigger>
+    <AccordionContent>
+      VirtualBox and Hyper-V both have known issues with the default shared-folder
+      implementation. Switch the type explicitly in the Vagrantfile:
+      ```ruby
+      config.vm.synced_folder ".", "/vagrant", type: "rsync", rsync__exclude: [".git/"]
+      ```
+      On Windows, `type: "rsync"` also avoids the Hyper-V performance problems.
+    </AccordionContent>
+  </AccordionItem>
 
-2. **Resource Issues**
-   - Adjust VM memory and CPU
-   - Check host system resources
-   - Verify virtualization support
+  <AccordionItem value="issue-4">
+    <AccordionTrigger>
+      SSH connection refused or timeouts
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # Get the exact SSH command Vagrant would use
+      vagrant ssh-config
+
+      # Connect with it directly
+      vagrant ssh -c "uptime"
+      ```
+      A wrong forwarded port or a stale `~/.vagrant.d/insecure_private_key` causes most
+      connection problems. `vagrant destroy -f && vagrant up` resets the machine.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-5">
+    <AccordionTrigger>
+      Provisioning fails halfway through
+    </AccordionTrigger>
+    <AccordionContent>
+      Provisioners run in order and stop at the first failure. Run them again without
+      recreating the machine:
+      ```bash
+      vagrant provision
+      ```
+      Use `vagrant up --provision` to re-run them during the next start.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-6">
+    <AccordionTrigger>
+      The machine is slow or runs out of disk
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # See the disk usage
+      vagrant ssh -c "df -h"
+
+      # Free space from old boxes
+      vagrant box prune
+
+      # Destroy unused machines
+      vagrant list
+      vagrant destroy -f
+      ```
+      Keep at least 20 GB free for the images and the guest disks.
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>
 
 ## Best Practices
 
-1. **Project Organization**
-   - Use version control for Vagrantfiles
-   - Document box requirements
-   - Implement proper provisioning scripts
+1. **Commit the Vagrantfile** — it is the definition of the environment.
+2. **Pin the box version** so every machine starts from the same image.
+3. **Provision with code**, not with manual steps inside the guest.
+4. **Use `vagrant destroy -f` instead of `rm -rf .vagrant`** — it cleans up properly.
+5. **Never commit a `.vagrant` directory** or a `*.box` file to Git.
+6. **Use `vagrant box prune`** regularly to reclaim disk space.
+7. **Prefer libvirt/KVM on Linux** and Hyper-V on Windows for performance.
+8. **Set the memory and CPU count explicitly** so the environment is predictable.
 
-2. **Performance**
-   - Use appropriate provider settings
-   - Optimize synced folder configuration
-   - Clean up unused boxes and VMs
+## Next Steps
 
-3. **Security**
-   - Keep boxes updated
-   - Use private networking
-   - Implement proper firewall rules
-
-## Additional Resources
-
-- [Official Vagrant Documentation](https://www.vagrantup.com/docs)
-- [Vagrant Cloud](https://app.vagrantup.com/boxes/search)
-- [Vagrant GitHub Repository](https://github.com/hashicorp/vagrant)
-- [Community Resources](https://www.vagrantup.com/community) 
+- [Vagrant Documentation](https://developer.hashicorp.com/vagrant/docs)
+- [Vagrant Cloud — box catalogue](https://app.vagrantup.com/boxes/search)
+- [Vagrant on Kubernetes](https://developer.hashicorp.com/vagrant/docs/other/kubernetes)
+- [Ansible Installation Guide](/docs/infrastructure/ansible)
+- [Packer Installation Guide](/docs/infrastructure/packer)
+- [Terraform Installation Guide](/docs/infrastructure/terraform)

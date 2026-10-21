@@ -1,260 +1,403 @@
 ---
-title: "HashiCorp Packer Installation Guide"
-description: "Detailed instructions for installing and using HashiCorp Packer, an open-source tool for creating identical machine images for multiple platforms from a single source configuration."
+title: HashiCorp Packer Installation Guide
+description: Install Packer 1.16, write HCL2 templates, build machine images for AWS, Azure, GCP and QEMU, and produce signed provenance attestations for your supply chain.
 ---
 
-Packer is an open-source tool by HashiCorp that enables you to create identical machine images for multiple platforms from a single source configuration. It automates the creation of any type of machine image.
+Packer builds identical machine images for multiple platforms from a single
+configuration. One template, many clouds — with the same provisioners and the same
+result everywhere.
 
-## Prerequisites
+<Callout title="Versions used in this guide">
+  Packer **1.16.1** · HCL2 templates with `source` and `build` blocks ·
+  `required_plugins` for plugin pinning · the `provenance` post-processor and
+  `packer verify-attestation` for SLSA build attestations
+</Callout>
 
-- A 64-bit operating system
-- Minimum 1GB RAM
-- Administrative/sudo privileges
-- Internet connection for downloading packages
-- Cloud provider credentials (if building cloud images)
+## System Requirements
+
+- A 64-bit operating system (Linux, macOS, Windows, FreeBSD)
+- Packer is a single static binary — no runtime dependencies
+- Credentials for the target platform (AWS, Azure, GCP, Proxmox, QEMU, …)
+- For local builds: a hypervisor such as QEMU, VirtualBox, VMware or Hyper-V
 
 ## Installation Instructions
 
 <Tabs defaultValue="ubuntu">
   <TabsList>
     <TabsTrigger value="ubuntu">Ubuntu/Debian</TabsTrigger>
-    <TabsTrigger value="centos">CentOS/RHEL</TabsTrigger>
+    <TabsTrigger value="rpm">RHEL/CentOS</TabsTrigger>
     <TabsTrigger value="fedora">Fedora</TabsTrigger>
     <TabsTrigger value="macos">macOS</TabsTrigger>
     <TabsTrigger value="windows">Windows</TabsTrigger>
+    <TabsTrigger value="docker">Docker</TabsTrigger>
   </TabsList>
 
   <TabsContent value="ubuntu">
-    ### Ubuntu/Debian Installation
+    ### Ubuntu / Debian (apt)
 
     ```bash
-    # Add HashiCorp GPG key
-    wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+    # Add the HashiCorp signing key
+    wget -O - https://apt.releases.hashicorp.com/gpg \
+      | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
 
-    # Add HashiCorp repository
-    echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+    # Add the repository
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(grep -oP '(?<=UBUNTU_CODENAME=).*' /etc/os-release || lsb_release -cs) main" \
+      | sudo tee /etc/apt/sources.list.d/hashicorp.list
 
-    # Update and install Packer
+    # Install
     sudo apt update
-    sudo apt install packer
+    sudo apt install -y packer
+
+    packer version
     ```
   </TabsContent>
 
-  <TabsContent value="centos">
-    ### CentOS/RHEL Installation
+  <TabsContent value="rpm">
+    ### RHEL / CentOS / Rocky / Alma (dnf)
 
     ```bash
-    # Add HashiCorp repository
-    sudo yum install -y yum-utils
-    sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo
+    sudo dnf install -y dnf-plugins-core
+    sudo dnf config-manager --add-repo https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo
 
-    # Install Packer
-    sudo yum install packer
+    sudo dnf install -y packer
+
+    packer version
     ```
   </TabsContent>
 
   <TabsContent value="fedora">
-    ### Fedora Installation
+    ### Fedora (dnf)
 
     ```bash
-    # Add HashiCorp repository
     sudo dnf install -y dnf-plugins-core
     sudo dnf config-manager --add-repo https://rpm.releases.hashicorp.com/fedora/hashicorp.repo
 
-    # Install Packer
-    sudo dnf install packer
+    sudo dnf install -y packer
+
+    packer version
     ```
   </TabsContent>
 
   <TabsContent value="macos">
-    ### macOS Installation
+    ### macOS (Homebrew)
 
     ```bash
-    # Using Homebrew
     brew tap hashicorp/tap
     brew install hashicorp/tap/packer
 
-    # Update if already installed
+    # Update later with
     brew upgrade hashicorp/tap/packer
     ```
   </TabsContent>
 
   <TabsContent value="windows">
-    ### Windows Installation
+    ### Windows
 
     ```powershell
-    # Install using Chocolatey
+    # Chocolatey
     choco install packer
 
-    # Alternative: Download from official website
-    # Navigate to: https://www.packer.io/downloads
-    # Download the Windows binary
-    # Add to PATH environment variable
+    # Windows Package Manager
+    winget install Hashicorp.Packer
+
+    packer version
+    ```
+
+    Or download the ZIP from
+    [releases.hashicorp.com/packer](https://releases.hashicorp.com/packer/) and add it to
+    your `PATH`.
+  </TabsContent>
+
+  <TabsContent value="docker">
+    ### Docker
+
+    ```bash
+    docker run --rm -it \
+      -v $PWD:/work \
+      -v $HOME/.aws:/root/.aws:ro \
+      -w /work \
+      hashicorp/packer:1.16.1 \
+      build .
     ```
   </TabsContent>
 </Tabs>
 
-## Verifying Installation
+## Verifying the Installation
 
 ```bash
-# Check Packer version
+# Version
 packer version
 
-# View available commands
-packer -help
+# List the available plugins
+packer plugins installed
+
+# Format a template
+packer fmt .
+
+# Validate a template
+packer validate .
 ```
 
-## Basic Configuration
+## Your First Template
 
-### 1. Create a Basic Template
-
-Create `example.pkr.hcl`:
+Create `template.pkr.hcl`:
 
 ```hcl
 packer {
   required_plugins {
     amazon = {
-      version = ">= 1.0.0"
       source  = "github.com/hashicorp/amazon"
+      version = ">= 1.3.0"
     }
   }
+}
+
+variable "aws_region" {
+  type    = string
+  default = "eu-central-1"
+}
+
+variable "ami_name" {
+  type    = string
+  default = "app-base-{{timestamp}}"
 }
 
 source "amazon-ebs" "ubuntu" {
-  ami_name      = "learn-packer-linux-aws"
-  instance_type = "t2.micro"
-  region        = "us-west-2"
-  source_ami_filter {
-    filters = {
-      name                = "ubuntu/images/*ubuntu-focal-20.04-amd64-server-*"
-      root-device-type    = "ebs"
-      virtualization-type = "hvm"
-    }
-    most_recent = true
-    owners      = ["099720109477"]
+  region        = var.aws_region
+  instance_type = "t3.micro"
+  ami_name      = var.ami_name
+  source_ami    = "ami-0abcdef1234567890" # Ubuntu 24.04 LTS
+  ssh_username  = "ubuntu"
+  ami_name_filter = "app-base-*"
+  tags = {
+    Name        = var.ami_name
+    built_by    = "packer"
+    build_date  = "{{timestamp}}"
   }
-  ssh_username = "ubuntu"
 }
 
 build {
-  sources = [
-    "source.amazon-ebs.ubuntu"
-  ]
+  name    = "ubuntu-base"
+  sources = ["source.amazon-ebs.ubuntu"]
+
+  provisioner "shell" {
+    inline = [
+      "sudo apt-get update",
+      "sudo apt-get install -y nginx",
+      "sudo systemctl enable nginx",
+    ]
+  }
+
+  provisioner "file" {
+    source = "./nginx.conf"
+    destination = "/tmp/nginx.conf"
+  }
+
+  post-processor "manifest" {
+    output     = "manifest.json"
+    strip_path = true
+  }
 }
 ```
 
-### 2. Initialize Plugins
-
 ```bash
-# Initialize Packer configuration
+# Install the plugins the template needs
 packer init .
 
-# Format configuration files
-packer fmt .
-```
-
-## Building Images
-
-### 1. Validate Configuration
-
-```bash
-# Validate template
+# Validate the template
 packer validate .
-```
 
-### 2. Build Image
-
-```bash
-# Build image
+# Build it
 packer build .
 
-# Build with variables
-packer build -var 'aws_access_key=YOUR_KEY' .
+# Build only one source, or exclude one
+packer build -only="amazon-ebs.ubuntu" .
+packer build -except="amazon-ebs" .
 ```
 
-## Environment Setup
+<Callout title="Pins belong in required_plugins">
+  Declare every plugin with a version constraint and commit the generated
+  `.packer.lock.hcl` file. Without it, a build can silently pick up a different plugin
+  version and produce a different image.
+</Callout>
 
-### 1. Cloud Provider Authentication
+## Building on Other Platforms
+
+Packer uses the same template structure for every platform — only the `source` block
+changes.
+
+```hcl
+# Azure
+source "azure-arm" "ubuntu" {
+  location          = "westeurope"
+  vm_size           = "Standard_B1s"
+  image_source_id   = "/subscriptions/.../sourceImage"
+  ssh_username      = "packer"
+  image_offer       = "0001-com-ubuntu-server-jammy"
+  image_sku         = "22_04-lts-gen2"
+}
+
+# Google Cloud
+source "googlecompute" "ubuntu" {
+  project_id = "my-project"
+  source_image_family = "ubuntu-2404-lts-amd64"
+  image_name  = "app-base-{{timestamp}}"
+  ssh_username = "packer"
+  zone         = "europe-west4-a"
+  machine_type = "e2-medium"
+}
+```
+
+## Build Attestations (SLSA)
+
+Packer 1.16 can emit and verify signed provenance for the images it builds, so consumers
+can prove where an image came from:
+
+```hcl
+post-processor "provenance" {
+  only = ["docker.*"]
+  # Sign with a local PEM key
+  sign = "./cosign.key"
+  # ...or with a cloud KMS key
+  # sign = "awskms:///alias/cosign"
+}
+```
 
 ```bash
-# AWS credentials
-export AWS_ACCESS_KEY_ID="your_access_key"
-export AWS_SECRET_ACCESS_KEY="your_secret_key"
-export AWS_DEFAULT_REGION="your_region"
-
-# Azure credentials
-export ARM_SUBSCRIPTION_ID="your_subscription_id"
-export ARM_CLIENT_ID="your_client_id"
-export ARM_CLIENT_SECRET="your_client_secret"
-export ARM_TENANT_ID="your_tenant_id"
+# Verify an attestation
+packer verify-attestation --path "pkg:docker/your-image@sha256:..." \
+  --certificate "chain.pem" --key "cosign.key"
 ```
 
-### 2. Logging Configuration
+## Upgrading
 
 ```bash
-# Enable detailed logging
-export PACKER_LOG=1
-export PACKER_LOG_PATH="packer.log"
+# Upgrade the binary
+sudo apt update && sudo apt install --only-upgrade packer
+
+# Update the plugins
+packer plugins update
+
+# Check what is installed
+packer plugins installed
 ```
-
-## Best Practices
-
-1. **Template Organization**
-   - Use variables for reusable values
-   - Implement modular configurations
-   - Version control your templates
-
-2. **Security**
-   - Use environment variables for secrets
-   - Implement minimal access permissions
-   - Regularly update base images
-
-3. **Build Optimization**
-   - Use provisioner scripts efficiently
-   - Implement parallel builds where possible
-   - Clean up temporary files
 
 ## Troubleshooting
 
-### Common Issues
+<Accordion type="single">
+  <AccordionItem value="issue-1">
+    <AccordionTrigger>
+      "Plugin not found" or "Missing plugins" errors
+    </AccordionTrigger>
+    <AccordionContent>
+      The template declares plugins that are not installed:
+      ```bash
+      packer init .          # install the required plugins
+      packer plugins required .
+      packer plugins installed
+      ```
+    </AccordionContent>
+  </AccordionItem>
 
-1. **Authentication Errors**
-   - Verify cloud credentials
-   - Check environment variables
-   - Validate IAM permissions
+  <AccordionItem value="issue-2">
+    <AccordionTrigger>
+      The build fails during the shell provisioner
+    </AccordionTrigger>
+    <AccordionContent>
+      Scripts fail on the first non-zero exit code. Add error handling and check the
+      output:
+      ```hcl
+      provisioner "shell" {
+        inline = ["set -e", "sudo apt-get update"]
+        expect_disconnect = true
+      }
+      ```
+      Use `execute_command` to change the interpreter, for example `expect_disconnect`
+      for Windows or a custom SSH command.
+    </AccordionContent>
+  </AccordionItem>
 
-2. **Build Failures**
-   ```bash
-   # Debug mode
-   packer build -debug .
-   
-   # On error
-   export PACKER_LOG=1
-   packer build .
-   ```
+  <AccordionItem value="issue-3">
+    <AccordionTrigger>
+      Cloud credentials are not found
+    </AccordionTrigger>
+    <AccordionContent>
+      Packer uses the standard provider SDK credential chain:
+      ```bash
+      # AWS
+      export AWS_PROFILE=my-profile
+      # or use a temporary token
+      export AWS_ACCESS_KEY_ID=... AWS_SECRET_ACCESS_KEY=... AWS_SESSION_TOKEN=...
 
-3. **Network Issues**
-   - Check VPC/subnet configurations
-   - Verify security group rules
-   - Ensure internet connectivity
+      # Azure
+      az login
+      export ARM_CLIENT_ID=... ARM_CLIENT_SECRET=... ARM_TENANT_ID=...
 
-### Error Resolution
+      # GCP
+      gcloud auth application-default login
+      ```
+      Never hardcode credentials in the template.
+    </AccordionContent>
+  </AccordionItem>
 
-1. **Plugin Issues**
-   ```bash
-   # Clean plugin cache
-   rm -rf ~/.packer.d/plugins
-   packer init -upgrade .
-   ```
+  <AccordionItem value="issue-4">
+    <AccordionTrigger>
+      The build is slow
+    </AccordionTrigger>
+    <AccordionContent>
+      Packer boots a machine, provisions it and shuts it down for every build. Reduce the
+      work:
+      - Use a shared base AMI with the common packages already installed
+      - Bake configuration with `ansible-provisioner` and a local playbook instead of
+        many `shell` steps
+      - Use `-on-error=ask` to inspect a failed build interactively
+    </AccordionContent>
+  </AccordionItem>
 
-2. **SSH Problems**
-   - Verify SSH username
-   - Check security group rules
-   - Validate key pairs
+  <AccordionItem value="issue-5">
+    <AccordionTrigger>
+      The image already exists
+    </AccordionTrigger>
+    <AccordionContent>
+      Most builders refuse to overwrite an existing artefact. Either make the name unique
+      with `{{timestamp}}`, or clean up the old image first:
+      ```bash
+      packer build -var "ami_name=app-base-v2" .
+      ```
+    </AccordionContent>
+  </AccordionItem>
 
-## Additional Resources
+  <AccordionItem value="issue-6">
+    <AccordionTrigger>
+      The template does not validate
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # Format it and validate again
+      packer fmt -check -diff .
+      packer validate .
+      ```
+      Validation only checks the template — it does not contact the cloud provider, so a
+      template can validate and still fail at build time.
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>
 
-- [Official Packer Documentation](https://www.packer.io/docs)
-- [Packer GitHub Repository](https://github.com/hashicorp/packer)
-- [HashiCorp Learn - Packer](https://learn.hashicorp.com/packer)
-- [Community Templates](https://github.com/hashicorp/packer-examples) 
+## Best Practices
+
+1. **Declare and pin plugins** in `required_plugins`, and commit `.packer.lock.hcl`.
+2. **Version your images** — `{{timestamp}}` or a semantic version, never `latest`.
+3. **Build one base image and layer on top** instead of rebuilding everything.
+4. **Use `manifest` post-processors** so you know which artefact came from which build.
+5. **Produce provenance attestations** for images you publish.
+6. **Keep templates free of secrets** — use environment variables or a secrets manager.
+7. **Run `packer validate` and `packer fmt -check` in CI** before every build.
+8. **Tag images with the source commit** so you can trace an image back to the code.
+
+## Next Steps
+
+- [Packer Documentation](https://developer.hashicorp.com/packer/docs)
+- [Packer Plugins](https://developer.hashicorp.com/packer/plugins)
+- [Terraform Installation Guide](/docs/infrastructure/terraform)
+- [Ansible Installation Guide](/docs/infrastructure/ansible)
+- [Vault Installation Guide](/docs/infrastructure/vault)

@@ -7,6 +7,18 @@ Infrastructure as code turns hand-rolled servers into reviewed, repeatable and v
 These guides cover the tools that make that possible — from provisioning to secret management and
 golden image building.
 
+Every guide is written against the current release line and verified against the upstream
+documentation:
+
+| Guide | Current release | What it covers |
+| --- | --- | --- |
+| [Terraform](/docs/infrastructure/terraform) | 1.16.6 | Providers, remote state, locking, `terraform test` |
+| [Ansible](/docs/infrastructure/ansible) | 14.5.0 / core 2.21.5 | Inventory, playbooks, Vault, execution environments |
+| [HashiCorp Vault](/docs/infrastructure/vault) | 2.2.0 | Init and unseal, secrets engines, AppRole, audit |
+| [HashiCorp Consul](/docs/infrastructure/consul) | 2.0.4 | Cluster, ACLs, TLS, service intentions, Connect |
+| [Vagrant](/docs/infrastructure/vagrant) | 2.4.9 | Boxes, providers, synced folders, multi-machine |
+| [HashiCorp Packer](/docs/infrastructure/packer) | 1.16.1 | HCL2 templates, plugins, multi-cloud, attestations |
+
 <div className="grid gap-4 mt-6">
   <Card>
     <CardHeader>

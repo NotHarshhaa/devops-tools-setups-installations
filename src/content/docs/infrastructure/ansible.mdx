@@ -1,108 +1,178 @@
 ---
-title: "Ansible Installation Guide"
-description: "Complete guide for installing and setting up Ansible, an agentless automation tool that enables infrastructure as code, configuration management, and application deployment using simple YAML syntax."
+title: Ansible Installation Guide
+description: Install Ansible 14 with ansible-core 2.21 and Python 3.12+, build an inventory, write your first playbook, use Ansible Vault and run tasks in execution environments.
 ---
 
-Ansible is an open-source automation tool that enables infrastructure as code, configuration management, application deployment, and task automation. It uses a simple, human-readable language (YAML) and requires no agents on remote systems.
+Ansible is a cross-platform, agentless automation tool. It talks to managed nodes over
+SSH (or WinRM on Windows), so there is nothing to install on the machines you manage.
 
-## Prerequisites
+<Callout title="Versions used in this guide">
+  Ansible community package **14.5.0** · ansible-core **2.21.5** · **Python 3.12 or
+  newer** on the control node · FQCN modules such as `ansible.builtin.package`
+</Callout>
 
-- Python 2.7 or Python 3.5+ (Python 3.9+ recommended)
-- Control node: Linux/Unix/macOS (Windows is not supported as a control node)
-- Managed nodes: Windows or Unix/Linux systems
-- SSH access to managed nodes
-- Administrative/sudo privileges
+<Callout title="The control node needs a recent Python">
+  ansible-core 2.21 requires **Python 3.12+** on the control node. The managed nodes only
+  need Python 3.9 or newer — and Windows nodes are managed over WinRM with PowerShell, so
+  they need no Python at all.
+</Callout>
+
+## System Requirements
+
+### Control Node
+
+- Linux, macOS or a WSL2 distribution (Windows is not supported as a control node)
+- Python 3.12 or newer
+- `ssh` and `git` available
+- The ability to reach the managed nodes over SSH (port 22) or WinRM (port 5985/5986)
+
+### Managed Nodes
+
+- Linux with Python 3.9+
+- Windows with PowerShell 3.0+ and the WinRM feature enabled
+- SSH key-based authentication (strongly recommended)
 
 ## Installation Instructions
 
 <Tabs defaultValue="ubuntu">
   <TabsList>
     <TabsTrigger value="ubuntu">Ubuntu/Debian</TabsTrigger>
-    <TabsTrigger value="centos">CentOS/RHEL</TabsTrigger>
+    <TabsTrigger value="rpm">RHEL/CentOS</TabsTrigger>
     <TabsTrigger value="fedora">Fedora</TabsTrigger>
     <TabsTrigger value="macos">macOS</TabsTrigger>
-    <TabsTrigger value="windows">Windows (WSL)</TabsTrigger>
+    <TabsTrigger value="pip">pip / virtualenv</TabsTrigger>
+    <TabsTrigger value="windows">Windows (WSL2)</TabsTrigger>
   </TabsList>
 
   <TabsContent value="ubuntu">
-    ### Ubuntu/Debian Installation
+    ### Ubuntu / Debian (apt)
 
     ```bash
-    # Update package index
+    # Update the package index
     sudo apt update
 
-    # Install dependencies
-    sudo apt install -y python3 python3-pip
-
-    # Install Ansible
+    # Install the community package (includes ~300 collections)
     sudo apt install -y ansible
 
-    # Alternative: Install via pip
-    pip3 install --user ansible
+    # Verify
+    ansible --version
+    ```
+
+    To install only the core engine and add the collections you actually need:
+
+    ```bash
+    sudo apt install -y ansible-core
     ```
   </TabsContent>
 
-  <TabsContent value="centos">
-    ### CentOS/RHEL Installation
+  <TabsContent value="rpm">
+    ### RHEL / CentOS / Rocky / Alma (dnf)
 
     ```bash
-    # Install EPEL repository
+    # Enable the EPEL repository for the community packages
     sudo dnf install -y epel-release
+    sudo dnf install -y ansible-core
 
-    # Install Ansible
+    # Or install the full community package
     sudo dnf install -y ansible
 
-    # Alternative: Install via pip
-    pip3 install --user ansible
+    ansible --version
     ```
   </TabsContent>
 
   <TabsContent value="fedora">
-    ### Fedora Installation
+    ### Fedora (dnf)
 
     ```bash
-    # Install Ansible
+    sudo dnf install -y ansible-core
+
+    # Or the full community package
     sudo dnf install -y ansible
 
-    # Alternative: Install via pip
-    pip3 install --user ansible
+    ansible --version
     ```
   </TabsContent>
 
   <TabsContent value="macos">
-    ### macOS Installation
+    ### macOS (Homebrew)
 
     ```bash
-    # Using Homebrew
     brew install ansible
 
-    # Alternative: Install via pip
-    pip3 install --user ansible
+    ansible --version
+    ```
+  </TabsContent>
+
+  <TabsContent value="pip">
+    ### pip in a virtual environment
+
+    This is the recommended way to pin the version per project:
+
+    ```bash
+    # Create a virtual environment
+    python3 -m venv ~/.venvs/ansible
+    source ~/.venvs/ansible/bin/activate
+
+    # Install the community package
+    pip install --upgrade pip
+    pip install 'ansible==14.5.0'
+
+    ansible --version
+    ```
+
+    Pin the exact version in a `requirements.txt` so every machine and CI job installs the
+    same build:
+
+    ```bash
+    ansible==14.5.0
     ```
   </TabsContent>
 
   <TabsContent value="windows">
-    ### Windows (WSL) Installation
+    ### Windows (WSL2)
+
+    Install WSL2 with a Linux distribution, then use the Debian or Ubuntu instructions
+    inside it:
 
     ```bash
-    # Install WSL2 and Ubuntu, then:
-    sudo apt update
-    sudo apt install -y ansible
+    wsl --install -d Ubuntu
+    # Inside WSL
+    sudo apt update && sudo apt install -y ansible
+    ansible --version
     ```
   </TabsContent>
 </Tabs>
 
-## Basic Configuration
-
-### 1. Create Configuration Directory
+## Project Layout
 
 ```bash
-# Create Ansible directory structure
-mkdir -p ~/ansible/playbooks
+mkdir -p ~/ansible/{playbooks,roles,inventory,collections}
 cd ~/ansible
 ```
 
-### 2. Configure Inventory
+```bash
+# Create a requirements file for the collections you need
+ansible-galaxy collection init
+```
+
+```yaml
+# requirements.yml
+collections:
+  - name: community.general
+    version: ">=10.0.0"
+  - name: ansible.posix
+    version: ">=1.5.0"
+```
+
+```bash
+# Install the collections
+ansible-galaxy collection install -r requirements.yml
+
+# Update them later
+ansible-galaxy collection install -r requirements.yml --upgrade
+```
+
+## Inventory
 
 Create `inventory.ini`:
 
@@ -115,174 +185,302 @@ web2 ansible_host=192.168.1.11
 db1 ansible_host=192.168.1.20
 
 [all:vars]
-ansible_user=your_ssh_user
-ansible_ssh_private_key_file=~/.ssh/id_rsa
+ansible_user=deploy
+ansible_ssh_private_key_file=~/.ssh/id_ed25519
 ```
 
-### 3. Configure Ansible
+Or use YAML, which is the format to prefer:
 
-Create `ansible.cfg`:
+```yaml
+# inventory.yaml
+all:
+  children:
+    webservers:
+      hosts:
+        web1:
+          ansible_host: 192.168.1.10
+        web2:
+          ansible_host: 192.168.1.11
+    dbservers:
+      hosts:
+        db1:
+          ansible_host: 192.168.1.20
+  vars:
+    ansible_user: deploy
+    ansible_ssh_private_key_file: ~/.ssh/id_ed25519
+```
+
+## Configuration
+
+Create `ansible.cfg` in the project root:
 
 ```ini
 [defaults]
-inventory = ./inventory.ini
-remote_user = your_ssh_user
-private_key_file = ~/.ssh/id_rsa
-host_key_checking = False
+inventory = ./inventory.yaml
+roles_path = ./roles
+host_key_checking = True
+stdout_callback = yaml
+interpreter_python = auto_silent
+retry_files_enabled = False
+
+[ssh_connection]
+pipelining = True
+ssh_args = -o ControlMaster=auto -o ControlPersist=60s
 ```
 
-## Basic Usage
+## Your First Playbook
 
-### 1. Test Connection
-
-```bash
-# Ping all hosts
-ansible all -m ping
-
-# Check specific group
-ansible webservers -m ping
-```
-
-### 2. Create First Playbook
-
-Create `playbooks/update_servers.yml`:
+Create `playbooks/install-nginx.yml`:
 
 ```yaml
 ---
-- name: Update all servers
-  hosts: all
-  become: yes
+- name: Install and start Nginx
+  hosts: webservers
+  become: true
+  vars:
+    nginx_packages:
+      - nginx
+      - curl
+
   tasks:
-    - name: Update apt cache (Debian/Ubuntu)
-      apt:
-        update_cache: yes
+    - name: Update the package cache (Debian/Ubuntu)
+      ansible.builtin.apt:
+        update_cache: true
       when: ansible_os_family == "Debian"
+      changed_when: false
 
-    - name: Update dnf cache (RHEL/CentOS)
-      dnf:
-        update_cache: yes
+    - name: Update the package cache (RHEL/CentOS)
+      ansible.builtin.dnf:
+        update_cache: true
       when: ansible_os_family == "RedHat"
+      changed_when: false
+
+    - name: Install the packages
+      ansible.builtin.package:
+        name: "{{ nginx_packages }}"
+        state: present
+
+    - name: Ensure Nginx is running and enabled
+      ansible.builtin.service:
+        name: nginx
+        state: started
+        enabled: true
 ```
 
-### 3. Run Playbook
-
 ```bash
-# Run playbook
-ansible-playbook playbooks/update_servers.yml
+# Test the connection
+ansible webservers -m ping
 
-# Run with extra variables
-ansible-playbook playbooks/update_servers.yml -e "variable=value"
+# Validate the syntax
+ansible-playbook playbooks/install-nginx.yml --syntax-check
+
+# Preview the changes without applying them
+ansible-playbook playbooks/install-nginx.yml --check --diff
+
+# Run it
+ansible-playbook playbooks/install-nginx.yml
 ```
 
-## Advanced Configuration
+<Callout title="Use fully qualified collection names">
+  Write `ansible.builtin.package` instead of `package`. Short names only work when the
+  collection is loaded implicitly, and the FQCN form is what `ansible-lint` expects.
+</Callout>
 
-### 1. SSH Key Setup
-
-```bash
-# Generate SSH key
-ssh-keygen -t rsa -b 4096
-
-# Copy key to remote hosts
-ssh-copy-id username@remote_host
-```
-
-### 2. Vault Configuration
+## Handling Secrets with Ansible Vault
 
 ```bash
-# Create encrypted file
+# Create an encrypted variables file
 ansible-vault create secrets.yml
 
-# Edit encrypted file
+# Edit it
 ansible-vault edit secrets.yml
 
-# Run playbook with vault
-ansible-playbook playbook.yml --ask-vault-pass
+# Encrypt an existing file
+ansible-vault encrypt --output secrets.enc.yml vars.yml
+
+# Use it in a playbook
+ansible-playbook site.yml --ask-vault-pass
 ```
 
-### 3. Role Structure
+```yaml
+# vars/vault.yml (encrypted)
+db_password: "super-secret"
+api_token: "another-secret"
+```
 
 ```bash
-# Create role structure
-ansible-galaxy init my_role
-
-# Role directory structure
-my_role/
-├── defaults/
-├── files/
-├── handlers/
-├── meta/
-├── tasks/
-├── templates/
-└── vars/
+# Use a password file in CI instead of an interactive prompt
+ansible-playbook site.yml --vault-password-file .vault-password
 ```
 
-## Best Practices
+## Roles
 
-1. **Project Organization**
-   - Use roles for reusable components
-   - Keep sensitive data in Ansible Vault
-   - Use version control for playbooks
+```bash
+# Scaffold a role
+ansible-galaxy init roles/nginx
 
-2. **Security**
-   - Use SSH keys instead of passwords
-   - Implement proper inventory grouping
-   - Secure sensitive variables
+# Install a role from Galaxy
+ansible-galaxy role install geerlingguy.nginx
+```
 
-3. **Performance**
-   - Use dynamic inventory when possible
-   - Implement proper error handling
-   - Use async tasks for long-running operations
+```yaml
+# Use it in a playbook
+- name: Configure Nginx
+  hosts: webservers
+  become: true
+  roles:
+    - role: nginx
+      vars:
+        nginx_port: 8080
+```
+
+## Execution Environments
+
+Execution environments are containers that package Ansible and its dependencies, so a
+pipeline always runs the same stack:
+
+```bash
+# Install the builder
+pip install ansible-builder
+
+# Build the image
+ansible-builder build --file execution-environment.yml --tag my-ee:latest
+
+# Run a playbook inside it
+podman run -it --rm -v $(pwd):/z my-ee:latest ansible-playbook site.yml
+```
+
+```yaml
+# execution-environment.yml
+version: 3
+images:
+  base_image:
+    name: registry.redhat.io/ubi9/ubi-minimal:latest
+dependencies:
+  galaxy: requirements.yml
+  python: requirements.txt
+  system: bindep.txt
+```
 
 ## Troubleshooting
 
-### Common Issues
+<Accordion type="single">
+  <AccordionItem value="issue-1">
+    <AccordionTrigger>
+      SSH connection failures
+    </AccordionTrigger>
+    <AccordionContent>
+      Test the connection outside Ansible first:
+      ```bash
+      ssh -v deploy@192.168.1.10
+      ansible webservers -m ping -vvv
+      ```
+      The usual causes are an unreachable host, a key that is not in `authorized_keys`, or
+      a `known_hosts` mismatch after the host was rebuilt. `ssh-keygen -R <host>` clears
+      the stale key.
+    </AccordionContent>
+  </AccordionItem>
 
-1. **SSH Connection Problems**
-   ```bash
-   # Check SSH connection
-   ssh -v username@remote_host
-   
-   # Test Ansible connection
-   ansible host -m ping -vvv
-   ```
+  <AccordionItem value="issue-2">
+    <AccordionTrigger>
+      "The module failed to execute successfully" or a missing Python error
+    </AccordionTrigger>
+    <AccordionContent>
+      The managed node has no usable Python:
+      ```bash
+      # Check which interpreter Ansible picks
+      ansible host -m setup -a "filter=ansible_python_version"
 
-2. **Permission Issues**
-   ```bash
-   # Check sudo access
-   ansible host -m shell -a "sudo -l"
-   
-   # Run with become
-   ansible-playbook playbook.yml --become
-   ```
+      # Install Python with the raw module
+      ansible host -m raw -a "apt-get update && apt-get install -y python3"
+      ```
+      Set `interpreter_python = auto_silent` in `ansible.cfg` to fall back automatically.
+    </AccordionContent>
+  </AccordionItem>
 
-3. **Python Issues**
-   ```bash
-   # Check Python version
-   ansible host -m setup -a "filter=ansible_python_version"
-   
-   # Install Python if missing
-   ansible host -m raw -a "apt-get install -y python3"
-   ```
+  <AccordionItem value="issue-3">
+    <AccordionTrigger>
+      Permission errors when using become
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # Check the sudo rights of the remote user
+      ansible host -m shell -a "sudo -l"
 
-### Error Resolution
+      # Provide the password from a vault variable
+      ansible-playbook site.yml --become --become-password-file .sudo-password
+      ```
+      Prefer passwordless sudo for the deploy user over shipping a password around.
+    </AccordionContent>
+  </AccordionItem>
 
-1. **Module Errors**
-   - Check module documentation
-   - Verify module dependencies
-   - Use correct module parameters
+  <AccordionItem value="issue-4">
+    <AccordionTrigger>
+      The task runs but the change is not applied
+    </AccordionTrigger>
+    <AccordionContent>
+      Modules report "ok" when they did not have to do anything. Check the diff:
+      ```bash
+      ansible-playbook site.yml --check --diff
+      ```
+      A common cause is a `when` condition that never matched, or a `changed_when` that
+      hides the real result.
+    </AccordionContent>
+  </AccordionItem>
 
-2. **Playbook Syntax**
-   ```bash
-   # Check playbook syntax
-   ansible-playbook --syntax-check playbook.yml
-   
-   # Run in check mode
-   ansible-playbook --check playbook.yml
-   ```
+  <AccordionItem value="issue-5">
+    <AccordionTrigger>
+      Playbook is slow
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # Profile where the time goes
+      ANSIBLE_CALLBACK_PROFILE_ENABLED=True ansible-playbook site.yml
 
-## Additional Resources
+      # Enable pipelining and ControlPersist in ansible.cfg
+      ```
+      A `forks` value above the default of 5 also helps on many hosts.
+    </AccordionContent>
+  </AccordionItem>
 
-- [Official Ansible Documentation](https://docs.ansible.com)
+  <AccordionItem value="issue-6">
+    <AccordionTrigger>
+      Linting and syntax errors
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # Syntax check
+      ansible-playbook site.yml --syntax-check
+
+      # Lint with ansible-lint
+      pip install ansible-lint
+      ansible-lint playbooks/
+      ```
+      `ansible-lint` catches most issues before they reach a real host.
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>
+
+## Best Practices
+
+1. **Use ansible-core** and add only the collections you need — it keeps the control node
+   small and the version pinned.
+2. **Pin versions** in `requirements.yml` and commit the lock file.
+3. **Use YAML inventory** and group hosts by role, not by team.
+4. **Use FQCN module names** and run `ansible-lint` in CI.
+5. **Keep secrets in Ansible Vault**, never in plain variables.
+6. **Run with `--check --diff` first** on any change that touches a production system.
+7. **Prefer idempotent modules** (`package`, `service`, `template`) over `shell` and
+   `command`.
+8. **Use `block`/`rescue`/`always`** for error handling instead of `ignore_errors`.
+9. **Set `forks` and pipelining** to keep large fleets fast.
+10. **Run in an execution environment** in CI for reproducible builds.
+
+## Next Steps
+
+- [Ansible Documentation](https://docs.ansible.com)
 - [Ansible Galaxy](https://galaxy.ansible.com)
-- [Ansible Best Practices](https://docs.ansible.com/ansible/latest/user_guide/playbooks_best_practices.html)
-- [Ansible Examples](https://github.com/ansible/ansible-examples) 
+- [ansible-lint](https://ansible.readthedocs.io/projects/lint/)
+- [Execution Environments](https://ansible.readthedocs.io/projects/builder/)
+- [Terraform Installation Guide](/docs/infrastructure/terraform)
+- [Packer Installation Guide](/docs/infrastructure/packer)

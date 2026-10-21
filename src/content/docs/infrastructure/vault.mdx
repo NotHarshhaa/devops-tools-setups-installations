@@ -1,231 +1,297 @@
 ---
-title: "HashiCorp Vault Installation Guide"
-description: "Step-by-step guide for installing and configuring HashiCorp Vault, a secrets management tool that provides secure, centralized storage and access control for tokens, passwords, certificates, and encryption keys."
+title: HashiCorp Vault Installation Guide
+description: Install Vault 2.2, initialise and unseal the server, enable the KV v2 and AWS secrets engines, configure AppRole authentication, audit logging and automatic unsealing.
 ---
 
-HashiCorp Vault is a secrets management tool that provides a secure, centralized way to store and distribute secrets, encryption keys, and other sensitive data across your infrastructure.
+Vault is a secrets management platform. It stores tokens, passwords, certificates and
+encryption keys, and issues short-lived credentials to the applications that need them.
 
-## Prerequisites
+<Callout title="Versions used in this guide">
+  Vault **2.2.0** (IBM Vault Community Edition) · KV v2 secrets engine ·
+  Integrated Storage (Raft) for production · AppRole and AWS IAM authentication ·
+  `max_token_header_size` listener option for the 2.x hardening
+</Callout>
 
-- A 64-bit operating system
-- Minimum 2GB RAM
-- Administrative/sudo privileges
-- Network connectivity for distributed setups
-- SSL/TLS certificates (for production)
+<Callout title="Vault 1.21.x is the previous line">
+  Vault 2.x is the current major release. The 1.21.x line is still supported, and most
+  breaking changes in 2.0 are internal to the SDKs and auth plugins — but plan your
+  upgrade and read the release notes first.
+</Callout>
+
+## System Requirements
+
+- A 64-bit operating system (Linux, macOS, Windows, FreeBSD)
+- 2 GB RAM for a small deployment, 8 GB or more for a production cluster
+- A persistent disk for the Raft data store
+- TLS certificates for the listener in production
+- Root/sudo privileges to install the system service
 
 ## Installation Instructions
 
 <Tabs defaultValue="ubuntu">
   <TabsList>
     <TabsTrigger value="ubuntu">Ubuntu/Debian</TabsTrigger>
-    <TabsTrigger value="centos">CentOS/RHEL</TabsTrigger>
+    <TabsTrigger value="rpm">RHEL/CentOS</TabsTrigger>
     <TabsTrigger value="fedora">Fedora</TabsTrigger>
     <TabsTrigger value="macos">macOS</TabsTrigger>
     <TabsTrigger value="windows">Windows</TabsTrigger>
+    <TabsTrigger value="docker">Docker</TabsTrigger>
   </TabsList>
 
   <TabsContent value="ubuntu">
-    ### Ubuntu/Debian Installation
+    ### Ubuntu / Debian (apt)
 
     ```bash
-    # Add HashiCorp GPG key
-    wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+    # Add the HashiCorp signing key
+    wget -O - https://apt.releases.hashicorp.com/gpg \
+      | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
 
-    # Add HashiCorp repository
-    echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+    # Add the repository
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(grep -oP '(?<=UBUNTU_CODENAME=).*' /etc/os-release || lsb_release -cs) main" \
+      | sudo tee /etc/apt/sources.list.d/hashicorp.list
 
-    # Update and install Vault
+    # Install
     sudo apt update
-    sudo apt install vault
+    sudo apt install -y vault
+
+    vault version
     ```
   </TabsContent>
 
-  <TabsContent value="centos">
-    ### CentOS/RHEL Installation
+  <TabsContent value="rpm">
+    ### RHEL / CentOS / Rocky / Alma (dnf)
 
     ```bash
-    # Add HashiCorp repository
-    sudo yum install -y yum-utils
-    sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo
+    sudo dnf install -y dnf-plugins-core
+    sudo dnf config-manager --add-repo https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo
 
-    # Install Vault
-    sudo yum install vault
+    sudo dnf install -y vault
+
+    vault version
     ```
   </TabsContent>
 
   <TabsContent value="fedora">
-    ### Fedora Installation
+    ### Fedora (dnf)
 
     ```bash
-    # Add HashiCorp repository
     sudo dnf install -y dnf-plugins-core
     sudo dnf config-manager --add-repo https://rpm.releases.hashicorp.com/fedora/hashicorp.repo
 
-    # Install Vault
-    sudo dnf install vault
+    sudo dnf install -y vault
+
+    vault version
     ```
   </TabsContent>
 
   <TabsContent value="macos">
-    ### macOS Installation
+    ### macOS (Homebrew)
 
     ```bash
-    # Using Homebrew
     brew tap hashicorp/tap
     brew install hashicorp/tap/vault
 
-    # Update if already installed
+    # Update later with
     brew upgrade hashicorp/tap/vault
     ```
   </TabsContent>
 
   <TabsContent value="windows">
-    ### Windows Installation
+    ### Windows
 
     ```powershell
-    # Install using Chocolatey
+    # Chocolatey
     choco install vault
 
-    # Alternative: Download from official website
-    # Navigate to: https://www.vaultproject.io/downloads
-    # Download the Windows binary
-    # Add to PATH environment variable
+    # Windows Package Manager
+    winget install Hashicorp.Vault
+
+    vault version
+    ```
+
+    Or download the ZIP from
+    [releases.hashicorp.com/vault](https://releases.hashicorp.com/vault/) and add it to
+    your `PATH`.
+  </TabsContent>
+
+  <TabsContent value="docker">
+    ### Docker
+
+    ```bash
+    docker run --cap-add=IPC_LOCK \
+      --name vault \
+      --detach \
+      --publish 8200:8200 \
+      --env 'VAULT_DEV_ROOT_TOKEN_ID=myroot' \
+      --env 'VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:8200' \
+      hashicorp/vault:2.2.0
+
+    # Check it is running
+    docker logs vault
     ```
   </TabsContent>
 </Tabs>
 
-## Basic Configuration
+## Configuration
 
-### 1. Create Configuration Directory
+### Development
 
 ```bash
-sudo mkdir -p /etc/vault.d
-sudo chown -R vault:vault /etc/vault.d
+# Start a development server with an in-memory store
+vault server -dev
+
+# The root token is printed at startup
+export VAULT_ADDR='http://127.0.0.1:8200'
+export VAULT_TOKEN='<root-token-from-the-log>'
 ```
 
-### 2. Basic Server Configuration
+### Production (Integrated Storage / Raft)
 
 Create `/etc/vault.d/vault.hcl`:
 
 ```hcl
-storage "file" {
+ui = true
+
+api_addr = "https://vault.example.com:8200"
+cluster_address = "https://vault.example.com:8201"
+
+# Integrated Storage
+storage "raft" {
   path = "/opt/vault/data"
+  node_id = "vault-node-1"
+
+  retry_join {
+    node_id = "vault-node-2"
+    peer_addr = "https://vault-node-2.example.com:8201"
+  }
 }
 
 listener "tcp" {
   address     = "0.0.0.0:8200"
-  tls_disable = "true"  # Only for development
-}
-
-api_addr = "http://127.0.0.1:8200"
-ui = true
-```
-
-### 3. Production Configuration Example
-
-```hcl
-storage "raft" {
-  path = "/opt/vault/data"
-  node_id = "node1"
-}
-
-listener "tcp" {
-  address         = "0.0.0.0:8200"
+  cluster_address = "0.0.0.0:8201"
   tls_cert_file   = "/etc/vault.d/cert.pem"
   tls_key_file    = "/etc/vault.d/key.pem"
   tls_client_ca_file = "/etc/vault.d/ca.pem"
+  tls_min_version = "tls12"
+
+  # Vault 2.x bounds the size of the token headers (default 8 KB)
+  max_token_header_size = 8192
 }
 
-api_addr = "https://vault.example.com:8200"
-ui = true
+# Enable the audit device before you store anything
+disable_mlock = true
 ```
 
-## Starting Vault
-
-### Development Mode
-
 ```bash
-# Start Vault in development mode
-vault server -dev
+# Create the data directory with the right ownership
+sudo mkdir -p /opt/vault/data
+sudo chown -R vault:vault /opt/vault
+sudo chmod 750 /opt/vault
 
-# Export Vault address
-export VAULT_ADDR='http://127.0.0.1:8200'
-
-# Save the root token displayed at startup
-```
-
-### Production Mode
-
-```bash
-# Start Vault server
-sudo systemctl start vault
-
-# Enable Vault to start at boot
-sudo systemctl enable vault
-
-# Check status
+# Start the service
+sudo systemctl enable --now vault
 sudo systemctl status vault
+sudo journalctl -u vault -f
 ```
 
-## Initial Setup
-
-### 1. Initialize Vault
+## Initialising and Unsealing
 
 ```bash
-# Initialize Vault
-vault operator init
+# Initialise with 5 key shares and a threshold of 3
+vault operator init -key-shares=5 -key-threshold=3
 
-# Save the unseal keys and root token securely
-```
-
-### 2. Unseal Vault
-
-```bash
-# Unseal Vault (requires 3 keys by default)
+# Save the unseal keys and the root token somewhere safe
+# Unseal with any 3 of the 5 keys
 vault operator unseal <key1>
 vault operator unseal <key2>
 vault operator unseal <key3>
+
+# Check the status
+vault status
+
+# Log in with the root token
+vault login <root-token>
 ```
 
-### 3. Login to Vault
+<Callout title="Never store the unseal keys next to Vault">
+  The unseal keys are the master secret of your Vault. Keep them offline, in separate
+  places, and use Shamir's secret sharing for the team. In production, use automatic
+  unsealing with a cloud KMS (AWS KMS, GCP Cloud KMS, Azure Key Vault) or HSM.
+</Callout>
 
-```bash
-# Login with root token
-vault login <root_token>
+### Automatic Unsealing
+
+```hcl
+seal "awskms" {
+  region     = "eu-central-1"
+  key_id     = "arn:aws:kms:eu-central-1:123456789012:key/abcd-1234"
+  access_key = ""
+  secret_key = ""
+  iam_role_arn = "arn:aws:iam::123456789012:role/vault-unseal"
+}
 ```
 
-## Basic Operations
-
-### 1. Enable Secrets Engine
+## Secrets Engines
 
 ```bash
-# Enable KV secrets engine
+# Enable the KV v2 engine (the default path is "secret")
 vault secrets enable -path=secret kv-v2
 
-# Enable AWS secrets engine
-vault secrets enable aws
-```
+# Check what is enabled
+vault secrets list
 
-### 2. Write and Read Secrets
-
-```bash
-# Write a secret
+# Write and read a secret
 vault kv put secret/myapp/config username=myuser password=mypassword
-
-# Read a secret
 vault kv get secret/myapp/config
+vault kv get -format=json secret/myapp/config | jq -r '.data.data.password'
+
+# Enable the AWS dynamic credentials engine
+vault secrets enable aws
+vault write aws/config/root \
+  region=eu-central-1 \
+  access_key=$AWS_ACCESS_KEY_ID \
+  secret_key=$AWS_SECRET_ACCESS_KEY
+
+# Issue short-lived credentials
+vault read aws/creds/my-role
 ```
 
-## Security Configuration
-
-### 1. Enable Audit Logging
+## Authentication
 
 ```bash
-# Enable file audit device
-vault audit enable file file_path=/var/log/vault/audit.log
+# Enable AppRole — designed for machine identities
+vault auth enable approle
+
+# Create a role
+vault write auth/approle/role/my-role \
+    secret_id_ttl=10m \
+    token_num_uses=10 \
+    token_ttl=20m \
+    token_max_ttl=30m \
+    secret_id_num_uses=40
+
+# Fetch a role id and a secret id
+vault read -field=role_id auth/approle/role/my-role/role-id
+vault write -f -field=secret_id auth/approle/role/my-role/secret-id
+
+# Log in
+vault write auth/approle/login role_id=<role-id> secret_id=<secret-id>
 ```
 
-### 2. Create Policies
+```bash
+# Enable AWS IAM authentication for EC2, EKS and ECS workloads
+vault auth enable aws
+vault write auth/aws/config \
+    type=iam \
+    role_arn="arn:aws:iam::123456789012:role/vault-auth"
+
+vault write auth/aws/role/my-role \
+    bound_iam_principal_arn="arn:aws:iam::123456789012:role/my-app" \
+    policies=my-policy \
+    ttl=1h
+```
+
+## Policies
 
 Create `app-policy.hcl`:
 
@@ -233,74 +299,178 @@ Create `app-policy.hcl`:
 path "secret/data/myapp/*" {
   capabilities = ["read", "list"]
 }
-```
 
-Apply policy:
+path "auth/approle/login" {
+  capabilities = ["create", "update"]
+}
+```
 
 ```bash
 vault policy write app-policy app-policy.hcl
 ```
 
-### 3. Enable Authentication Methods
+## Audit Logging
+
+Enable at least one audit device **before** you store any secrets — audit logs are the
+only record of who accessed what.
 
 ```bash
-# Enable AppRole auth
-vault auth enable approle
+# File audit device
+vault audit enable file file_path=/var/log/vault/audit.log
 
-# Create role
-vault write auth/approle/role/my-role \
-    secret_id_ttl=10m \
-    token_num_uses=10 \
-    token_ttl=20m \
-    token_max_ttl=30m \
-    secret_id_num_uses=40
+# Syslog audit device
+vault audit enable syslog facility=local tag=vault
+
+# List the active devices
+vault audit list
+```
+
+```bash
+# Rotate the root token and create a scoped one instead
+vault token create -policy=app-policy -ttl=1h -explicit-max-ttl=4h
+```
+
+## Upgrading
+
+```bash
+# 1. Back up the data directory
+sudo systemctl stop vault
+sudo tar -czf /var/backups/vault-$(date +%F).tar.gz -C /opt/vault data
+sudo systemctl start vault
+
+# 2. Upgrade the package
+sudo apt update && sudo apt install --only-upgrade vault
+
+# 3. Restart and check the seal status
+sudo systemctl restart vault
+vault status
 ```
 
 ## Troubleshooting
 
-### Common Issues
+<Accordion type="single">
+  <AccordionItem value="issue-1">
+    <AccordionTrigger>
+      The server will not start
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # Read the log
+      sudo journalctl -u vault -n 100 --no-pager
 
-1. **Seal Status**
-   ```bash
-   # Check seal status
-   vault status
-   
-   # View server logs
-   sudo journalctl -u vault
-   ```
+      # Check the configuration
+      sudo vault operator diagnose -format=json
+      ```
+      The most common causes are a wrong file path, a missing `node_id` in the Raft
+      config, or a data directory that the `vault` user cannot write to.
+    </AccordionContent>
+  </AccordionItem>
 
-2. **Permission Issues**
-   ```bash
-   # Fix data directory permissions
-   sudo chown -R vault:vault /opt/vault
-   sudo chmod 750 /opt/vault
-   ```
+  <AccordionItem value="issue-2">
+    <AccordionTrigger>
+      The server is sealed
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      vault status
+      # Unseal with the threshold number of keys
+      vault operator unseal <key1>
+      ```
+      If the server was restarted, it seals again — that is the expected behaviour
+      unless you configure automatic unsealing.
+    </AccordionContent>
+  </AccordionItem>
 
-3. **TLS Issues**
-   - Verify certificate paths
-   - Check certificate validity
-   - Ensure proper certificate chain
+  <AccordionItem value="issue-3">
+    <AccordionTrigger>
+      "Error checking seal status: connection refused" or TLS errors
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      export VAULT_ADDR='https://vault.example.com:8200'
+      export VAULT_CACERT=/etc/vault.d/ca.pem
+
+      # Or skip verification in a lab (never in production)
+      export VAULT_SKIP_VERIFY=true
+      ```
+      Make sure `VAULT_ADDR` matches the `api_addr` in the configuration, including the
+      scheme.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-4">
+    <AccordionTrigger>
+      Permission denied errors
+    </AccordionTrigger>
+    <AccordionContent>
+      The token is missing the capability, or the policy path is wrong:
+      ```bash
+      # Check the token
+      vault token lookup
+      # Check the capabilities on a path
+      vault token capabilities secret/data/myapp/config
+      ```
+      Note that KV v2 policies use the `secret/data/...` path, not `secret/...`.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-5">
+    <AccordionTrigger>
+      mlock errors
+    </AccordionTrigger>
+    <AccordionContent>
+      Vault wants to lock memory and needs `CAP_IPC_LOCK`:
+      ```bash
+      # systemd override
+      sudo systemctl edit vault
+      ```
+      ```ini
+      [Service]
+      AmbientCapabilities=CAP_IPC_LOCK
+      CapabilityBoundingSet=CAP_IPC_LOCK
+      ```
+      Alternatively set `disable_mlock = true` and make sure swap is disabled.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-6">
+    <AccordionTrigger>
+      The Raft cluster will not form
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # Check the cluster membership
+      vault operator raft list-peers
+
+      # Check the logs for the gossip errors
+      sudo journalctl -u vault -f | grep -i raft
+      ```
+      Verify that port 8201 is open between the nodes and that every node uses the same
+      `cluster_name`.
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>
 
 ## Best Practices
 
-1. **Production Setup**
-   - Use TLS for all communications
-   - Implement proper backup strategy
-   - Use auto-unseal where possible
+1. **Use Integrated Storage (Raft)** for production instead of the file backend.
+2. **Enable automatic unsealing** with a cloud KMS and never store unseal keys with the
+   server.
+3. **Enable audit devices before you store any secrets** and ship the logs off-host.
+4. **Use short-lived, scoped tokens** — never hand out the root token to applications.
+5. **Prefer dynamic credentials** over static secrets; Vault issues AWS, database and SSH
+   credentials on demand.
+6. **Run at least three nodes** in a cluster, spread across failure domains.
+7. **Use TLS on the listener** and a `tls_min_version` of `tls12` or higher.
+8. **Back up the Raft store** and test the restore regularly.
+9. **Use the Vault Agent** to inject secrets into applications without them ever being
+   written to disk.
 
-2. **Security**
-   - Rotate root tokens regularly
-   - Use separate tokens per application
-   - Implement least privilege access
+## Next Steps
 
-3. **High Availability**
-   - Use Integrated Storage (Raft) or Consul backend
-   - Configure multiple nodes
-   - Implement proper monitoring
-
-## Additional Resources
-
-- [Official Vault Documentation](https://www.vaultproject.io/docs)
-- [Vault API Reference](https://www.vaultproject.io/api-docs)
-- [HashiCorp Learn - Vault](https://learn.hashicorp.com/vault)
-- [Vault Security Guide](https://learn.hashicorp.com/collections/vault/security) 
+- [Vault Documentation](https://developer.hashicorp.com/vault/docs)
+- [Vault API Reference](https://developer.hashicorp.com/vault/api-docs)
+- [Vault Tutorials](https://developer.hashicorp.com/vault/tutorials)
+- [HashiCorp Learn — Vault](https://learn.hashicorp.com/vault)
+- [Terraform Installation Guide](/docs/infrastructure/terraform)
+- [Consul Installation Guide](/docs/infrastructure/consul)

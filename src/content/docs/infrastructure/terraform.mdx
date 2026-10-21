@@ -1,188 +1,427 @@
 ---
-title: "Terraform Installation Guide"
-description: "A comprehensive guide for installing and configuring HashiCorp Terraform, an Infrastructure as Code (IaC) tool for building, changing, and versioning infrastructure safely and efficiently."
+title: Terraform Installation Guide
+description: Install Terraform 1.16 from the official HashiCorp repositories, configure providers and backends, write your first stack and keep state safe with locking.
 ---
 
-Terraform is HashiCorp's Infrastructure as Code (IaC) tool that lets you define both cloud and on-prem resources in human-readable configuration files that you can version, reuse, and share.
+Terraform is HashiCorp's Infrastructure as Code (IaC) tool. You describe your
+infrastructure in configuration files, and Terraform plans the changes and applies them
+against cloud and on-prem providers.
 
-## Prerequisites
+<Callout title="Versions used in this guide">
+  Terraform **1.16.6** · the official `apt.releases.hashicorp.com` and
+  `rpm.releases.hashicorp.com` repositories · native `terraform test` ·
+  `terraform providers lock` for reproducible provider versions
+</Callout>
 
-- A 64-bit operating system
-- System with at least 2GB RAM
-- Internet connection for downloading packages
-- Administrative/sudo privileges
+<Callout title="Check the licence before you commit to it">
+  Since Terraform 1.6, HashiCorp distributes the binary under the
+  [Business Source License](https://www.hashicorp.com/en/terraform/license) — free to use,
+  but it converts to a commercial licence. If you need a fully open-source licence, use
+  [OpenTofu](https://opentofu.org), a community fork of Terraform 1.5 with the same CLI and
+  configuration format.
+</Callout>
+
+## System Requirements
+
+- A 64-bit operating system (Linux, macOS, FreeBSD, Windows, or a supported container)
+- Terraform runs as a single static binary — there is no runtime dependency
+- 2 GB RAM is plenty for all but the largest state files
+- Network access to `releases.hashicorp.com` and `registry.terraform.io`
 
 ## Installation Instructions
 
 <Tabs defaultValue="ubuntu">
   <TabsList>
     <TabsTrigger value="ubuntu">Ubuntu/Debian</TabsTrigger>
-    <TabsTrigger value="centos">CentOS/RHEL</TabsTrigger>
+    <TabsTrigger value="rpm">RHEL/CentOS</TabsTrigger>
     <TabsTrigger value="fedora">Fedora</TabsTrigger>
     <TabsTrigger value="macos">macOS</TabsTrigger>
     <TabsTrigger value="windows">Windows</TabsTrigger>
+    <TabsTrigger value="docker">Docker</TabsTrigger>
   </TabsList>
 
   <TabsContent value="ubuntu">
-    ### Ubuntu/Debian Installation
+    ### Ubuntu / Debian (apt)
 
     ```bash
-    # Add HashiCorp GPG key
-    wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+    # Add the HashiCorp signing key
+    wget -O - https://apt.releases.hashicorp.com/gpg \
+      | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
 
-    # Add HashiCorp repository
-    echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+    # Add the repository
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(grep -oP '(?<=UBUNTU_CODENAME=).*' /etc/os-release || lsb_release -cs) main" \
+      | sudo tee /etc/apt/sources.list.d/hashicorp.list
 
-    # Update and install Terraform
+    # Install
     sudo apt update
-    sudo apt install terraform
+    sudo apt install -y terraform
+
+    # Verify
+    terraform version
     ```
   </TabsContent>
 
-  <TabsContent value="centos">
-    ### CentOS/RHEL Installation
+  <TabsContent value="rpm">
+    ### RHEL / CentOS / Rocky / Alma (dnf)
 
     ```bash
-    # Add HashiCorp repository
-    sudo yum install -y yum-utils
-    sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo
+    sudo dnf install -y dnf-plugins-core
+    sudo dnf config-manager --add-repo https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo
 
-    # Install Terraform
-    sudo yum install terraform
+    sudo dnf install -y terraform
+
+    terraform version
     ```
   </TabsContent>
 
   <TabsContent value="fedora">
-    ### Fedora Installation
+    ### Fedora (dnf)
 
     ```bash
-    # Add HashiCorp repository
     sudo dnf install -y dnf-plugins-core
     sudo dnf config-manager --add-repo https://rpm.releases.hashicorp.com/fedora/hashicorp.repo
 
-    # Install Terraform
-    sudo dnf install terraform
+    sudo dnf install -y terraform
+
+    terraform version
     ```
   </TabsContent>
 
   <TabsContent value="macos">
-    ### macOS Installation
+    ### macOS (Homebrew)
 
     ```bash
-    # Using Homebrew
     brew tap hashicorp/tap
     brew install hashicorp/tap/terraform
 
-    # Update if already installed
+    # Update later with
     brew upgrade hashicorp/tap/terraform
     ```
   </TabsContent>
 
   <TabsContent value="windows">
-    ### Windows Installation
+    ### Windows
 
     ```powershell
-    # Install using Chocolatey
+    # Chocolatey
     choco install terraform
 
-    # Alternative: Download from official website
-    # Navigate to: https://www.terraform.io/downloads.html
-    # Download the Windows binary
-    # Add to PATH environment variable
+    # Windows Package Manager
+    winget install Hashicorp.Terraform
+
+    # Verify
+    terraform version
     ```
+
+    Or download the ZIP from
+    [releases.hashicorp.com/terraform](https://releases.hashicorp.com/terraform/) and add
+    the folder to your `PATH`.
+  </TabsContent>
+
+  <TabsContent value="docker">
+    ### Docker
+
+    ```bash
+    docker run --rm -it \
+      -v $PWD:/work \
+      -w /work \
+      hashicorp/terraform:1.16.6 \
+      plan
+    ```
+
+    The official image is `hashicorp/terraform:<version>`. Mount your configuration
+    directory and pass the subcommand you want to run.
   </TabsContent>
 </Tabs>
 
-## Verifying Installation
+## Verifying the Installation
 
 ```bash
-# Check Terraform version
+# Version and platform
 terraform version
 
-# Initialize Terraform in a directory
+# Enable shell completion
+terraform -install-autocomplete
+source ~/.bashrc
+
+# Confirm the provider registry is reachable
 terraform init
 ```
 
-## Post-Installation Setup
+## Your First Stack
 
-### 1. Configure Auto-completion (Bash)
+Create `main.tf` in an empty directory:
 
-```bash
-# Add to ~/.bashrc
-terraform -install-autocomplete
+```hcl
+terraform {
+  required_version = ">= 1.16.0"
+
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 6.0"
+    }
+  }
+}
+
+provider "aws" {
+  region = var.region
+}
+
+resource "aws_s3_bucket" "example" {
+  bucket_prefix = "example-"
+}
+
+variable "region" {
+  type    = string
+  default = "eu-central-1"
+}
 ```
 
-### 2. Environment Variables
-
-Common environment variables to consider:
-
 ```bash
-# Provider-specific auth (example for AWS)
-export AWS_ACCESS_KEY_ID="your_access_key"
-export AWS_SECRET_ACCESS_KEY="your_secret_key"
-export AWS_DEFAULT_REGION="your_region"
+# Download the providers and the backend configuration
+terraform init
 
-# Terraform specific
-export TF_LOG=DEBUG  # For debugging
-export TF_VAR_name="value"  # For variables
+# See what would change — always run this first
+terraform plan
+
+# Apply the changes
+terraform apply
+
+# Inspect the state
+terraform show
+terraform state list
 ```
 
-## Best Practices
+### Locking Provider Versions
 
-1. **State Management**
-   - Use remote state storage (like S3, Azure Storage, or GCS)
-   - Enable state locking
-   - Use workspaces for environment separation
+Commit the lock file so every machine and every CI job uses exactly the same provider
+builds:
 
-2. **Security**
-   - Never commit sensitive credentials to version control
-   - Use variable files for environment-specific values
-   - Implement proper IAM policies
+```bash
+# Generate the lock file for all the platforms you use
+terraform providers lock -platform=linux_amd64 -platform=darwin_arm64 -platform=darwin_amd64
 
-3. **Code Organization**
-   - Use modules for reusable components
-   - Follow a consistent directory structure
-   - Implement proper tagging strategy
+# Commit .terraform.lock.hcl to version control
+```
+
+## State Management
+
+State is the record of what Terraform manages. It usually belongs in a remote backend with
+locking enabled.
+
+```hcl
+terraform {
+  backend "s3" {
+    bucket       = "my-terraform-state"
+    key          = "prod/terraform.tfstate"
+    region       = "eu-central-1"
+    dynamodb_table = "terraform-locks"
+    encrypt      = true
+  }
+}
+```
+
+```bash
+# Switch to the remote backend
+terraform init -migrate-state
+
+# A stuck lock has to be released by hand — use with care
+terraform force-unlock <LOCK_ID>
+```
+
+<Callout title="Never keep state in a Git repository">
+  State files contain the full attributes of your infrastructure, including secrets that
+  were written to resources. Keep them in an encrypted remote backend with versioning
+  enabled.
+</Callout>
+
+## Testing Your Configuration
+
+Terraform has a native test framework — no extra tooling required:
+
+```hcl
+# tests/setup.tftest.hcl
+variables {
+  bucket_prefix = "test-"
+}
+
+run "validate_bucket_name" {
+  command = plan
+
+  assert {
+    condition     = length(aws_s3_bucket.example.bucket) > 0
+    error_message = "The bucket name must not be empty"
+  }
+}
+```
+
+```bash
+# Run the tests
+terraform test
+```
+
+## Importing Existing Infrastructure
+
+Terraform 1.5 and newer can generate configuration for resources you already have:
+
+```bash
+# Generate configuration for an existing resource
+terraform plan -generate-config-out=generated.tf
+
+# Or define the import block by hand
+```
+
+```hcl
+import {
+  to = aws_s3_bucket.example
+  id = "my-existing-bucket"
+}
+```
+
+```bash
+terraform plan  # shows the import
+terraform apply
+```
+
+## Upgrading
+
+```bash
+# Check for a newer version
+terraform version
+
+# Upgrade the binary
+sudo apt update && sudo apt install --only-upgrade terraform
+
+# Upgrade the providers and re-pin them
+terraform init -upgrade
+terraform providers lock -platform=linux_amd64
+
+# Review the change before applying
+terraform plan
+```
+
+<Callout title="Upgrade the binary before the providers">
+  Terraform supports a version skew of one minor version between the CLI and providers.
+  Upgrade Terraform first, then the providers, and run `terraform plan` between the two
+  steps.
+</Callout>
 
 ## Troubleshooting
 
-### Common Issues
+<Accordion type="single">
+  <AccordionItem value="issue-1">
+    <AccordionTrigger>
+      Provider plugin errors during init
+    </AccordionTrigger>
+    <AccordionContent>
+      Clear the plugin cache and re-download:
+      ```bash
+      rm -rf .terraform .terraform.lock.hcl
+      terraform init -upgrade
+      ```
+      If the registry is unreachable behind a proxy, export `HTTPS_PROXY` before running
+      `init`.
+    </AccordionContent>
+  </AccordionItem>
 
-1. **Provider Plugin Issues**
-   ```bash
-   # Clear plugin cache
-   rm -rf ~/.terraform.d/plugins
-   terraform init -upgrade
-   ```
+  <AccordionItem value="issue-2">
+    <AccordionTrigger>
+      "Error acquiring the state lock"
+    </AccordionTrigger>
+    <AccordionContent>
+      Another run is holding the lock. Check for a running process first:
+      ```bash
+      terraform force-unlock -force <LOCK_ID>
+      ```
+      Only force-unlock when you are sure no other apply is running — two concurrent
+      applies corrupt the state.
+    </AccordionContent>
+  </AccordionItem>
 
-2. **State Lock Issues**
-   ```bash
-   # Force unlock (use with caution)
-   terraform force-unlock LOCK_ID
-   ```
+  <AccordionItem value="issue-3">
+    <AccordionTrigger>
+      Provider version conflicts
+    </AccordionTrigger>
+    <AccordionContent>
+      Two modules require incompatible provider versions. Pin the version in
+      `required_providers` and re-lock:
+      ```bash
+      terraform providers
+      terraform providers lock -platform=linux_amd64
+      ```
+    </AccordionContent>
+  </AccordionItem>
 
-3. **Version Conflicts**
-   ```bash
-   # Use specific version
-   terraform init -upgrade
-   terraform providers
-   ```
+  <AccordionItem value="issue-4">
+    <AccordionTrigger>
+      Authentication errors against the cloud provider
+    </AccordionTrigger>
+    <AccordionContent>
+      Prefer short-lived credentials over static keys. For AWS, use the OIDC integration
+      with GitHub Actions or an IAM role:
+      ```bash
+      # Local development
+      aws sso login --profile my-profile
+      export AWS_PROFILE=my-profile
+      ```
+      Then run `terraform plan` again — the error message usually names the missing
+      permission.
+    </AccordionContent>
+  </AccordionItem>
 
-### Error Resolution
+  <AccordionItem value="issue-5">
+    <AccordionTrigger>
+      "Provider produced inconsistent result after apply"
+    </AccordionTrigger>
+    <AccordionContent>
+      The provider changed a value outside Terraform's control, or a resource is being
+      modified by something else. Inspect the plan and import the drifted resource:
+      ```bash
+      terraform plan -refresh-only
+      terraform show -json | jq '.resource_changes'
+      ```
+    </AccordionContent>
+  </AccordionItem>
 
-1. **Authentication Errors**
-   - Verify credentials are properly set
-   - Check IAM permissions
-   - Validate provider configuration
+  <AccordionItem value="issue-6">
+    <AccordionTrigger>
+      Terraform is slow on large configurations
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # Show where the time goes
+      TF_LOG=INFO terraform plan
 
-2. **Network Issues**
-   - Check proxy settings
-   - Verify firewall rules
-   - Ensure registry.terraform.io is accessible
+      # Skip refreshing unchanged resources
+      terraform plan -refresh=false
+      ```
+      Split large configurations into modules and use `-target` only while debugging.
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>
 
-## Additional Resources
+## Best Practices
 
-- [Official Terraform Documentation](https://www.terraform.io/docs)
+1. **Always run `terraform plan` before `apply`** — and review the diff, do not pipe it
+   into `apply` in CI.
+2. **Commit `.terraform.lock.hcl`** so every run uses the same provider builds.
+3. **Keep state remote, encrypted and versioned**, and enable locking.
+4. **Never commit `*.tfstate` or `*.tfvars`** to Git — use a secret manager for variables.
+5. **Use modules** for anything you build twice, and pin module versions.
+6. **Write tests** with `terraform test` for every module.
+7. **Tag every resource** consistently so you can find and clean up resources later.
+8. **Use `import` blocks** to bring existing infrastructure under management instead of
+   rebuilding it.
+9. **Pin the CLI version** in CI so a new release never changes your pipeline's behaviour.
+10. **Use the `check` block** for assertions on data sources and outputs.
+
+## Next Steps
+
+- [Terraform Documentation](https://developer.hashicorp.com/terraform/docs)
 - [Terraform Registry](https://registry.terraform.io)
-- [HashiCorp Learn](https://learn.hashicorp.com/terraform)
-- [Terraform Best Practices](https://www.terraform-best-practices.com/) 
+- [OpenTofu — the open-source fork](https://opentofu.org)
+- [Terraform Test Framework](https://developer.hashicorp.com/terraform/language/tests)
+- [Kubernetes Installation Guide](/docs/containers/kubernetes)
+- [Packer Installation Guide](/docs/infrastructure/packer)
+- [Ansible Installation Guide](/docs/infrastructure/ansible)
