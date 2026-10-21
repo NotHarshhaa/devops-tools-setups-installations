@@ -1,216 +1,205 @@
 ---
 title: Prometheus Installation Guide
-description: A comprehensive guide for installing and configuring Prometheus monitoring system
+description: Install Prometheus 3.15 with node_exporter 1.12, configure scraping and alerting in the 3.x format, and understand the breaking changes when upgrading from 2.x.
 ---
 
-Prometheus is an open-source systems monitoring and alerting toolkit. It collects and stores metrics as time series data, with rich query language and alerting capabilities.
+Prometheus is an open-source monitoring and alerting toolkit. It scrapes metrics, stores
+them as time series, and evaluates rules against them.
 
-## Prerequisites
+<Callout title="Versions used in this guide">
+  Prometheus **3.15.0** · node_exporter **1.12.1** · the Prometheus 3.x configuration
+  format (`authorization`, `fallback_scrape_protocol`, UTF-8 metric names) · Alertmanager
+  **0.16+** with `api_version: v2`
+</Callout>
 
-- A system running Linux, macOS, or Windows
-- Administrative/sudo privileges
-- Terminal/Command Prompt access
-- Docker (optional, for containerized installation)
-- Sufficient disk space (recommended: 50GB+)
-- Internet connection for downloading packages
+<Callout title="Prometheus 3 is not a drop-in upgrade">
+  Prometheus 3 changed how metric names are validated, how `le` and `quantile` labels are
+  stored, and how it negotiates the scrape protocol. The
+  [migration notes](#upgrading-from-prometheus-2) at the bottom of this guide list the
+  changes that break existing dashboards and alerts.
+</Callout>
+
+## System Requirements
+
+- A 64-bit operating system: Linux, macOS or Windows
+- No runtime dependencies — Prometheus is a single Go binary
+- 2 GB RAM is enough for a small installation; disk usage is roughly 1–2 GB per retained week
+  per million active series
+- Ports 9090 (web UI and API) and 9091 (node_exporter)
 
 ## Installation Instructions
 
-<Tabs defaultValue="ubuntu">
+<Tabs defaultValue="binary">
   <TabsList>
-    <TabsTrigger value="ubuntu">Ubuntu/Debian</TabsTrigger>
-    <TabsTrigger value="centos">CentOS/RHEL</TabsTrigger>
+    <TabsTrigger value="binary">Linux (binary)</TabsTrigger>
     <TabsTrigger value="docker">Docker</TabsTrigger>
-    <TabsTrigger value="binary">Binary</TabsTrigger>
+    <TabsTrigger value="windows">Windows</TabsTrigger>
+    <TabsTrigger value="kubernetes">Kubernetes</TabsTrigger>
   </TabsList>
 
-  <TabsContent value="ubuntu">
-    ### Ubuntu/Debian Installation
+  <TabsContent value="binary">
+    ### Linux (recommended)
 
     ```bash
-    # Create Prometheus system user
-    sudo useradd --no-create-home --shell /bin/false prometheus
+    # Set the version
+    PROM_VERSION=3.15.0
 
-    # Create directories
-    sudo mkdir /etc/prometheus
-    sudo mkdir /var/lib/prometheus
-    
-    # Download Prometheus
-    wget https://github.com/prometheus/prometheus/releases/download/v2.45.0/prometheus-2.45.0.linux-amd64.tar.gz
-    
-    # Extract and move files
-    tar xvf prometheus-*.tar.gz
-    cd prometheus-*/
-    sudo cp prometheus /usr/local/bin/
-    sudo cp promtool /usr/local/bin/
-    sudo cp -r consoles/ /etc/prometheus
-    sudo cp -r console_libraries/ /etc/prometheus
-    
-    # Configure Prometheus
-    sudo tee /etc/prometheus/prometheus.yml << EOF
-global:
-  scrape_interval: 15s
+    # Create the user and directories
+    sudo useradd --system --no-create-home --shell /bin/false prometheus
+    sudo mkdir -p /etc/prometheus /var/lib/prometheus
 
-scrape_configs:
-  - job_name: 'prometheus'
-    static_configs:
-      - targets: ['localhost:9090']
-EOF
+    # Download the release
+    cd /tmp
+    curl -LO "https://github.com/prometheus/prometheus/releases/download/v${PROM_VERSION}/prometheus-${PROM_VERSION}.linux-amd64.tar.gz"
+    tar xzf "prometheus-${PROM_VERSION}.linux-amd64.tar.gz"
 
-    # Create systemd service
-    sudo tee /etc/systemd/system/prometheus.service << EOF
-[Unit]
-Description=Prometheus
-Wants=network-online.target
-After=network-online.target
+    # Install the binaries
+    sudo install -o root -g root -m 0755 "prometheus-${PROM_VERSION}.linux-amd64/prometheus" /usr/local/bin/prometheus
+    sudo install -o root -g root -m 0755 "prometheus-${PROM_VERSION}.linux-amd64/promtool" /usr/local/bin/promtool
 
-[Service]
-User=prometheus
-Group=prometheus
-Type=simple
-ExecStart=/usr/local/bin/prometheus \
-    --config.file /etc/prometheus/prometheus.yml \
-    --storage.tsdb.path /var/lib/prometheus/ \
-    --web.console.templates=/etc/prometheus/consoles \
-    --web.console.libraries=/etc/prometheus/console_libraries
+    # Clean up
+    rm -rf "prometheus-${PROM_VERSION}.linux-amd64" "prometheus-${PROM_VERSION}.linux-amd64.tar.gz"
 
-[Install]
-WantedBy=multi-user.target
-EOF
-
-    # Set permissions
-    sudo chown -R prometheus:prometheus /etc/prometheus
-    sudo chown -R prometheus:prometheus /var/lib/prometheus
-
-    # Start Prometheus
-    sudo systemctl daemon-reload
-    sudo systemctl start prometheus
-    sudo systemctl enable prometheus
+    # Verify
+    prometheus --version
+    promtool --version
     ```
-  </TabsContent>
 
-  <TabsContent value="centos">
-    ### CentOS/RHEL Installation
+    On ARM64 use `prometheus-${PROM_VERSION}.linux-arm64.tar.gz`.
+
+    <Callout title="The classic console UI is gone">
+      Prometheus 3 removed the old `consoles/` templates, so the
+      `--web.console.templates` and `--web.console.libraries` flags no longer exist. The
+      React UI at `http://localhost:9090` replaced them.
+    </Callout>
+
+    #### Create the systemd service
 
     ```bash
-    # Create Prometheus user
-    sudo useradd --no-create-home --shell /bin/false prometheus
+    sudo tee /etc/systemd/system/prometheus.service > /dev/null <<'EOF'
+    [Unit]
+    Description=Prometheus
+    Wants=network-online.target
+    After=network-online.target
 
-    # Create directories
-    sudo mkdir /etc/prometheus
-    sudo mkdir /var/lib/prometheus
+    [Service]
+    Type=simple
+    User=prometheus
+    Group=prometheus
+    ExecStart=/usr/local/bin/prometheus \
+        --config.file=/etc/prometheus/prometheus.yml \
+        --storage.tsdb.path=/var/lib/prometheus/ \
+        --storage.tsdb.retention.time=15d \
+        --storage.tsdb.retention.size=50GB \
+        --web.enable-lifecycle
+    Restart=always
+    RestartSec=5
 
-    # Download Prometheus
-    wget https://github.com/prometheus/prometheus/releases/download/v2.45.0/prometheus-2.45.0.linux-amd64.tar.gz
+    [Install]
+    WantedBy=multi-user.target
+    EOF
 
-    # Extract and move files
-    tar xvf prometheus-*.tar.gz
-    cd prometheus-*/
-    sudo cp prometheus /usr/local/bin/
-    sudo cp promtool /usr/local/bin/
-    sudo cp -r consoles/ /etc/prometheus
-    sudo cp -r console_libraries/ /etc/prometheus
+    # Permissions
+    sudo chown -R prometheus:prometheus /etc/prometheus /var/lib/prometheus
 
-    # Configure Prometheus (same configuration as Ubuntu)
-    sudo tee /etc/prometheus/prometheus.yml << EOF
-global:
-  scrape_interval: 15s
-
-scrape_configs:
-  - job_name: 'prometheus'
-    static_configs:
-      - targets: ['localhost:9090']
-EOF
-
-    # Create systemd service (same as Ubuntu)
-    sudo tee /etc/systemd/system/prometheus.service << EOF
-[Unit]
-Description=Prometheus
-Wants=network-online.target
-After=network-online.target
-
-[Service]
-User=prometheus
-Group=prometheus
-Type=simple
-ExecStart=/usr/local/bin/prometheus \
-    --config.file /etc/prometheus/prometheus.yml \
-    --storage.tsdb.path /var/lib/prometheus/ \
-    --web.console.templates=/etc/prometheus/consoles \
-    --web.console.libraries=/etc/prometheus/console_libraries
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-    # Set permissions
-    sudo chown -R prometheus:prometheus /etc/prometheus
-    sudo chown -R prometheus:prometheus /var/lib/prometheus
-
-    # Start and enable Prometheus
+    # Start it
     sudo systemctl daemon-reload
-    sudo systemctl start prometheus
-    sudo systemctl enable prometheus
+    sudo systemctl enable --now prometheus
+    sudo systemctl status prometheus
     ```
+
+    <Callout title="Prometheus 3 is container-aware">
+      Prometheus 3 sets `GOMEMLIMIT` and `GOMAXPROCS` automatically from the container
+      memory and CPU limits, so the JVM-style heap tuning of 2.x is no longer needed. Use
+      `--no-auto-gomemlimit` to opt out.
+    </Callout>
   </TabsContent>
 
   <TabsContent value="docker">
-    ### Docker Installation
+    ### Docker
 
     ```bash
-    # Create directories for Prometheus data and config
-    mkdir -p prometheus/data
-    
-    # Create Prometheus configuration
-    cat << EOF > prometheus/prometheus.yml
-global:
-  scrape_interval: 15s
+    # Create the configuration
+    mkdir -p prometheus
+    cat <<'EOF' > prometheus/prometheus.yml
+    global:
+      scrape_interval: 15s
 
-scrape_configs:
-  - job_name: 'prometheus'
-    static_configs:
-      - targets: ['localhost:9090']
-EOF
+    scrape_configs:
+      - job_name: 'prometheus'
+        static_configs:
+          - targets: ['localhost:9090']
+    EOF
 
-    # Run Prometheus container
+    # Run it
     docker run -d \
       --name prometheus \
+      --restart unless-stopped \
       -p 9090:9090 \
-      -v $(pwd)/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml \
-      -v $(pwd)/prometheus/data:/prometheus \
-      prom/prometheus:v2.45.0
+      -v "$(pwd)/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro" \
+      -v prometheus-data:/prometheus \
+      --user "$(id -u):$(id -g)" \
+      prom/prometheus:v3.15.0
+    ```
+
+    <Callout title="Do not run the container as root">
+      Passing `--user "$(id -u):$(id -g)"` avoids the permission problems that come from
+      the container writing as root into a bind-mounted volume.
+    </Callout>
+  </TabsContent>
+
+  <TabsContent value="windows">
+    ### Windows
+
+    ```powershell
+    # Download the release
+    $PROM_VERSION = "3.15.0"
+    Invoke-WebRequest -Uri "https://github.com/prometheus/prometheus/releases/download/v$PROM_VERSION/prometheus-$PROM_VERSION.windows-amd64.zip" -OutFile prometheus.zip
+
+    # Extract it
+    Expand-Archive prometheus.zip -DestinationPath C:\prometheus
+
+    # Run it
+    C:\prometheus\prometheus.exe --config.file=C:\prometheus\prometheus.yml
     ```
   </TabsContent>
 
-  <TabsContent value="binary">
-    ### Binary Installation
+  <TabsContent value="kubernetes">
+    ### Kubernetes (Helm)
 
     ```bash
-    # Download Prometheus
-    wget https://github.com/prometheus/prometheus/releases/download/v2.45.0/prometheus-2.45.0.linux-amd64.tar.gz
-    
-    # Extract archive
-    tar xvf prometheus-*.tar.gz
-    cd prometheus-*/
-    
-    # Run Prometheus
-    ./prometheus --config.file=prometheus.yml
+    helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+    helm repo update
+
+    helm search repo prometheus-community/prometheus
+
+    helm install prometheus prometheus-community/prometheus \
+      --namespace monitoring --create-namespace \
+      --set alertmanager.enabled=true \
+      --set server.persistentVolume.enabled=true
     ```
+
+    For a long-term store, use the Mimir or Thanos chart instead — Prometheus alone is not
+    a highly available metrics backend.
   </TabsContent>
 </Tabs>
 
-## Post-Installation Configuration
+## Configuration
 
-### Basic Configuration File (prometheus.yml)
+### prometheus.yml
 
 ```yaml
 global:
   scrape_interval: 15s
+  scrape_timeout: 10s
   evaluation_interval: 15s
 
+  # Prometheus 3 validates names as UTF-8 by default. Set this to "legacy" to keep
+  # the Prometheus 2.x behaviour of rejecting names with dots or dashes.
+  metric_name_validation_scheme: utf8
+
 rule_files:
-  # - "first.rules"
-  # - "second.rules"
+  - /etc/prometheus/rules/*.yml
 
 scrape_configs:
   - job_name: prometheus
@@ -220,115 +209,327 @@ scrape_configs:
   - job_name: node
     static_configs:
       - targets: ['localhost:9100']
+
+  - job_name: 'kubernetes-apiservers'
+    kubernetes_sd_configs:
+      - role: endpoints
+    scheme: https
+    tls_config:
+      ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+    bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+    # Prometheus 3 fails the scrape when the target does not send a supported
+    # Content-Type. This is the safe fallback for older exporters.
+    fallback_scrape_protocol: PrometheusText0.0.4
 ```
 
-### Adding Node Exporter
+### Authentication for Scrape Targets
+
+Prometheus 3 uses the `authorization` block. `basic_auth` still works, but `authorization`
+covers both basic auth and bearer tokens:
+
+```yaml
+scrape_configs:
+  - job_name: api
+    authorization:
+      type: Basic
+      credentials: <base64 of username:password>
+    static_configs:
+      - targets: ['api.example.com:9100']
+
+  - job_name: cloud-metrics
+    authorization:
+      type: Bearer
+      credentials_file: /etc/prometheus/token
+    static_configs:
+      - targets: ['metrics.example.com:443']
+    tls_config:
+      ca_file: /etc/prometheus/ca.pem
+```
+
+### Alerting Rules
+
+Create `/etc/prometheus/rules/alerts.yml`:
+
+```yaml
+groups:
+  - name: instance-health
+    rules:
+      - alert: InstanceDown
+        expr: up == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Instance {{ $labels.instance }} is down"
+          description: "{{ $labels.job }} on {{ $labels.instance }} has been down for 5 minutes."
+
+      - alert: HighMemoryUsage
+        expr: (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) > 0.9
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+```
 
 ```bash
-# Install Node Exporter (Ubuntu/Debian)
-wget https://github.com/prometheus/node_exporter/releases/download/v1.6.0/node_exporter-1.6.0.linux-amd64.tar.gz
-tar xvf node_exporter-*.tar.gz
-sudo cp node_exporter-*/node_exporter /usr/local/bin
-sudo useradd -rs /bin/false node_exporter
+# Validate the configuration before reloading
+sudo promtool check config /etc/prometheus/prometheus.yml
+sudo promtool check rules /etc/prometheus/rules/alerts.yml
 
-# Create systemd service for Node Exporter
-sudo tee /etc/systemd/system/node_exporter.service << EOF
+# Reload without restarting
+sudo systemctl reload prometheus
+# or: curl -X POST http://localhost:9090/-/reload
+```
+
+<Callout title="Alertmanager v2 API only">
+  Prometheus 3 removed support for Alertmanager's v1 API. You need **Alertmanager 0.16 or
+  newer** and `api_version: v2` in the `alerting` section — otherwise Prometheus refuses
+  to start.
+</Callout>
+
+## Adding node_exporter
+
+```bash
+# Create the user
+sudo useradd --system --no-create-home --shell /bin/false node_exporter
+
+# Download node_exporter 1.12.1
+cd /tmp
+curl -LO "https://github.com/prometheus/node_exporter/releases/download/v1.12.1/node_exporter-1.12.1.linux-amd64.tar.gz"
+tar xzf "node_exporter-1.12.1.linux-amd64.tar.gz"
+sudo install -o root -g root -m 0755 "node_exporter-1.12.1.linux-amd64/node_exporter" /usr/local/bin/node_exporter
+rm -rf node_exporter-1.12.1*
+
+# Create the systemd service
+sudo tee /etc/systemd/system/node_exporter.service > /dev/null <<'EOF'
 [Unit]
 Description=Node Exporter
 After=network.target
 
 [Service]
+Type=simple
 User=node_exporter
 Group=node_exporter
-Type=simple
 ExecStart=/usr/local/bin/node_exporter
+Restart=always
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
-# Start Node Exporter
 sudo systemctl daemon-reload
-sudo systemctl start node_exporter
-sudo systemctl enable node_exporter
+sudo systemctl enable --now node_exporter
 ```
 
 ## Verification
 
-Verify the installation by:
-
-1. Checking the Prometheus service status:
 ```bash
+# The service is running
 sudo systemctl status prometheus
+
+# The targets are up
+curl -s http://localhost:9090/api/v1/targets | jq '.data.activeTargets[] | {job: .labels.job, health: .health}'
+
+# The metrics endpoint serves data
+curl -s http://localhost:9090/metrics | head
+
+# Query it
+curl -s 'http://localhost:9090/api/v1/query?query=up' | jq .
+
+# Check the TSDB
+promtool tsdb analyze /var/lib/prometheus
 ```
 
-2. Accessing the Prometheus web interface:
-```
-http://localhost:9090
-```
+The web UI at `http://localhost:9090` has the **Status → Targets** page — every target
+should be green there.
 
-3. Verifying metrics collection:
-```
-http://localhost:9090/metrics
-```
+## Common Operations
 
-## Common Configuration Options
-
-### Setting Up Basic Authentication
-
-1. Create password file:
 ```bash
-sudo apt install apache2-utils
-sudo htpasswd -c /etc/prometheus/.htpasswd admin
+# Reload the configuration
+curl -X POST http://localhost:9090/-/reload
+sudo systemctl reload prometheus
+
+# Check which flags are in effect
+curl -s http://localhost:9090/api/v1/status/flags | jq .
+
+# Check the runtime information
+curl -s http://localhost:9090/api/v1/status/runtimeinfo | jq .
+
+# TSDB analysis — find the biggest cardinality offenders
+promtool tsdb analyze /var/lib/prometheus --top 10
+
+# Download a TSDB block for offline analysis
+promtool tsdb create-blocks-from rules /path/to/prometheus /path/to/output
 ```
 
-2. Update Prometheus configuration:
-```yaml
-web:
-  basic_auth_users:
-    admin: <hashed-password>
-```
+### Retention and Storage
 
-### Configuring Retention
-
-Update the Prometheus service file with retention settings:
 ```bash
+# In the systemd unit
 ExecStart=/usr/local/bin/prometheus \
-    --storage.tsdb.retention.time=15d \
-    --storage.tsdb.retention.size=50GB
+    --storage.tsdb.path=/var/lib/prometheus/ \
+    --storage.tsdb.retention.time=30d \
+    --storage.tsdb.retention.size=80GB
 ```
+
+Retention is applied when **either** limit is reached, so set both a time and a size
+limit to avoid filling the disk.
 
 ## Troubleshooting
 
-### Common Issues
+<Accordion type="single">
+  <AccordionItem value="issue-1">
+    <AccordionTrigger>
+      Prometheus will not start
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      sudo journalctl -u prometheus -n 50 --no-pager
+      sudo promtool check config /etc/prometheus/prometheus.yml
+      ```
+      A common cause in 3.x is an old Alertmanager configuration: Prometheus 3 requires
+      `api_version: v2` and refuses to start with the v1 API.
+    </AccordionContent>
+  </AccordionItem>
 
-1. **Service Won't Start**
-   - Check logs: `sudo journalctl -u prometheus`
-   - Verify permissions on data directory
-   - Validate configuration file syntax
+  <AccordionItem value="issue-2">
+    <AccordionTrigger>
+      Targets show as "down"
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # From the Prometheus host
+      curl -v http://<target>:9100/metrics
 
-2. **Cannot Scrape Targets**
-   - Check firewall settings
-   - Verify target endpoints are accessible
-   - Check network connectivity
+      # And from Prometheus itself
+      curl -s http://localhost:9090/api/v1/targets | jq '.data.activeTargets[].lastError'
+      ```
+      In Prometheus 3 a missing or unparsable `Content-Type` header makes the scrape fail.
+      Either fix the exporter or set `fallback_scrape_protocol` on the job.
+    </AccordionContent>
+  </AccordionItem>
 
-3. **High Memory Usage**
-   - Adjust retention period
-   - Review query patterns
-   - Consider federation or remote storage
+  <AccordionItem value="issue-3">
+    <AccordionTrigger>
+      Alerts stopped firing after the upgrade
+    </AccordionTrigger>
+    <AccordionContent>
+      Prometheus 3 normalises the `le` label of classic histograms and the `quantile`
+      label of summaries to float form. An alert on `le="1"` no longer matches — it has
+      to be `le="1.0"`. Check the affected rules:
+      ```bash
+      grep -rn 'le="' /etc/prometheus/rules/
+      ```
+    </AccordionContent>
+  </AccordionItem>
 
-## Security Considerations
+  <AccordionItem value="issue-4">
+    <AccordionTrigger>
+      Out of memory or the container is killed
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # How much are we using?
+      ps -o pid,rss,cmd -C prometheus
 
-1. Use HTTPS for web interface
-2. Implement authentication
-3. Use secure passwords and rotate regularly
-4. Restrict network access
-5. Keep Prometheus and exporters updated
-6. Use minimal permissions for service accounts
+      # Reduce the retained data
+      sudo systemctl edit prometheus
+      ```
+      ```ini
+      [Service]
+      ExecStart=
+      ExecStart=/usr/local/bin/prometheus --config.file=/etc/prometheus/prometheus.yml --storage.tsdb.path=/var/lib/prometheus/ --storage.tsdb.retention.time=7d
+      ```
+      Prometheus 3 sets `GOMEMLIMIT` from the container limit automatically — set
+      `--storage.tsdb.retention.size` as well so the disk cannot fill up.
+    </AccordionContent>
+  </AccordionItem>
 
-## Additional Resources
+  <AccordionItem value="issue-5">
+    <AccordionTrigger>
+      The disk fills up with TSDB blocks
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # See what is using space
+      sudo du -sh /var/lib/prometheus
+      promtool tsdb analyze /var/lib/prometheus --top 10
 
-- [Official Prometheus Documentation](https://prometheus.io/docs/introduction/overview/)
-- [Prometheus Best Practices](https://prometheus.io/docs/practices/naming/)
-- [PromQL Tutorial](https://prometheus.io/docs/prometheus/latest/querying/basics/)
-- [Alerting Rules](https://prometheus.io/docs/prometheus/latest/configuration/alerting_rules/) 
+      # Lower the retention
+      sudo systemctl edit prometheus
+      ```
+      High cardinality is the usual cause — `promtool tsdb analyze` shows the series that
+      are responsible. Use `metric_relabel_configs` to drop them at scrape time.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-6">
+    <AccordionTrigger>
+      Cannot downgrade to Prometheus 2.x
+    </AccordionTrigger>
+    <AccordionContent>
+      The TSDB format changed in 2.55, so a Prometheus 3 data directory can only be read
+      by 2.55 or newer. If you need to go back, upgrade to 2.55 first, or export the data
+      with `promtool tsdb create-blocks-from` and reload it elsewhere.
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>
+
+## Upgrading from Prometheus 2
+
+The changes in Prometheus 3 that break existing setups:
+
+| Change | What to do |
+| --- | --- |
+| UTF-8 metric names allowed by default | Set `metric_name_validation_scheme: legacy` to keep the old validation, or rename the affected metrics |
+| `le` and `quantile` labels normalised to float form | Update alerts and dashboards that reference `le="1"` to `le="1.0"` |
+| Stricter `Content-Type` handling on scrape | Fix the exporters, or set `fallback_scrape_protocol` per job |
+| Alertmanager v1 API removed | Upgrade to Alertmanager 0.16+ and use `api_version: v2` |
+| Range selectors are now left-open | Rewrite subqueries that relied on the extra boundary sample, for example `foo[1m:1m]` to `foo[2m:1m]` |
+| TSDB format changed | Only Prometheus 2.55+ can read a 3.x data directory |
+| Log format switched to `log/slog` | Update any log parsers that expected the old format |
+
+```bash
+# 1. Upgrade to 2.55 first and confirm everything works
+# 2. Stop Prometheus
+sudo systemctl stop prometheus
+
+# 3. Install the new release
+sudo tar xzf prometheus-3.15.0.linux-amd64.tar.gz --strip-components=1 -C /usr/local/bin
+
+# 4. Validate the configuration with the new binary
+sudo promtool check config /etc/prometheus/prometheus.yml
+
+# 5. Start it again
+sudo systemctl start prometheus
+```
+
+## Best Practices
+
+1. **Use `promtool check config` in CI** so a broken configuration never reaches the
+   server.
+2. **Set both retention limits** — time and size — so a spike in series cannot fill the
+   disk.
+3. **Record rules for expensive queries** instead of running them on every dashboard
+   refresh.
+4. **Use `metric_relabel_configs` to drop high-cardinality labels** at scrape time.
+5. **Enable `--web.enable-lifecycle`** so you can reload instead of restarting.
+6. **Use the `authorization` block** with a `credentials_file` rather than putting
+   secrets in the configuration.
+7. **Run Prometheus behind a load balancer with two replicas** and a remote-write target
+   for durability.
+8. **Monitor Prometheus itself** — the `prometheus_*` metrics tell you when scraping or
+   the TSDB is in trouble.
+
+## Next Steps
+
+- [Prometheus Documentation](https://prometheus.io/docs/introduction/overview/)
+- [Prometheus 3.0 Migration Guide](https://prometheus.io/docs/prometheus/latest/migration/)
+- [Configuration Reference](https://prometheus.io/docs/prometheus/latest/configuration/configuration/)
+- [PromQL Basics](https://prometheus.io/docs/prometheus/latest/querying/basics/)
+- [node_exporter](https://github.com/prometheus/node_exporter)
+- [Grafana Installation Guide](/docs/monitoring/grafana)
+- [Kubernetes Installation Guide](/docs/containers/kubernetes)

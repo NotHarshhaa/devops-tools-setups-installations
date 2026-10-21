@@ -1,232 +1,315 @@
 ---
 title: Grafana Installation Guide
-description: A comprehensive guide for installing and configuring Grafana visualization platform
+description: Install Grafana 13.2 on Linux, Windows, macOS, Docker and Kubernetes, connect Prometheus as a data source, and size the deployment for production.
 ---
 
-Grafana is an open-source analytics and interactive visualization web application. It provides charts, graphs, and alerts for the web when connected to supported data sources.
+Grafana is the visualization layer for metrics, logs and traces. It queries Prometheus,
+Loki, Tempo, Elasticsearch and dozens of other backends, and turns them into dashboards
+and alerts.
 
-## Prerequisites
+<Callout title="Versions used in this guide">
+  Grafana **13.2.4** · the official `apt.grafana.com` and `rpm.grafana.com` repositories ·
+  the `grafana server` binary · MySQL 8.0+ or PostgreSQL 12+ for production
+</Callout>
 
-- A system running Linux, macOS, or Windows
-- Administrative/sudo privileges
-- Terminal/Command Prompt access
-- Minimum 2GB RAM
-- 1GB free disk space
-- Internet connection for downloading packages
+<Callout title="Grafana Enterprise is now the default download">
+  Grafana Labs now recommends the **Enterprise** edition — it is functionally identical
+  to OSS and free to use, with the Enterprise feature set unlocked by a licence. The
+  package is `grafana-enterprise`; `grafana` is still the OSS package.
+</Callout>
+
+## System Requirements
+
+| Tier | CPU | Memory | Disk | Instances |
+| --- | --- | --- | --- | --- |
+| Small (under 25 users) | 2 cores | 2–4 GB | 10–20 GB SSD | 1 |
+| Medium (25–200 users) | 4–8 cores | 8–16 GB | 20–50 GB SSD | 2 (load balanced) |
+| Large (200+ users) | 8–16+ cores | 16–32+ GB | 50+ GB SSD | 3+ (load balanced) |
+
+- A supported database: SQLite 3 (development only), MySQL 8.0+ or PostgreSQL 12+
+- A current browser with JavaScript enabled
 
 ## Installation Instructions
 
 <Tabs defaultValue="ubuntu">
   <TabsList>
     <TabsTrigger value="ubuntu">Ubuntu/Debian</TabsTrigger>
-    <TabsTrigger value="centos">CentOS/RHEL</TabsTrigger>
+    <TabsTrigger value="rpm">RHEL/CentOS</TabsTrigger>
     <TabsTrigger value="docker">Docker</TabsTrigger>
-    <TabsTrigger value="binary">Binary</TabsTrigger>
+    <TabsTrigger value="windows">Windows</TabsTrigger>
+    <TabsTrigger value="macos">macOS</TabsTrigger>
+    <TabsTrigger value="kubernetes">Kubernetes</TabsTrigger>
   </TabsList>
 
   <TabsContent value="ubuntu">
-    ### Ubuntu/Debian Installation
+    ### Ubuntu / Debian (apt)
 
     ```bash
-    # Install required dependencies
-    sudo apt-get install -y apt-transport-https software-properties-common
+    # Prerequisites
+    sudo apt-get install -y apt-transport-https wget gnupg
 
-    # Add Grafana GPG key
-    wget -q -O - https://apt.grafana.com/gpg.key | sudo apt-key add -
+    # Import the GPG key into a keyring
+    sudo mkdir -p /etc/apt/keyrings
+    sudo wget -O /etc/apt/keyrings/grafana.asc https://apt.grafana.com/gpg-full.key
+    sudo chmod 644 /etc/apt/keyrings/grafana.asc
 
-    # Add Grafana repository
-    echo "deb https://apt.grafana.com stable main" | sudo tee -a /etc/apt/sources.list.d/grafana.list
+    # Add the repository
+    echo "deb [signed-by=/etc/apt/keyrings/grafana.asc] https://apt.grafana.com stable main" \
+      | sudo tee /etc/apt/sources.list.d/grafana.list
 
-    # Update package list
+    # Install
     sudo apt-get update
+    sudo apt-get install -y grafana          # OSS
+    # sudo apt-get install -y grafana-enterprise   # Enterprise
 
-    # Install Grafana
-    sudo apt-get install grafana -y
-
-    # Start Grafana service
-    sudo systemctl start grafana-server
-    sudo systemctl enable grafana-server
+    # Start and enable the service
+    sudo systemctl enable --now grafana-server
+    sudo systemctl status grafana-server
     ```
+
+    <Callout title="apt-key is gone">
+      The old `apt-key add` command no longer exists on Ubuntu 22.04+ and Debian 12. The
+      key now lives in `/etc/apt/keyrings/grafana.asc` and is referenced with
+      `signed-by=`.
+    </Callout>
   </TabsContent>
 
-  <TabsContent value="centos">
-    ### CentOS/RHEL Installation
+  <TabsContent value="rpm">
+    ### RHEL / CentOS / Rocky / Alma (dnf)
 
     ```bash
-    # Create repository file
-    cat << EOF | sudo tee /etc/yum.repos.d/grafana.repo
-[grafana]
-name=grafana
-baseurl=https://rpm.grafana.com
-repo_gpgcheck=1
-enabled=1
-gpgcheck=1
-gpgkey=https://rpm.grafana.com/gpg.key
-sslverify=1
-sslcacert=/etc/pki/tls/certs/ca-bundle.crt
-EOF
+    # Create the repository file
+    sudo tee /etc/yum.repos.d/grafana.repo > /dev/null <<'EOF'
+    [grafana]
+    name=grafana
+    baseurl=https://rpm.grafana.com
+    repo_gpgcheck=1
+    enabled=1
+    gpgcheck=1
+    gpgkey=https://rpm.grafana.com/gpg.key
+    sslverify=1
+    sslcacert=/etc/pki/tls/certs/ca-bundle.crt
+    EOF
 
-    # Install Grafana
-    sudo yum install grafana -y
+    # Install
+    sudo dnf install -y grafana
+    # sudo dnf install -y grafana-enterprise
 
-    # Start Grafana service
-    sudo systemctl start grafana-server
-    sudo systemctl enable grafana-server
+    sudo systemctl enable --now grafana-server
     ```
   </TabsContent>
 
   <TabsContent value="docker">
-    ### Docker Installation
+    ### Docker
 
     ```bash
-    # Create persistent storage volume
+    # Create the storage volume
     docker volume create grafana-storage
 
-    # Run Grafana container
+    # Run it
     docker run -d \
-      --name=grafana \
+      --name grafana \
+      --restart unless-stopped \
       -p 3000:3000 \
       -v grafana-storage:/var/lib/grafana \
-      grafana/grafana:latest
+      -e GF_SECURITY_ADMIN_PASSWORD='your_secure_password' \
+      -e GF_INSTALL_PLUGINS='grafana-clock-panel,grafana-simple-json-datasource' \
+      grafana/grafana:13.2.4
+    ```
 
-    # For production with additional settings
-    docker run -d \
-      --name=grafana \
-      -p 3000:3000 \
-      -v grafana-storage:/var/lib/grafana \
-      -e "GF_SECURITY_ADMIN_PASSWORD=your_secure_password" \
-      -e "GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource" \
-      grafana/grafana:latest
+    <Callout title="Always set the admin password">
+      Without `GF_SECURITY_ADMIN_PASSWORD` the container keeps the default `admin/admin`
+      credentials. Set the variable, or mount a `custom.ini` with a proper password.
+    </Callout>
+  </TabsContent>
+
+  <TabsContent value="windows">
+    ### Windows
+
+    ```powershell
+    # Chocolatey
+    choco install grafana
+
+    # Or the MSI from https://grafana.com/docs/grafana/latest/setup-grafana/installation/windows/
+    # The service is called grafana-server
+    Start-Service grafana-server
     ```
   </TabsContent>
 
-  <TabsContent value="binary">
-    ### Binary Installation
+  <TabsContent value="macos">
+    ### macOS (Homebrew)
 
     ```bash
-    # Download latest Grafana
-    wget https://dl.grafana.com/enterprise/release/grafana-enterprise-9.5.2.linux-amd64.tar.gz
+    brew install grafana
+    brew services start grafana
+    ```
+  </TabsContent>
 
-    # Extract archive
-    tar -zxvf grafana-enterprise-9.5.2.linux-amd64.tar.gz
+  <TabsContent value="kubernetes">
+    ### Kubernetes (Helm)
 
-    # Move to /opt
-    sudo mv grafana-9.5.2 /opt/grafana
+    ```bash
+    helm repo add grafana https://grafana.github.io/grafana-helm-charts
+    helm repo update
 
-    # Create Grafana user
-    sudo useradd --system --no-create-home grafana
+    helm search repo grafana/grafana
 
-    # Set permissions
-    sudo chown -R grafana:grafana /opt/grafana
-
-    # Create systemd service
-    sudo tee /etc/systemd/system/grafana.service << EOF
-[Unit]
-Description=Grafana
-Documentation=https://grafana.com/docs/
-Wants=network-online.target
-After=network-online.target
-
-[Service]
-User=grafana
-Group=grafana
-Type=simple
-ExecStart=/opt/grafana/bin/grafana-server \
-  --config=/opt/grafana/conf/defaults.ini \
-  --homepath=/opt/grafana
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-    # Start Grafana
-    sudo systemctl daemon-reload
-    sudo systemctl start grafana
-    sudo systemctl enable grafana
+    helm install grafana grafana/grafana \
+      --namespace monitoring --create-namespace \
+      --set persistence.enabled=true \
+      --set adminPassword='your_secure_password'
     ```
   </TabsContent>
 </Tabs>
 
-## Post-Installation Configuration
+## Verifying the Installation
 
-### Initial Setup
+```bash
+# The service is running
+sudo systemctl status grafana-server
 
-1. Access Grafana web interface:
+# The health endpoint
+curl -s http://localhost:3000/api/health
+
+# The version
+curl -s http://localhost:3000/api/health | jq .
 ```
-http://localhost:3000
-```
 
-2. Default login credentials:
-- Username: `admin`
-- Password: `admin`
+Open `http://localhost:3000` and sign in with `admin` / `admin` — Grafana asks you to
+change the password immediately.
 
-3. You'll be prompted to change the password on first login.
+## Configuration
 
-### Basic Configuration File (grafana.ini)
+Grafana reads `/etc/grafana/grafana.ini`. Every setting can also be set with an
+environment variable: `GF_<SECTION>_<KEY>`, for example `GF_SECURITY_ADMIN_PASSWORD` or
+`GF_SERVER_HTTP_PORT`.
 
 ```ini
 [server]
 http_port = 3000
-domain = localhost
+domain = grafana.example.com
+root_url = https://grafana.example.com
 
 [security]
 admin_user = admin
-# Disable user signup
+admin_password = change-me
 allow_sign_up = false
+cookie_secure = true
+# Set to "none" when Grafana runs behind a proxy that terminates TLS
+cookie_samesite = strict
+
+[users]
+allow_sign_up = false
+default_theme = dark
 
 [auth.anonymous]
 enabled = false
 
+[auth.basic]
+enabled = true
+
+[auth.oauth.github]
+enabled = true
+client_id = your-client-id
+client_secret = your-client-secret
+scopes = user:email
+allow_sign_up = true
+
+[database]
+type = postgres
+host = localhost:5432
+name = grafana
+user = grafana
+password = your-password
+ssl_mode = require
+
 [smtp]
-enabled = false
-# Configure for email alerts
-# host = smtp.gmail.com:587
-# user = your-email@gmail.com
-# password = your-app-specific-password
+enabled = true
+host = smtp.example.com:587
+user = grafana@example.com
+password = your-app-password
+from_address = grafana@example.com
+from_name = Grafana
+
+[unified_alerting]
+enabled = true
+
+[alerting]
+enabled = true
 ```
 
-### Adding Data Sources
+<Callout title="Set `root_url` when you run behind a proxy">
+  Without it, Grafana generates links with `localhost`, and OAuth redirects and
+  "email me" links break.
+</Callout>
 
-1. Click on Configuration (gear icon) > Data Sources
-2. Click "Add data source"
-3. Select your data source type (e.g., Prometheus)
-4. Configure the connection details:
+## Connecting Prometheus
+
+1. Open **Connections → Data sources → Add data source**
+2. Choose **Prometheus**
+3. Set the URL to your Prometheus instance (`http://prometheus:9090` in Docker, or
+   `http://localhost:9090`)
+4. Set **Prometheus type** to **Prometheus**
+5. Leave **Access** as **Server (default)** and click **Save & test**
+
+```bash
+# You can also provision it from a file
+```
+
 ```yaml
-URL: http://localhost:9090  # For local Prometheus
-Access: Server (default)
-Scrape interval: 15s
+# /etc/grafana/provisioning/datasources/prometheus.yaml
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://localhost:9090
+    isDefault: true
+    editable: true
 ```
 
-## Verification
+## Provisioning Dashboards and Datasources
 
-1. Check service status:
-```bash
-sudo systemctl status grafana-server
+```yaml
+# /etc/grafana/provisioning/datasources/datasources.yaml
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
 ```
 
-2. Verify logs:
-```bash
-sudo journalctl -u grafana-server
+```yaml
+# /etc/grafana/provisioning/dashboards/dashboards.yaml
+apiVersion: 1
+
+providers:
+  - name: 'default'
+    orgId: 1
+    folder: ''
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    options:
+      path: /etc/grafana/dashboards
 ```
 
-3. Test API endpoint:
+## HTTPS
+
 ```bash
-curl http://localhost:3000/api/health
-```
-
-## Common Configuration Options
-
-### Enable HTTPS
-
-1. Generate SSL certificate:
-```bash
+# Generate a certificate
 sudo mkdir -p /etc/grafana/ssl
 sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
   -keyout /etc/grafana/ssl/grafana.key \
   -out /etc/grafana/ssl/grafana.crt
+
+sudo chown -R grafana:grafana /etc/grafana/ssl
 ```
 
-2. Update configuration:
 ```ini
 [server]
 protocol = https
@@ -234,54 +317,148 @@ cert_file = /etc/grafana/ssl/grafana.crt
 cert_key = /etc/grafana/ssl/grafana.key
 ```
 
-### Configure SMTP for Alerts
+## Upgrading
 
-```ini
-[smtp]
-enabled = true
-host = smtp.gmail.com:587
-user = your-email@gmail.com
-password = your-app-specific-password
-from_address = grafana@your-domain.com
-from_name = Grafana Alert
+```bash
+# Check the current version
+sudo grafana-server -v
+# or
+curl -s http://localhost:3000/api/health
+
+# Upgrade the package
+sudo apt-get update && sudo apt-get install --only-upgrade grafana
+sudo systemctl restart grafana-server
+```
+
+```bash
+# Back up before an upgrade
+sudo systemctl stop grafana-server
+sudo tar -czf /var/backups/grafana-$(date +%F).tar.gz -C /var/lib/grafana .
+sudo systemctl start grafana-server
 ```
 
 ## Troubleshooting
 
-### Common Issues
+<Accordion type="single">
+  <AccordionItem value="issue-1">
+    <AccordionTrigger>
+      The web interface is not reachable
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # Is the service running and on which port?
+      sudo systemctl status grafana-server
+      sudo ss -tlnp | grep 3000
 
-1. **Cannot Access Web Interface**
-   - Verify service is running
-   - Check firewall settings
-   - Confirm port 3000 is not in use
-   - Check logs for errors
+      # What do the logs say?
+      sudo journalctl -u grafana-server -n 50 --no-pager
+      ```
+      If you changed `http_port`, the `root_url` and any reverse proxy configuration have
+      to match.
+    </AccordionContent>
+  </AccordionItem>
 
-2. **Database Connection Issues**
-   - Verify database permissions
-   - Check connection string
-   - Ensure database service is running
+  <AccordionItem value="issue-2">
+    <AccordionTrigger>
+      The login page loops back to the sign-in screen
+    </AccordionTrigger>
+    <AccordionContent>
+      Almost always a cookie problem behind a proxy. Set:
+      ```ini
+      [server]
+      root_url = https://grafana.example.com
+      [security]
+      cookie_samesite = none
+      cookie_secure = true
+      ```
+      and make sure the proxy forwards the `Host` and `X-Forwarded-Proto` headers.
+    </AccordionContent>
+  </AccordionItem>
 
-3. **Plugin Installation Failures**
-   - Check internet connectivity
-   - Verify plugin compatibility
-   - Check disk space
-   - Review plugin installation logs
+  <AccordionItem value="issue-3">
+    <AccordionTrigger>
+      "Failed to initialize database" or migration errors
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      sudo journalctl -u grafana-server | grep -i "database"
+      ```
+      Back up the database, then let Grafana run its migrations:
+      ```bash
+      sudo systemctl stop grafana-server
+      sudo -u grafana /usr/sbin/grafana-server \
+        --config=/etc/grafana/grafana.ini \
+        --homepath=/usr/share/grafana \
+        --packaging=docker \
+        cfg:default.paths.data=/var/lib/grafana \
+        cfg:default.paths.logs=/var/log/grafana \
+        cfg:default.paths.plugins=/var/lib/grafana/plugins \
+        migration
+      ```
+      A version downgrade is not supported — restore a backup taken before the upgrade
+      instead.
+    </AccordionContent>
+  </AccordionItem>
 
-## Security Considerations
+  <AccordionItem value="issue-4">
+    <AccordionTrigger>
+      A data source cannot be reached
+    </AccordionTrigger>
+    <AccordionContent>
+      Grafana proxies the query from the server, so the **server** must be able to reach
+      the data source, not the browser:
+      ```bash
+      # From the Grafana host
+      curl -s http://prometheus:9090/-/ready
+      ```
+      Then check the data source in the UI — the **Save & test** button shows the exact
+      error.
+    </AccordionContent>
+  </AccordionItem>
 
-1. Change default admin password immediately
-2. Use HTTPS in production
-3. Implement authentication (LDAP, OAuth, etc.)
-4. Regular backups of configuration and data
-5. Keep Grafana updated
-6. Use secure passwords for data source connections
-7. Implement rate limiting
-8. Enable audit logging
+  <AccordionItem value="issue-5">
+    <AccordionTrigger>
+      A plugin will not install
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # Install a plugin from the command line
+      sudo grafana-cli plugins install grafana-clock-panel
 
-## Additional Resources
+      # List what is installed
+      sudo grafana-cli plugins ls
 
-- [Official Grafana Documentation](https://grafana.com/docs/)
-- [Grafana Community](https://community.grafana.com/)
-- [Grafana Blog](https://grafana.com/blog/)
-- [Grafana Tutorials](https://grafana.com/tutorials/)
-- [Grafana Labs YouTube](https://www.youtube.com/c/Grafana) 
+      # Check the logs
+      sudo journalctl -u grafana-server | grep -i plugin
+      ```
+      Plugins must match the Grafana major version, and a plugin that needs a backend
+      needs a matching `GF_INSTALL_PLUGINS` entry in a container deployment.
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>
+
+## Best Practices
+
+1. **Never use SQLite in production** — use MySQL 8.0+ or PostgreSQL 12+.
+2. **Provision everything from files** — datasources, dashboards and alert rules belong in
+   Git, not in the UI.
+3. **Export dashboards as JSON** and keep them next to your code.
+4. **Use an external identity provider** (OAuth/OIDC, SAML or LDAP) instead of local
+   accounts.
+5. **Run the image renderer as a separate process** — it is the component that needs
+   the most memory.
+6. **Set `root_url`, `cookie_secure` and `cookie_samesite`** before you put Grafana
+   behind a proxy.
+7. **Use the Unified Alerting** feature for anything that must page someone.
+8. **Pin the Grafana version** in Docker images and Kubernetes deployments.
+9. **Back up both the database and `/var/lib/grafana`** (plugins, dashboards stored on
+   disk).
+
+## Next Steps
+
+- [Grafana Documentation](https://grafana.com/docs/grafana/latest/)
+- [Grafana Installation Guide](https://grafana.com/docs/grafana/latest/setup-grafana/installation/)
+- [Grafana Helm Charts](https://github.com/grafana/helm-charts)
+- [Prometheus Installation Guide](/docs/monitoring/prometheus)
+- [Elastic Stack Installation Guide](/docs/monitoring/elk-stack)
+- [Kubernetes Installation Guide](/docs/containers/kubernetes)

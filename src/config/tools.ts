@@ -260,7 +260,7 @@ export const tools: ToolMeta[] = [
     slug: "monitoring/prometheus",
     name: "Prometheus",
     description:
-      "Install Prometheus, scrape targets and build alerting rules.",
+      "Install Prometheus 3.15 with node_exporter 1.12, configure scraping and alerting in the 3.x format and plan the upgrade from 2.x.",
     category: "monitoring",
     tags: ["monitoring", "metrics", "alerting", "observability"],
   },
@@ -268,7 +268,7 @@ export const tools: ToolMeta[] = [
     slug: "monitoring/grafana",
     name: "Grafana",
     description:
-      "Connect Grafana to your metrics and build dashboards and alerts.",
+      "Install Grafana 13.2, connect Prometheus and Loki as data sources, provision dashboards from Git and size the deployment for production.",
     category: "monitoring",
     tags: ["monitoring", "dashboards", "visualization", "observability"],
   },
@@ -276,7 +276,7 @@ export const tools: ToolMeta[] = [
     slug: "monitoring/elk-stack",
     name: "ELK Stack",
     description:
-      "Deploy Elasticsearch, Logstash and Kibana for centralised log management.",
+      "Install Elasticsearch 9.5, Logstash and Kibana from the official repositories with TLS security and automatic configuration.",
     category: "monitoring",
     tags: ["logging", "search", "analytics", "observability"],
   },
@@ -284,7 +284,7 @@ export const tools: ToolMeta[] = [
     slug: "monitoring/nagios",
     name: "Nagios",
     description:
-      "Install Nagios Core, configure checks and notify on host failures.",
+      "Install Nagios Core 4.5 with the Nagios Plugins, configure hosts, services and notifications and verify every check by hand.",
     category: "monitoring",
     tags: ["monitoring", "alerting", "networking", "observability"],
   },

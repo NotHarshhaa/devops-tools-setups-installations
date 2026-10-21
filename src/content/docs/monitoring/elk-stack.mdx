@@ -1,212 +1,287 @@
 ---
 title: ELK Stack Installation Guide
-description: A comprehensive guide for installing and configuring the ELK Stack (Elasticsearch, Logstash, Kibana)
+description: Install the Elastic Stack 9.5 — Elasticsearch, Logstash and Kibana — from the official apt and rpm repositories, enable TLS security and ship your first logs.
 ---
 
-The ELK Stack is a collection of three open-source products: Elasticsearch, Logstash, and Kibana. It allows you to collect any data from any source, search, analyze, and visualize it in real time.
+The Elastic Stack is three products that work together: **Elasticsearch** stores and
+searches your data, **Logstash** ingests and transforms it, and **Kibana** visualises it.
 
-## Prerequisites
+<Callout title="Versions used in this guide">
+  Elasticsearch **9.5.5** · Logstash **9.5.5** · Kibana **9.5.5** · the
+  `artifacts.elastic.co/packages/9.x` repositories · security auto-configuration with TLS
+  and an enrollment token
+</Callout>
 
-- A system running Linux, macOS, or Windows
-- Administrative/sudo privileges
-- Terminal/Command Prompt access
-- Minimum 8GB RAM (16GB recommended)
-- Java 11 or later installed
-- Sufficient disk space (minimum 10GB)
-- Internet connection for downloading packages
+<Callout title="Check the licence before you deploy">
+  Since 8.16 the default Elastic distribution is licensed under **AGPL v3** (with
+  source-available options for some features). If you need a permissive licence, use
+  **OpenSearch** — it is API-compatible with the parts of Elasticsearch this guide
+  covers and is licensed under Apache 2.0.
+</Callout>
+
+## System Requirements
+
+- 64-bit Linux, macOS or Windows (Linux is the supported production platform)
+- **At least 4 GB RAM** for Elasticsearch, 8 GB or more for a production node
+- Java is **bundled** with the packages — you do not need to install a JDK
+- `vm.max_map_count` set to `262144` (Elasticsearch refuses to start otherwise)
+- Ports 9200 (Elasticsearch), 9300 (transport), 5044 (Logstash Beats input), 9600
+  (Logstash monitoring), 5601 (Kibana)
+- 20 GB free disk for the data volume
 
 ## Installation Instructions
 
 <Tabs defaultValue="ubuntu">
   <TabsList>
     <TabsTrigger value="ubuntu">Ubuntu/Debian</TabsTrigger>
-    <TabsTrigger value="centos">CentOS/RHEL</TabsTrigger>
+    <TabsTrigger value="rpm">RHEL/CentOS</TabsTrigger>
     <TabsTrigger value="docker">Docker</TabsTrigger>
+    <TabsTrigger value="kubernetes">Kubernetes</TabsTrigger>
   </TabsList>
 
   <TabsContent value="ubuntu">
-    ### Ubuntu/Debian Installation
+    ### Ubuntu / Debian (apt)
 
     ```bash
-    # Install Java
-    sudo apt update
-    sudo apt install default-jre -y
+    # 1. Import the Elastic signing key
+    wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch \
+      | sudo gpg --dearmor -o /usr/share/keyrings/elasticsearch-keyring.gpg
 
-    # Add Elastic GPG key
-    wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
+    # 2. Add the 9.x repository
+    echo "deb [signed-by=/usr/share/keyrings/elasticsearch-keyring.gpg] https://artifacts.elastic.co/packages/9.x/apt stable main" \
+      | sudo tee /etc/apt/sources.list.d/elastic-9.x.list
 
-    # Add Elastic repository
-    echo "deb https://artifacts.elastic.co/packages/8.x/apt stable main" | \
-      sudo tee /etc/apt/sources.list.d/elastic-8.x.list
+    # 3. Install the stack
+    sudo apt-get update
+    sudo apt-get install -y elasticsearch logstash kibana
 
-    # Update package list
-    sudo apt update
+    # 4. Raise the memory map limit
+    sudo sysctl -w vm.max_map_count=262144
+    echo "vm.max_map_count=262144" | sudo tee /etc/sysctl.d/99-elastic.conf
+    sudo sysctl --system
 
-    # Install Elasticsearch
-    sudo apt install elasticsearch -y
-
-    # Start Elasticsearch
+    # 5. Start the services
     sudo systemctl daemon-reload
-    sudo systemctl enable elasticsearch
-    sudo systemctl start elasticsearch
-
-    # Install Kibana
-    sudo apt install kibana -y
-
-    # Start Kibana
-    sudo systemctl enable kibana
-    sudo systemctl start kibana
-
-    # Install Logstash
-    sudo apt install logstash -y
-
-    # Start Logstash
-    sudo systemctl enable logstash
-    sudo systemctl start logstash
+    sudo systemctl enable --now elasticsearch
+    sudo systemctl enable --now kibana
+    sudo systemctl enable --now logstash
     ```
+
+    <Callout title="apt-key is gone">
+      The old `apt-key add` command was removed in Debian 12 and Ubuntu 24.04. The key
+      now goes into `/usr/share/keyrings/` and the repository references it with
+      `signed-by=`.
+    </Callout>
   </TabsContent>
 
-  <TabsContent value="centos">
-    ### CentOS/RHEL Installation
+  <TabsContent value="rpm">
+    ### RHEL / CentOS / Rocky / Alma (dnf)
 
     ```bash
-    # Install Java
-    sudo yum install java-11-openjdk-devel -y
+    # Import the Elastic signing key
+    sudo rpm --import https://artifacts.elastic.co/GPG-KEY-elasticsearch
 
-    # Add Elastic repository
-    cat << EOF | sudo tee /etc/yum.repos.d/elasticsearch.repo
-[elasticsearch]
-name=Elasticsearch repository
-baseurl=https://artifacts.elastic.co/packages/8.x/yum
-gpgcheck=1
-gpgkey=https://artifacts.elastic.co/GPG-KEY-elasticsearch
-enabled=1
-autorefresh=1
-type=rpm-md
-EOF
+    # Add the 9.x repository
+    sudo tee /etc/yum.repos.d/elastic-9.x.repo > /dev/null <<'EOF'
+    [elasticsearch-9.x]
+    name=Elasticsearch repository
+    baseurl=https://artifacts.elastic.co/packages/9.x/yum
+    enabled=1
+    gpgcheck=1
+    gpgkey=https://artifacts.elastic.co/GPG-KEY-elasticsearch
+    module_hotfixing=true
+    EOF
 
-    # Install Elasticsearch
-    sudo yum install elasticsearch -y
+    # Install the stack
+    sudo dnf install -y elasticsearch logstash kibana
 
-    # Start Elasticsearch
+    # Raise the memory map limit
+    sudo sysctl -w vm.max_map_count=262144
+    echo "vm.max_map_count=262144" | sudo tee /etc/sysctl.d/99-elastic.conf
+    sudo sysctl --system
+
+    # Start the services
     sudo systemctl daemon-reload
-    sudo systemctl enable elasticsearch
-    sudo systemctl start elasticsearch
-
-    # Install Kibana
-    sudo yum install kibana -y
-
-    # Start Kibana
-    sudo systemctl enable kibana
-    sudo systemctl start kibana
-
-    # Install Logstash
-    sudo yum install logstash -y
-
-    # Start Logstash
-    sudo systemctl enable logstash
-    sudo systemctl start logstash
+    sudo systemctl enable --now elasticsearch
+    sudo systemctl enable --now kibana
+    sudo systemctl enable --now logstash
     ```
   </TabsContent>
 
   <TabsContent value="docker">
-    ### Docker Installation
+    ### Docker Compose
+
+    ```yaml
+    # docker-compose.yml
+    services:
+      elasticsearch:
+        image: docker.elastic.co/elasticsearch/elasticsearch:9.5.5
+        environment:
+          - node.name=es01
+          - cluster.name=my-cluster
+          - discovery.type=single-node
+          - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+          - xpack.security.enabled=true
+          - xpack.security.http.ssl.enabled=false
+        ulimits:
+          memlock: { soft: -1, hard: -1 }
+          nofile: { soft: 65536, hard: 65536 }
+        volumes:
+          - es-data:/usr/share/elasticsearch/data
+        ports:
+          - "9200:9200"
+        healthcheck:
+          test: ["CMD-SHELL", "curl -fs http://localhost:9200 || exit 1"]
+          interval: 10s
+          timeout: 5s
+          retries: 12
+
+      kibana:
+        image: docker.elastic.co/kibana/kibana:9.5.5
+        environment:
+          - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+          - ELASTICSEARCH_USERNAME=kibana_system
+          - ELASTICSEARCH_PASSWORD=${KIBANA_PASSWORD}
+        ports:
+          - "5601:5601"
+        depends_on:
+          elasticsearch:
+            condition: service_healthy
+
+      logstash:
+        image: docker.elastic.co/logstash/logstash:9.5.5
+        volumes:
+          - ./logstash/pipeline:/usr/share/logstash/pipeline
+        ports:
+          - "5044:5044"
+
+    volumes:
+      es-data:
+    ```
 
     ```bash
-    # Create docker network
-    docker network create elk
+    export ELASTIC_PASSWORD='a-strong-password'
+    docker compose up -d
+    ```
+  </TabsContent>
 
-    # Run Elasticsearch
-    docker run -d \
-      --name elasticsearch \
-      --net elk \
-      -p 9200:9200 \
-      -p 9300:9300 \
-      -e "discovery.type=single-node" \
-      -e "xpack.security.enabled=false" \
-      docker.elastic.co/elasticsearch/elasticsearch:8.8.0
+  <TabsContent value="kubernetes">
+    ### Kubernetes (ECK)
 
-    # Run Kibana
-    docker run -d \
-      --name kibana \
-      --net elk \
-      -p 5601:5601 \
-      docker.elastic.co/kibana/kibana:8.8.0
+    The Elastic Cloud on Kubernetes operator manages the whole stack:
 
-    # Run Logstash
-    # First, create logstash.conf
-    cat << EOF > logstash.conf
-input {
-  beats {
-    port => 5044
-  }
-}
+    ```bash
+    helm repo add elastic https://helm.elastic.co
+    helm repo update
 
-output {
-  elasticsearch {
-    hosts => ["elasticsearch:9200"]
-    index => "%{[@metadata][beat]}-%{[@metadata][version]}-%{+YYYY.MM.dd}"
-  }
-}
-EOF
+    helm install elastic-operator elastic/eck-operator \
+      --namespace elastic-system --create-namespace
+    ```
 
-    # Run Logstash container
-    docker run -d \
-      --name logstash \
-      --net elk \
-      -p 5044:5044 \
-      -v $(pwd)/logstash.conf:/usr/share/logstash/pipeline/logstash.conf \
-      docker.elastic.co/logstash/logstash:8.8.0
+    ```yaml
+    # elastic-stack.yaml
+    apiVersion: elasticsearch.k8s.elastic.co/v1
+    kind: Elasticsearch
+    metadata:
+      name: quickstart
+    spec:
+      version: 9.5.5
+      nodeSets:
+        - name: default
+          count: 3
+          config:
+            node.roles: [master, data, ingest]
+          volumeClaimTemplates:
+            - metadata:
+                name: elasticsearch-data
+              spec:
+                accessModes: ["ReadWriteOnce"]
+                resources:
+                  requests:
+                    storage: 30Gi
+                storageClassName: gp3
+    ---
+    apiVersion: kibana.k8s.elastic.co/v1
+    kind: Kibana
+    metadata:
+      name: quickstart
+    spec:
+      version: 9.5.5
+      count: 1
+      elasticsearchRef:
+        name: quickstart
     ```
   </TabsContent>
 </Tabs>
 
-## Post-Installation Configuration
+## Security Setup
 
-### Elasticsearch Configuration (elasticsearch.yml)
+Elasticsearch 9 configures security automatically on first start: it generates TLS
+certificates for the transport and HTTP layers, creates an enrollment token for Kibana and
+enables the `elastic` superuser.
 
-```yaml
-# Network settings
-network.host: 0.0.0.0
-http.port: 9200
+### 1. Set the `elastic` password
 
-# Discovery settings
-discovery.type: single-node
+Because the service runs under systemd, the password is not printed in the terminal. Set
+it with the reset tool:
 
-# Memory settings
-bootstrap.memory_lock: true
-
-# Security settings
-xpack.security.enabled: true
-xpack.security.transport.ssl.enabled: true
+```bash
+cd /usr/share/elasticsearch
+sudo -u elasticsearch bin/elasticsearch-reset-password -u elastic
 ```
 
-### Kibana Configuration (kibana.yml)
-
-```yaml
-# Server settings
-server.port: 5601
-server.host: "0.0.0.0"
-
-# Elasticsearch connection
-elasticsearch.hosts: ["http://localhost:9200"]
-
-# Security settings
-elasticsearch.username: "kibana_system"
-elasticsearch.password: "your_password"
+```bash
+# Store it for the rest of the session
+export ELASTIC_PASSWORD='the-password-you-just-set'
 ```
 
-### Logstash Pipeline Configuration (logstash.conf)
+### 2. Verify Elasticsearch
+
+```bash
+curl --cacert /etc/elasticsearch/certs/http_ca.crt \
+  -u "elastic:$ELASTIC_PASSWORD" https://localhost:9200
+```
+
+```json
+{
+  "name": "Cp8oag6",
+  "cluster_name": "elasticsearch",
+  "version": { "number": "9.5.5" },
+  "tagline": "You Know, for Search"
+}
+```
+
+### 3. Connect Kibana
+
+```bash
+# Get the enrollment token from Elasticsearch
+cd /usr/share/elasticsearch
+sudo -u elasticsearch bin/elasticsearch-create-enrollment-token --ca-fingerprint /etc/elasticsearch/certs/http_ca.crt
+```
+
+```bash
+# On the Kibana host, start Kibana with the token
+sudo systemctl stop kibana
+sudo /usr/share/kibana/bin/kibana \
+  --elasticsearch.hosts=https://localhost:9200 \
+  --elasticsearch.ssl.certificateAuthorities=/etc/kibana/config/http_ca.crt \
+  --elasticsearch.username=kibana_system \
+  --elasticsearch.password=<enrollment-token> \
+  --encryption.key="$(openssl rand -base64 32)" \
+  &
+```
+
+The token is valid for 30 minutes. Kibana writes the security configuration to
+`/etc/kibana/kibana.yml`, so this only has to be done once.
+
+## Logstash Pipeline
+
+Create `/etc/logstash/pipeline/logstash.conf`:
 
 ```ruby
 input {
   beats {
     port => 5044
-  }
-  
-  tcp {
-    port => 5000
-    codec => json
   }
 }
 
@@ -214,130 +289,220 @@ filter {
   if [type] == "syslog" {
     grok {
       match => { "message" => "%{SYSLOGTIMESTAMP:syslog_timestamp} %{SYSLOGHOST:syslog_hostname} %{DATA:syslog_program}(?:\[%{POSINT:syslog_pid}\])?: %{GREEDYDATA:syslog_message}" }
+      tag_on_failure => ["_syslog_parse_failure"]
     }
-    
     date {
-      match => [ "syslog_timestamp", "MMM  d HH:mm:ss", "MMM dd HH:mm:ss" ]
+      match => [ "syslog_timestamp", "MMM  d HH:mm:ss", "ISO8601" ]
     }
   }
 }
 
 output {
   elasticsearch {
-    hosts => ["localhost:9200"]
-    index => "logstash-%{+YYYY.MM.dd}"
+    hosts => ["https://localhost:9200"]
+    user => "elastic"
+    password => "${ELASTIC_PASSWORD}"
+    ssl_certificate => "/etc/elasticsearch/certs/http_ca.crt"
+    index => "logs-%{+YYYY.MM.dd}"
+  }
+
+  stdout {
+    codec => rubydebug
   }
 }
 ```
 
-## Verification
-
-### Elasticsearch
-
-1. Check service status:
 ```bash
-sudo systemctl status elasticsearch
+# Validate the pipeline before reloading
+sudo /usr/share/logstash/bin/logstash --path.settings /etc/logstash -t
+
+# Reload
+sudo systemctl reload logstash
+sudo journalctl -u logstash -f
 ```
 
-2. Test the REST API:
+## Kibana Dashboards
+
+1. Open `http://localhost:5601`
+2. Sign in with `elastic` and the password you set
+3. **Stack Management → Index Patterns** → create `logs-*`
+4. **Discover** → search your data
+5. **Dashboard → New** → add panels
+
 ```bash
-curl -X GET "localhost:9200/"
+# Check that Kibana is healthy
+curl -s http://localhost:5601/api/status | jq .
 ```
 
-### Kibana
+## Multi-Node Cluster
 
-1. Check service status:
+For a real cluster you need at least three master-eligible nodes:
+
 ```bash
-sudo systemctl status kibana
+# On the first node
+sudo tee -a /etc/elasticsearch/elasticsearch.yml > /dev/null <<'EOF'
+cluster.name: my-cluster
+node.name: node-1
+network.host: 0.0.0.0
+transport.host: 0.0.0.0
+discovery.seed.hosts: ["10.0.0.11", "10.0.0.12", "10.0.0.13"]
+cluster.initial_master_nodes: ["node-1", "node-2", "node-3"]
+EOF
 ```
 
-2. Access web interface:
-```
-http://localhost:5601
-```
-
-### Logstash
-
-1. Check service status:
 ```bash
-sudo systemctl status logstash
+# On the other nodes, enrol them with a token (valid for 30 minutes)
+sudo -u elasticsearch /usr/share/elasticsearch/bin/elasticsearch-create-enrollment-token -s node
+sudo -u elasticsearch /usr/share/elasticsearch/bin/elasticsearch-reconfigure-node --enrollment-token <token>
 ```
 
-2. Test configuration:
-```bash
-sudo -u logstash /usr/share/logstash/bin/logstash --config.test_and_exit -f /etc/logstash/conf.d/logstash.conf
-```
-
-## Common Configuration Options
-
-### Setting Up SSL/TLS
-
-1. Generate certificates:
-```bash
-# Generate CA
-bin/elasticsearch-certutil ca
-
-# Generate certificates
-bin/elasticsearch-certutil cert --ca elastic-stack-ca.p12
-```
-
-2. Configure Elasticsearch:
-```yaml
-xpack.security.transport.ssl.enabled: true
-xpack.security.transport.ssl.verification_mode: certificate
-xpack.security.transport.ssl.keystore.path: elastic-certificates.p12
-xpack.security.transport.ssl.truststore.path: elastic-certificates.p12
-```
-
-### Configuring Authentication
-
-1. Set up passwords:
-```bash
-# For Elasticsearch
-bin/elasticsearch-setup-passwords interactive
-
-# For Kibana (in kibana.yml)
-elasticsearch.username: "kibana_system"
-elasticsearch.password: "your_password"
-```
+<Callout title="Remove cluster.initial_master_nodes after bootstrapping">
+  Leaving the bootstrap configuration in place means a restarted cluster can
+  accidentally form a second cluster. Remove it once the nodes have joined.
+</Callout>
 
 ## Troubleshooting
 
-### Common Issues
+<Accordion type="single">
+  <AccordionItem value="issue-1">
+    <AccordionTrigger>
+      Elasticsearch will not start
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      sudo journalctl -u elasticsearch -n 100 --no-pager
+      ```
+      The most common cause is the memory map limit:
+      ```bash
+      sysctl vm.max_map_count
+      sudo sysctl -w vm.max_map_count=262144
+      echo "vm.max_map_count=262144" | sudo tee /etc/sysctl.d/99-elastic.conf
+      ```
+      The second most common cause is running out of memory — the JVM heap is capped at
+      50% of the available RAM.
+    </AccordionContent>
+  </AccordionItem>
 
-1. **Elasticsearch Won't Start**
-   - Check Java version compatibility
-   - Verify system resources (memory, disk space)
-   - Check logs: `sudo journalctl -u elasticsearch`
-   - Verify file permissions
+  <AccordionItem value="issue-2">
+    <AccordionTrigger>
+      Certificate errors when connecting to Elasticsearch
+    </AccordionTrigger>
+    <AccordionContent>
+      Elasticsearch generates its own CA on first start. Point the client at it:
+      ```bash
+      curl --cacert /etc/elasticsearch/certs/http_ca.crt -u elastic:$ELASTIC_PASSWORD https://localhost:9200
+      ```
+      ```yaml
+      # In Logstash
+      elasticsearch {
+        hosts => ["https://localhost:9200"]
+        ssl_certificate => "/etc/elasticsearch/certs/http_ca.crt"
+      }
+      ```
+      The fingerprint is printed in the Elasticsearch log at startup.
+    </AccordionContent>
+  </AccordionItem>
 
-2. **Kibana Can't Connect to Elasticsearch**
-   - Verify Elasticsearch is running
-   - Check connection settings in kibana.yml
-   - Verify network connectivity
-   - Check authentication credentials
+  <AccordionItem value="issue-3">
+    <AccordionTrigger>
+      Kibana will not start
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      sudo journalctl -u kibana -n 100 --no-pager
+      ```
+      The usual reasons are an expired enrollment token (they last 30 minutes) or a
+      missing `elasticsearch.password` in `kibana.yml`. Generate a fresh token:
+      ```bash
+      cd /usr/share/kibana
+      sudo -u kibana bin/kibana-encryption-key generate
+      ```
+    </AccordionContent>
+  </AccordionItem>
 
-3. **Logstash Pipeline Issues**
-   - Validate configuration syntax
-   - Check input/output connectivity
-   - Monitor resource usage
-   - Review pipeline logs
+  <AccordionItem value="issue-4">
+    <AccordionTrigger>
+      Logstash does not start or the pipeline fails
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # Test the configuration
+      sudo /usr/share/logstash/bin/logstash --path.settings /etc/logstash -t
 
-## Security Considerations
+      # Read the logs
+      sudo journalctl -u logstash -f
+      ```
+      A syntax error in the pipeline stops Logstash from starting at all.
+    </AccordionContent>
+  </AccordionItem>
 
-1. Change default passwords
-2. Enable X-Pack security
-3. Implement SSL/TLS encryption
-4. Use role-based access control
-5. Regular security updates
-6. Network segmentation
-7. Audit logging
-8. Data encryption at rest
+  <AccordionItem value="issue-5">
+    <AccordionTrigger>
+      Indices are not created / data does not appear
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # List the indices
+      curl -s --cacert /etc/elasticsearch/certs/http_ca.crt \
+        -u "elastic:$ELASTIC_PASSWORD" https://localhost:9200/_cat/indices?v
 
-## Additional Resources
+      # Check the Logstash output
+      sudo journalctl -u logstash | grep -i error
+      ```
+      If `action.auto_create_index` was disabled, create the index pattern explicitly
+      with `action.auto_create_index: .monitoring*,.watches,.triggered_watches,.watcher-history*,.ml*`.
+    </AccordionContent>
+  </AccordionItem>
 
-- [Elasticsearch Documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html)
-- [Kibana Documentation](https://www.elastic.co/guide/en/kibana/current/index.html)
-- [Logstash Documentation](https://www.elastic.co/guide/en/logstash/current/index.html)
-- [Elastic Stack Security](https://www.elastic.co/guide/en/elasticsearch/reference/current/secure-cluster.html)
-- [Elastic Community](https://discuss.elastic.co/) 
+  <AccordionItem value="issue-6">
+    <AccordionTrigger>
+      The cluster is red or has unassigned shards
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      curl -s --cacert /etc/elasticsearch/certs/http_ca.crt \
+        -u "elastic:$ELASTIC_PASSWORD" \
+        "https://localhost:9200/_cluster/health?pretty"
+      ```
+      A yellow cluster means the replicas are not allocated (usually a single-node
+      cluster). A red cluster means a primary shard is missing — check the node logs and
+      the disk space.
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>
+
+## Best Practices
+
+1. **Enable the security features** — TLS, the `elastic` superuser and role-based access
+   are on by default in 9.x. Never disable them in production.
+2. **Use an ILM policy** so old indices are deleted automatically:
+   ```bash
+   curl -s --cacert /etc/elasticsearch/certs/http_ca.crt -u "elastic:$ELASTIC_PASSWORD" \
+     -X PUT "https://localhost:9200/_ilm/policy/logs_policy" -H 'Content-Type: application/json' -d '{
+       "policy": {
+         "phases": {
+           "hot": { "actions": { "rollover": { "max_primary_shard_size": "50gb" } } },
+           "delete": { "min_age": "30d", "actions": { "delete": {} } }
+         }
+       }
+     }'
+   ```
+3. **Take snapshots** to a shared repository — a snapshot repository is not a backup
+   unless it is off-cluster.
+4. **Ship logs with Filebeat or Elastic Agent** rather than running Logstash on every
+   host.
+5. **Never put credentials in `logstash.conf`** — use a keystore or environment
+   variables.
+6. **Pin the version** across all three components; Elasticsearch, Kibana and Logstash
+   must be on compatible versions.
+7. **Monitor the JVM heap** — a heap over 75% means the node is under pressure.
+
+## Next Steps
+
+- [Elasticsearch Documentation](https://www.elastic.co/docs/deploy-manage/deploy/self-managed)
+- [Kibana Documentation](https://www.elastic.co/docs/deploy-manage/deploy/self-managed)
+- [Logstash Documentation](https://www.elastic.co/docs/deploy-manage/deploy/self-managed)
+- [Install Elasticsearch with a Debian package](https://www.elastic.co/guide/en/elasticsearch/reference/current/deb.html)
+- [OpenSearch](https://opensearch.org/) — the Apache 2.0 licensed alternative
+- [Grafana Installation Guide](/docs/monitoring/grafana)
+- [Prometheus Installation Guide](/docs/monitoring/prometheus)
