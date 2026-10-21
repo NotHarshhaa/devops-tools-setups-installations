@@ -1,336 +1,236 @@
 ---
 title: Istio Installation Guide
-description: Complete guide for installing Istio service mesh across different operating systems and Kubernetes distributions.
+description: Install Istio 1.31 with istioctl, choose the right configuration profile, enable sidecar or ambient mode, install the observability add-ons and verify the mesh.
 ---
 
-Istio is a service mesh that helps you connect, secure, control, and observe services. This guide covers installation across different operating systems.
+Istio is a service mesh that connects, secures, observes and controls your services. This
+guide installs **Istio 1.31** with `istioctl`, the recommended installation method.
+
+<Callout title="Sidecar or ambient?">
+  Istio 1.31 supports two data plane modes. **Sidecar mode** injects an Envoy proxy into
+  every pod and is the most mature option. **Ambient mode** moves the proxy to a
+  node-level daemon (`ztunnel`) and adds L7 proxies only where you need them, which
+  removes the per-pod resource overhead. Both are covered below.
+</Callout>
 
 ## Prerequisites
 
-- Kubernetes cluster (version 1.22 or higher)
-- `kubectl` CLI tool installed
-- Cluster admin privileges
-- 8GB+ RAM available
-- 4+ CPU cores
+- A Kubernetes cluster (1.30 or newer — check the [Istio compatibility matrix](https://istio.io/latest/docs/releases/supported-releases/) for the exact range)
+- `kubectl` configured against that cluster
+- Cluster-admin privileges to install the control plane
+- 8 GB RAM and 4 CPU cores available for the control plane
+- The `istioctl` binary on your workstation (or on the node you run commands from)
 
-## Installation Instructions
+## Installing the istioctl CLI
 
-<Tabs defaultValue="ubuntu">
-  <TabsList>
-    <TabsTrigger value="ubuntu">Ubuntu/Debian</TabsTrigger>
-    <TabsTrigger value="centos">CentOS/RHEL</TabsTrigger>
-    <TabsTrigger value="fedora">Fedora</TabsTrigger>
-    <TabsTrigger value="arch">Arch Linux</TabsTrigger>
-    <TabsTrigger value="alpine">Alpine</TabsTrigger>
-    <TabsTrigger value="suse">SUSE</TabsTrigger>
-    <TabsTrigger value="windows">Windows</TabsTrigger>
-  </TabsList>
-
-  <TabsContent value="ubuntu">
-    ### Ubuntu/Debian Installation
-
-    ```bash
-    # Download Istio
-    curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.20.0 sh -
-
-    # Move to Istio directory
-    cd istio-1.20.0
-
-    # Add istioctl to PATH
-    sudo cp bin/istioctl /usr/local/bin/
-    sudo chmod +x /usr/local/bin/istioctl
-
-    # Verify installation
-    istioctl version
-
-    # Install Istio into the cluster
-    istioctl install --set profile=demo -y
-
-    # Enable sidecar injection for default namespace
-    kubectl label namespace default istio-injection=enabled
-    ```
-  </TabsContent>
-
-  <TabsContent value="centos">
-    ### CentOS/RHEL Installation
-
-    ```bash
-    # Download Istio
-    curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.20.0 sh -
-
-    # Move to Istio directory
-    cd istio-1.20.0
-
-    # Add istioctl to PATH
-    sudo cp bin/istioctl /usr/local/bin/
-    sudo chmod +x /usr/local/bin/istioctl
-
-    # Verify installation
-    istioctl version
-
-    # Install Istio into the cluster
-    istioctl install --set profile=demo -y
-
-    # Enable sidecar injection for default namespace
-    kubectl label namespace default istio-injection=enabled
-    ```
-  </TabsContent>
-
-  <TabsContent value="fedora">
-    ### Fedora Installation
-
-    ```bash
-    # Download Istio
-    curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.20.0 sh -
-
-    # Move to Istio directory
-    cd istio-1.20.0
-
-    # Add istioctl to PATH
-    sudo cp bin/istioctl /usr/local/bin/
-    sudo chmod +x /usr/local/bin/istioctl
-
-    # Verify installation
-    istioctl version
-
-    # Install Istio into the cluster
-    istioctl install --set profile=demo -y
-
-    # Enable sidecar injection for default namespace
-    kubectl label namespace default istio-injection=enabled
-    ```
-  </TabsContent>
-
-  <TabsContent value="arch">
-    ### Arch Linux Installation
-
-    ```bash
-    # Install Istio using pacman
-    sudo pacman -Sy istio
-
-    # Verify installation
-    istioctl version
-
-    # Install Istio into the cluster
-    istioctl install --set profile=demo -y
-
-    # Enable sidecar injection for default namespace
-    kubectl label namespace default istio-injection=enabled
-    ```
-  </TabsContent>
-
-  <TabsContent value="alpine">
-    ### Alpine Linux Installation
-
-    ```bash
-    # Download Istio
-    curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.20.0 sh -
-
-    # Move to Istio directory
-    cd istio-1.20.0
-
-    # Add istioctl to PATH
-    sudo cp bin/istioctl /usr/local/bin/
-    sudo chmod +x /usr/local/bin/istioctl
-
-    # Verify installation
-    istioctl version
-
-    # Install Istio into the cluster
-    istioctl install --set profile=demo -y
-
-    # Enable sidecar injection for default namespace
-    kubectl label namespace default istio-injection=enabled
-    ```
-  </TabsContent>
-
-  <TabsContent value="suse">
-    ### SUSE Linux Installation
-
-    ```bash
-    # Download Istio
-    curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.20.0 sh -
-
-    # Move to Istio directory
-    cd istio-1.20.0
-
-    # Add istioctl to PATH
-    sudo cp bin/istioctl /usr/local/bin/
-    sudo chmod +x /usr/local/bin/istioctl
-
-    # Verify installation
-    istioctl version
-
-    # Install Istio into the cluster
-    istioctl install --set profile=demo -y
-
-    # Enable sidecar injection for default namespace
-    kubectl label namespace default istio-injection=enabled
-    ```
-  </TabsContent>
-
-  <TabsContent value="windows">
-    ### Windows Installation
-
-    ```powershell
-    # Install using Chocolatey
-    choco install istio
-
-    # Alternative: Download from official website
-    # Navigate to: https://github.com/istio/istio/releases
-
-    # Add istioctl to PATH
-    # Move istioctl.exe to a directory in your PATH
-
-    # Verify installation
-    istioctl version
-
-    # Install Istio into the cluster
-    istioctl install --set profile=demo -y
-
-    # Enable sidecar injection for default namespace
-    kubectl label namespace default istio-injection=enabled
-    ```
-  </TabsContent>
-</Tabs>
-
-## Installation Profiles
-
-Istio offers several installation profiles for different use cases:
+The CLI is identical on every operating system — download the archive, extract it and put
+`istioctl` on your `PATH`:
 
 ```bash
-# List available profiles
+# Download the latest release (1.31.x)
+curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.31.2 sh -
+
+# Move the binary into place
+sudo cp istio-1.31.2/bin/istioctl /usr/local/bin/
+sudo chmod +x /usr/local/bin/istioctl
+
+# Verify
+istioctl version --remote=false
+```
+
+On Windows, download the archive from the [Istio releases page](https://github.com/istio/istio/releases),
+extract it and add the `bin` folder to your `PATH`.
+
+```bash
+# Check that the cluster is reachable and compatible before you install anything
+istioctl x precheck
+```
+
+## Installing the Control Plane
+
+### Sidecar Mode (Default)
+
+```bash
+# Install the default profile — recommended for production
+istioctl install --set profile=default -y
+
+# Verify the control plane
+istioctl verify-install
+kubectl get pods -n istio-system
+```
+
+### Choosing a Profile
+
+Profiles are curated sets of Helm values. `istioctl` and `helm` share the same profiles.
+
+| Profile | Use it for |
+| --- | --- |
+| `default` | Production deployments and primary clusters in a multicluster mesh |
+| `demo` | Learning and the Bookinfo sample app — enables high tracing and access logging, so do not benchmark with it |
+| `minimal` | Control plane only; you install the data plane components separately |
+| `ambient` | Ambient mode (`ztunnel` based data plane) |
+| `remote` | A remote cluster managed by an external or primary control plane |
+| `empty` | Nothing at all — a base for a fully custom configuration |
+| `preview` | Experimental features; stability and performance are not guaranteed |
+
+```bash
+# List the available profiles
 istioctl profile list
 
-# Get profile details
-istioctl profile dump demo
+# Inspect what a profile contains before installing it
+istioctl profile dump default
 
-# Install specific profile
-istioctl install --set profile=demo  # For testing/learning
-istioctl install --set profile=production  # For production
-istioctl install --set profile=minimal  # Minimal installation
+# Install a different profile
+istioctl install --set profile=demo -y
 ```
 
-## Verifying Installation
+Platform-specific profiles (`gke`, `eks`, `openshift`, `k3d`, `k3s`, `microk8s`,
+`minikube`) tune the chart for that environment:
 
 ```bash
-# Check Istio pods
+istioctl install --set profile=default --set values.platform.minikube=true -y
+```
+
+### Ambient Mode
+
+```bash
+# Install the ambient profile (istiod + CNI + ztunnel)
+istioctl install --set profile=ambient -y
+
+# Verify
 kubectl get pods -n istio-system
-
-# Verify CRDs
-kubectl get crd | grep istio
-
-# Check configuration
-istioctl analyze
-
-# Verify proxy injection
-kubectl get namespace -L istio-injection
+kubectl get daemonset -n istio-system
 ```
 
-## Installing Add-ons
+### Review Before You Install
 
-### Kiali Dashboard
+For production it is worth generating the manifest and reading it before it touches the
+cluster:
 
 ```bash
-# Install Kiali and other addons
-kubectl apply -f samples/addons/kiali.yaml
+# Generate the manifest for the default profile
+istioctl manifest generate --set profile=default > istio.yaml
+
+# Review, then apply it yourself
+kubectl apply -f istio.yaml
+```
+
+## Enabling the Data Plane
+
+### Sidecar Injection (Sidecar Mode)
+
+Label the namespaces that should receive a sidecar. Prefer the `istio.io/rev` label,
+because it pins workloads to a specific control plane revision:
+
+```bash
+# Create a dedicated namespace for the mesh
+kubectl create namespace bookinfo
+
+# Label it for sidecar injection
+kubectl label namespace bookinfo istio-injection=enabled
+
+# Or pin it to a revision
+kubectl label namespace bookinfo istio.io/rev=default
+
+# Confirm the label took effect
+kubectl get namespace bookinfo --show-labels
+```
+
+Existing pods are not modified — restart them so the sidecar is injected:
+
+```bash
+kubectl rollout restart deployment/<name> -n <namespace>
+```
+
+Manual injection is available for pods you cannot label:
+
+```bash
+istioctl kube-inject -f deployment.yaml > deployment-with-sidecar.yaml
+```
+
+### Ambient Mode
+
+In ambient mode you label the **pod** instead of the namespace:
+
+```bash
+# Label the namespace as part of the mesh
+kubectl label namespace bookinfo istio.io/dataplane-mode=ambient
+
+# Or opt a single pod in
+kubectl label pod <pod-name> istio.io/dataplane-mode=ambient
+```
+
+A waypoint proxy provides L7 features (request routing, retries, authorization) on top of
+the L4 ambient data plane:
+
+```bash
+istioctl waypoint apply --enroll-namespace -n bookinfo
+```
+
+## Installing the Observability Add-ons
+
+```bash
+# Install Prometheus, Grafana, Kiali and Jaeger
 kubectl apply -f samples/addons/prometheus.yaml
 kubectl apply -f samples/addons/grafana.yaml
+kubectl apply -f samples/addons/kiali.yaml
 kubectl apply -f samples/addons/jaeger.yaml
 
-# Access Kiali dashboard
+# Open a dashboard
 istioctl dashboard kiali
 ```
 
-## Troubleshooting
+## Verifying the Installation
 
-<Accordion type="single">
-  <AccordionItem value="issue-1">
-    <AccordionTrigger>
-      Sidecar Injection Not Working
-    </AccordionTrigger>
-    <AccordionContent>
-      Check namespace label and webhook:
-      ```bash
-      # Verify namespace label
-      kubectl get namespace -L istio-injection
+```bash
+# The control plane pods should be Running
+kubectl get pods -n istio-system
 
-      # Check webhook
-      kubectl get mutatingwebhookconfiguration -o yaml | grep "sidecar-injector"
+# The Istio CRDs should be registered
+kubectl get crd | grep istio
 
-      # Restart pods if needed
-      kubectl rollout restart deployment <deployment-name>
-      ```
-    </AccordionContent>
-  </AccordionItem>
+# Analyse the mesh for misconfiguration
+istioctl analyze -A
 
-  <AccordionItem value="issue-2">
-    <AccordionTrigger>
-      Installation Validation Errors
-    </AccordionTrigger>
-    <AccordionContent>
-      Run Istio analysis:
-      ```bash
-      istioctl analyze
+# Check that the sidecar is actually injected
+istioctl check-inject <pod-name> -n <namespace>
 
-      # Get more details
-      istioctl analyze -A
+# Inspect the proxy configuration of a running pod
+istioctl proxy-status
+istioctl proxy-config all <pod-name>.<namespace>
 
-      # Check operator status
-      kubectl get pods -n istio-operator
-      kubectl logs -n istio-operator -l name=istio-operator
-      ```
-    </AccordionContent>
-  </AccordionItem>
-
-  <AccordionItem value="issue-3">
-    <AccordionTrigger>
-      Performance Issues
-    </AccordionTrigger>
-    <AccordionContent>
-      Check resource usage and configuration:
-      ```bash
-      # Check resource usage
-      kubectl top pods -n istio-system
-
-      # Verify proxy configuration
-      istioctl proxy-config all <pod-name>.<namespace>
-
-      # Check for proxy errors
-      istioctl proxy-status
-      ```
-    </AccordionContent>
-  </AccordionItem>
-</Accordion>
+# Confirm mTLS is enforced between workloads
+istioctl x describe pod <pod-name> -n <namespace>
+```
 
 ## Configuration Examples
 
-### 1. Traffic Management
+### Traffic Management
 
 ```yaml
-apiVersion: networking.istio.io/v1alpha3
+apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
   name: reviews-route
 spec:
   hosts:
-  - reviews
+    - reviews
   http:
-  - route:
-    - destination:
-        host: reviews
-        subset: v1
-      weight: 75
-    - destination:
-        host: reviews
-        subset: v2
-      weight: 25
+    - route:
+        - destination:
+            host: reviews
+            subset: v1
+          weight: 75
+        - destination:
+            host: reviews
+            subset: v2
+          weight: 25
 ```
 
-### 2. Security Policies
+### Security Policies
 
 ```yaml
-apiVersion: security.istio.io/v1beta1
+apiVersion: security.istio.io/v1
 kind: PeerAuthentication
 metadata:
   name: default
@@ -340,67 +240,147 @@ spec:
     mode: STRICT
 ```
 
-### 3. Monitoring Configuration
+### Telemetry
 
 ```yaml
-apiVersion: telemetry.istio.io/v1alpha1
+apiVersion: telemetry.istio.io/v1
 kind: Telemetry
 metadata:
   name: mesh-default
   namespace: istio-system
 spec:
   tracing:
-  - randomSamplingPercentage: 100.0
-    customTags:
-      environment:
-        literal:
-          value: production
+    - randomSamplingPercentage: 100.0
+      customTags:
+        environment:
+          literal:
+            value: production
 ```
+
+## Troubleshooting
+
+<Accordion type="single">
+  <AccordionItem value="issue-1">
+    <AccordionTrigger>
+      Sidecar injection is not working
+    </AccordionTrigger>
+    <AccordionContent>
+      Check the namespace label and the injector webhook:
+      ```bash
+      kubectl get namespace -L istio-injection
+      kubectl get mutatingwebhookconfiguration | grep sidecar-injector
+      kubectl get pods -n istio-system | grep istiod
+      ```
+      Pods are only injected at creation time — restart existing workloads with
+      `kubectl rollout restart deployment/<name>`.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-2">
+    <AccordionTrigger>
+      istioctl install fails with a validation error
+    </AccordionTrigger>
+    <AccordionContent>
+      Validate the cluster and the configuration before installing:
+      ```bash
+      istioctl x precheck
+      istioctl analyze -A
+      kubectl version
+      ```
+      A common cause is a Kubernetes version outside the supported range for your Istio
+      release.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-3">
+    <AccordionTrigger>
+      istioctl proxy-status shows SYNCED but traffic is broken
+    </AccordionTrigger>
+    <AccordionContent>
+      The control plane and the proxy disagree about the configuration. Compare them:
+      ```bash
+      istioctl proxy-config all <pod-name>.<namespace>
+      istioctl proxy-status
+      kubectl logs -n istio-system deploy/istiod --tail=100
+      ```
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-4">
+    <AccordionTrigger>
+      mTLS errors between services
+    </AccordionTrigger>
+    <AccordionContent>
+      Confirm the mesh-wide default and check for a strict override:
+      ```bash
+      kubectl get peerauthentication -A
+      kubectl get peerauthentication default -n istio-system -o yaml
+      ```
+      Set `mode: STRICT` in the `default` PeerAuthentication in `istio-system` to require
+      mTLS everywhere.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-5">
+    <AccordionTrigger>
+      Performance issues or high memory usage
+    </AccordionTrigger>
+    <AccordionContent>
+      Check the resource usage of the control plane and the proxies:
+      ```bash
+      kubectl top pods -n istio-system
+      kubectl top pods -n <namespace>
+      ```
+      The `demo` profile enables verbose tracing and access logging — use the `default`
+      profile for anything you intend to measure.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-6">
+    <AccordionTrigger>
+      Ambient mode: ztunnel is not running
+    </AccordionTrigger>
+    <AccordionContent>
+      Ambient mode needs the Istio CNI plugin and the ztunnel DaemonSet:
+      ```bash
+      kubectl get pods -n istio-system | grep ztunnel
+      kubectl logs -n istio-system ds/ztunnel --tail=50
+      ```
+      Re-install the ambient profile with `istioctl install --set profile=ambient -y` if
+      the CNI components are missing.
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>
 
 ## Best Practices
 
-1. **Resource Management**
-   ```yaml
-   apiVersion: install.istio.io/v1alpha1
-   kind: IstioOperator
-   spec:
-     components:
-       pilot:
-         k8s:
-           resources:
-             requests:
-               cpu: 500m
-               memory: 2048Mi
-             limits:
-               cpu: 1000m
-               memory: 4096Mi
+1. **Install with the `default` profile in production** and add explicit overrides only
+   where you need them:
+   ```bash
+   istioctl install --set profile=default --set values.pilot.resources.requests.cpu=500m -y
    ```
 
-2. **Security Settings**
+2. **Use revisions for safe upgrades** — install a second control plane and move the
+   traffic to it gradually:
    ```bash
-   # Enable strict mTLS
-   kubectl apply -f - <<EOF
-   apiVersion: security.istio.io/v1beta1
-   kind: PeerAuthentication
-   metadata:
-     name: default
-     namespace: istio-system
-   spec:
-     mtls:
-       mode: STRICT
-   EOF
+   istioctl install --set revision=canary -y
+   kubectl label namespace default istio.io/rev=canary
    ```
 
-3. **Monitoring Setup**
-   ```bash
-   # Install monitoring stack
-   kubectl apply -f samples/addons/prometheus.yaml
-   kubectl apply -f samples/addons/grafana.yaml
-   kubectl apply -f samples/addons/jaeger.yaml
-   ```
+3. **Pin the Istio version** in CI and upgrade one minor version at a time.
+
+4. **Keep the mesh small** — give each namespace its own label and only mesh the
+   services that need it.
+
+5. **Run `istioctl analyze` in CI** to catch invalid configuration before it is applied.
+
+6. **Enable the telemetry add-ons in production** so you can see what the mesh is doing.
 
 ## Next Steps
 
-- [Traffic Management](https://istio.io/latest/docs/tasks/traffic-management/)
-- [Security](https://istio.io/latest/docs/tasks/security/)
-- [Observability](https://istio.io/latest/docs/tasks/observability/) 
+- [Sidecar or ambient?](https://istio.io/latest/docs/overview/dataplane-modes/)
+- [Istio Traffic Management](https://istio.io/latest/docs/tasks/traffic-management/)
+- [Istio Security](https://istio.io/latest/docs/tasks/security/)
+- [Istio Observability](https://istio.io/latest/docs/tasks/observability/)
+- [Istio Upgrade Guide](https://istio.io/latest/docs/setup/upgrade/)
+- [Helm Installation Guide](/docs/containers/helm)

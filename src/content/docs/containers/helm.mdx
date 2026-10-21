@@ -1,196 +1,257 @@
 ---
 title: Helm Installation Guide
-description: Complete guide for installing Helm package manager for Kubernetes across different operating systems.
+description: Install Helm 4 on Linux, macOS and Windows, verify the binary signature, configure repositories and learn the new Helm 4 features such as OCI digest installs and server-side apply.
 ---
 
-Helm is the package manager for Kubernetes. This guide covers installation methods across different operating systems.
+Helm is the package manager for Kubernetes. This guide installs **Helm 4** (the current
+release line), verifies the binary, configures chart repositories and walks through the
+commands you use every day.
+
+<Callout title="Helm 4 is the current release">
+  Helm 4 keeps Helm 3 charts working unchanged, but changes a few defaults. The most
+  important ones for you: post-renderers are now plugins, `helm registry login` takes a
+  domain name only, new releases are installed with **server-side apply**, and
+  `--atomic` / `--force` were renamed to `--rollback-on-failure` / `--force-replace`.
+  If you have automation that depends on Helm 3 behaviour, pin the version explicitly.
+</Callout>
 
 ## Prerequisites
 
-- A Kubernetes cluster
+- A Kubernetes cluster (or a local one — see [Minikube](/docs/containers/minikube))
 - `kubectl` installed and configured
+- `curl` and `tar` for the manual installation
+- For OCI registries: `helm registry login` and a token with push/pull rights
 
 ## Installation Instructions
 
-<Tabs defaultValue="ubuntu">
+### The Official Script (Works on Every Platform)
+
+The Helm project publishes an installer script that detects your OS and architecture:
+
+```bash
+curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-4
+chmod 700 get_helm.sh
+./get_helm.sh
+```
+
+You can pipe it directly if you prefer, but downloading first lets you read the script
+before running it.
+
+### From the Official Binary Release
+
+```bash
+# Pin the version you want to install
+HELM_VERSION=v4.3.1
+
+# Download and verify the checksum
+curl -fsSL -O "https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz"
+curl -fsSL -O "https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz.sha256sum"
+sha256sum -c "helm-${HELM_VERSION}-linux-amd64.tar.gz.sha256sum"
+
+# Extract and install
+tar -xzf "helm-${HELM_VERSION}-linux-amd64.tar.gz"
+sudo install -o root -g root -m 0755 linux-amd64/helm /usr/local/bin/helm
+
+# Verify
+helm version
+```
+
+Replace `linux-amd64` with `linux-arm64`, `darwin-amd64`, `darwin-arm64` or
+`windows-amd64.zip` for your platform.
+
+### From Package Managers
+
+<Tabs defaultValue="linux">
   <TabsList>
-    <TabsTrigger value="ubuntu">Ubuntu/Debian</TabsTrigger>
-    <TabsTrigger value="centos">CentOS/RHEL</TabsTrigger>
-    <TabsTrigger value="fedora">Fedora</TabsTrigger>
-    <TabsTrigger value="arch">Arch Linux</TabsTrigger>
-    <TabsTrigger value="alpine">Alpine</TabsTrigger>
-    <TabsTrigger value="suse">SUSE</TabsTrigger>
+    <TabsTrigger value="linux">Linux</TabsTrigger>
+    <TabsTrigger value="macos">macOS</TabsTrigger>
     <TabsTrigger value="windows">Windows</TabsTrigger>
   </TabsList>
 
-  <TabsContent value="ubuntu">
-    ### Ubuntu/Debian Installation
+  <TabsContent value="linux">
+    #### Debian / Ubuntu (apt)
+
+    The Helm community maintains a Debian package hosted on Buildkite. The key is
+    fingerprint-checked before it is installed:
 
     ```bash
-    # Add Helm repository
-    curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
+    HELM_BUILDKITE_APT_KEY_ID="DDF78C3E6EBB2D2CC223C95C62BA89D07698DBC6"
 
-    # Add apt repository
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
+    sudo apt-get install curl gpg --yes
 
-    # Update package list
-    sudo apt update
+    curl -fsSL https://packages.buildkite.com/helm-linux/helm-debian/gpgkey > "${TMPDIR:-/tmp}/helm.asc"
 
-    # Install Helm
-    sudo apt install helm
+    # Ensure the key ID matches to prevent a compromised repository
+    if [ "$(gpg --import --import-options=show-only --with-colons "${TMPDIR:-/tmp}/helm.asc" \
+            | awk -F: '$1 == "fpr" {print $10}' | head -n 1)" != "${HELM_BUILDKITE_APT_KEY_ID}" ]; then
+      echo "ERROR: Unexpected Helm APT key ID: potential key compromise"
+      exit 1
+    fi
 
-    # Verify installation
-    helm version
-    ```
-  </TabsContent>
+    # Remove configuration left by earlier versions of these instructions
+    sudo rm -f /etc/apt/sources.list.d/helm-stable-debian.list /usr/share/keyrings/helm.gpg
 
-  <TabsContent value="centos">
-    ### CentOS/RHEL Installation
+    sudo install -m 0644 -Dt /etc/apt/keyrings/ "${TMPDIR:-/tmp}/helm.asc"
 
-    ```bash
-    # Add Helm repository
-    cat <<EOF | sudo tee /etc/yum.repos.d/helm.repo
-    [helm-stable]
-    name=Helm Stable Repository
-    baseurl=https://charts.helm.sh/stable
-    enabled=1
-    gpgcheck=1
-    gpgkey=https://charts.helm.sh/stable/gpg
+    sudo tee /etc/apt/sources.list.d/helm-stable-debian.sources > /dev/null <<EOF
+    Types: deb
+    URIs: https://packages.buildkite.com/helm-linux/helm-debian/any/
+    Suites: any
+    Components: main
+    Signed-By: /etc/apt/keyrings/helm.asc
     EOF
 
-    # Install Helm
-    sudo yum install helm
-
-    # Alternative: Using snap
-    sudo yum install snapd
-    sudo systemctl enable --now snapd.socket
-    sudo snap install helm --classic
-
-    # Verify installation
-    helm version
+    sudo apt-get update
+    sudo apt-get install helm
     ```
-  </TabsContent>
 
-  <TabsContent value="fedora">
-    ### Fedora Installation
+    #### RHEL / CentOS / Fedora (dnf)
 
     ```bash
-    # Install Helm using DNF
+    # Fedora 35 and newer ship Helm in the official repositories
     sudo dnf install helm
+    ```
 
-    # Alternative: Using snap
-    sudo dnf install snapd
-    sudo systemctl enable --now snapd.socket
+    #### Other distributions (snap)
+
+    ```bash
     sudo snap install helm --classic
-
-    # Verify installation
-    helm version
     ```
   </TabsContent>
 
-  <TabsContent value="arch">
-    ### Arch Linux Installation
+  <TabsContent value="macos">
+    #### macOS (Homebrew)
 
     ```bash
-    # Install Helm using pacman
-    sudo pacman -Sy helm
-
-    # Verify installation
-    helm version
+    brew install helm
     ```
-  </TabsContent>
 
-  <TabsContent value="alpine">
-    ### Alpine Linux Installation
+    If `which helm` fails after installing with Homebrew, relink the binary:
 
     ```bash
-    # Install Helm
-    sudo apk add helm
-
-    # Verify installation
-    helm version
-    ```
-  </TabsContent>
-
-  <TabsContent value="suse">
-    ### SUSE Linux Installation
-
-    ```bash
-    # Install Helm
-    sudo zypper install helm
-
-    # Alternative: Using snap
-    sudo zypper install snapd
-    sudo systemctl enable --now snapd
-    sudo snap install helm --classic
-
-    # Verify installation
-    helm version
+    brew unlink helm
+    brew link helm
     ```
   </TabsContent>
 
   <TabsContent value="windows">
-    ### Windows Installation
+    #### Windows
 
     ```powershell
-    # Install using Chocolatey
+    # Windows Package Manager
+    winget install Helm.Helm
+
+    # Chocolatey
     choco install kubernetes-helm
 
-    # Alternative: Using Scoop
+    # Scoop
     scoop install helm
+    ```
 
-    # Verify installation
+    Verify the installation:
+
+    ```powershell
     helm version
     ```
   </TabsContent>
 </Tabs>
 
-## Manual Installation (Script)
+## Verifying the Release Signature
 
-For any OS, you can use the official installation script:
+Every Helm release is signed. Verifying it protects you against tampered downloads:
 
 ```bash
-curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
-chmod 700 get_helm.sh
-./get_helm.sh
+# 1. Verify the SHA256 checksum
+sha256sum -c helm-v4.3.1-linux-amd64.tar.gz.sha256sum
+
+# 2. Import the Helm maintainer keys (once, into a location you control)
+curl https://raw.githubusercontent.com/helm/helm/main/KEYS | gpg --import
+
+# 3. Verify the signature
+gpg --verify helm-v4.3.1-linux-amd64.tar.gz.asc helm-v4.3.1-linux-amd64.tar.gz
+# gpg: Good signature from "Helm Maintainer"
 ```
+
+<Callout title="Keep your own copy of the keys">
+  Import the maintainer keys once and store them somewhere you control. If the repository
+  is ever compromised and the keys are swapped, your local copy lets you detect it.
+</Callout>
 
 ## Basic Configuration
 
-### Initialize Helm
+### Manage Chart Repositories
 
 ```bash
-# Add common repositories
-helm repo add stable https://charts.helm.sh/stable
+# Add a classic chart repository
 helm repo add bitnami https://charts.bitnami.com/bitnami
 
-# Update repositories
+# Refresh the local cache
 helm repo update
 
-# List repositories
+# List the configured repositories
 helm repo list
+
+# Search across the configured repositories
+helm search repo nginx
 ```
 
-### Working with Charts
+<Callout title="The old stable repository is archived">
+  `https://charts.helm.sh/stable` is no longer maintained, and Bitnami now publishes
+  most of its charts to an OCI registry. When a classic repository stops working, pull
+  the chart from OCI instead (see below) or from another registry such as
+  Artifact Hub.
+</Callout>
+
+### Install from an OCI Registry
+
+Helm 4 supports OCI registries natively, and Helm 4 can install a chart **by digest** so
+the exact same bits are always deployed:
 
 ```bash
-# Search for charts
+# Log in to the registry (domain only — no scheme or path)
+helm registry login registry-1.docker.io
+
+# Install the latest chart from an OCI registry
+helm install myapp oci://registry-1.docker.io/bitnamicharts/nginx
+
+# Install a specific chart by digest for supply chain safety
+helm install myapp oci://registry-1.docker.io/bitnamicharts/nginx@sha256:<digest>
+```
+
+### Working with Releases
+
+```bash
+# Search for a chart
 helm search repo nginx
 
-# Install a chart
+# Install a release
 helm install my-release bitnami/nginx
 
-# List installed releases
+# List releases
 helm list
 
 # Upgrade a release
 helm upgrade my-release bitnami/nginx
 
-# Rollback a release
+# Roll back to a previous revision
+helm history my-release
 helm rollback my-release 1
 
-# Uninstall a release
+# Uninstall
 helm uninstall my-release
+```
+
+### Template Locally Before Deploying
+
+```bash
+# Render the manifests without touching the cluster
+helm template my-release bitnami/nginx
+
+# Render with custom values
+helm template my-release bitnami/nginx -f values-prod.yaml
+
+# Validate against the live cluster (Helm 4 also reports resource status)
+helm install my-release bitnami/nginx --dry-run --debug
 ```
 
 ## Troubleshooting
@@ -201,21 +262,28 @@ helm uninstall my-release
       Error: could not find tiller
     </AccordionTrigger>
     <AccordionContent>
-      Helm 3 no longer uses Tiller. If you see this error, you might be using Helm 2. Upgrade to Helm 3:
+      Tiller was removed in Helm 3. If you see this error you are running Helm 2:
       ```bash
-      curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+      helm version
+      curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-4
+      ./get_helm.sh
       ```
     </AccordionContent>
   </AccordionItem>
 
   <AccordionItem value="issue-2">
     <AccordionTrigger>
-      Error: UPGRADE FAILED: another operation is in progress
+      Error: UPGRADE FAILED: another operation (install/upgrade/rollback) is in progress
     </AccordionTrigger>
     <AccordionContent>
-      Remove the release that is stuck in pending state:
+      A previous operation was interrupted and left the release in a pending state:
       ```bash
-      kubectl delete secret sh.helm.release.v1.[release-name].v[version-number] -n [namespace]
+      helm list --all --filter my-release
+      helm rollback my-release 1
+      ```
+      If no revision exists, remove the stuck release secret:
+      ```bash
+      kubectl delete secret sh.helm.release.v1.my-release.v1 -n default
       ```
     </AccordionContent>
   </AccordionItem>
@@ -225,78 +293,123 @@ helm uninstall my-release
       Error: chart not found in repo
     </AccordionTrigger>
     <AccordionContent>
-      Update your repositories:
+      The local repository cache is stale, or the chart moved to OCI:
       ```bash
       helm repo update
-      helm search repo [chart-name]
+      helm search repo <chart-name>
+      helm pull oci://registry-1.docker.io/bitnamicharts/<chart-name> --version <version>
       ```
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-4">
+    <AccordionTrigger>
+      Error: Kubernetes cluster unreachable
+    </AccordionTrigger>
+    <AccordionContent>
+      Helm talks to the cluster through your kubeconfig:
+      ```bash
+      kubectl cluster-info
+      kubectl get nodes
+      helm list --kubeconfig ~/.kube/config
+      ```
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-5">
+    <AccordionTrigger>
+      Error: repository not found or registry login failed
+    </AccordionTrigger>
+    <AccordionContent>
+      In Helm 4 `helm registry login` expects a **domain only**:
+      ```bash
+      helm registry login registry-1.docker.io
+      ```
+      Passing a full URL such as `https://registry-1.docker.io/v2/` is rejected.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-6">
+    <AccordionTrigger>
+      Error: unknown flag: --atomic
+    </AccordionTrigger>
+    <AccordionContent>
+      Helm 4 renamed the flag. The old name still works but prints a deprecation warning:
+      ```bash
+      # Helm 3
+      helm upgrade my-release ./chart --atomic
+
+      # Helm 4
+      helm upgrade my-release ./chart --rollback-on-failure
+      ```
+      `--force` was renamed to `--force-replace` in the same way.
     </AccordionContent>
   </AccordionItem>
 </Accordion>
 
 ## Best Practices
 
-1. **Version Control Your Charts**
+1. **Version control your charts**
    ```bash
-   # Create a new chart
    helm create mychart
-   
-   # Package the chart
+   helm lint mychart
    helm package mychart
-   
-   # Store in a chart repository
    helm repo index .
    ```
 
-2. **Use Values Files**
+2. **Always use values files for environment differences**
    ```yaml
    # values.yaml
    replicaCount: 3
    image:
      repository: nginx
-     tag: latest
+     tag: "1.27"
    ```
    ```bash
-   helm install -f values.yaml myrelease ./mychart
+   helm install -f values-prod.yaml myrelease ./mychart
    ```
 
-3. **Chart Testing**
+3. **Pin chart versions**
    ```bash
-   # Lint your chart
+   helm install my-release bitnami/nginx --version 15.4.2
+   ```
+
+4. **Diff before you upgrade**
+   ```bash
+   helm plugin install https://github.com/databus23/helm-diff
+   helm diff upgrade my-release bitnami/nginx --version 15.4.3
+   ```
+
+5. **Lint and test in CI**
+   ```bash
    helm lint mychart
-
-   # Test installation
-   helm install --dry-run --debug myrelease ./mychart
+   helm install myrelease ./mychart --dry-run --debug
+   helm unittest ./mychart
    ```
 
-## Security Considerations
-
-1. **Use Signed Charts**
+6. **Sign the charts you publish**
    ```bash
-   # Create a signing key
    gpg --quick-generate-key "Helm User"
-
-   # Sign a chart
    helm package --sign mychart
-
-   # Verify a chart
    helm verify mychart-0.1.0.tgz
    ```
 
-2. **RBAC Configuration**
-   ```yaml
-   apiVersion: rbac.authorization.k8s.io/v1
-   kind: Role
-   metadata:
-     name: helm-user
-   rules:
-   - apiGroups: [""]
-     resources: ["pods"]
-     verbs: ["get", "list", "watch"]
-   ```
+## What's New in Helm 4
+
+| Feature | What it means for you |
+| --- | --- |
+| Server-side apply | New releases are applied with SSA by default; existing client-side releases keep their behaviour when upgraded |
+| OCI digest installs | `helm install app oci://repo/chart@sha256:...` guarantees the exact artifact |
+| Multi-document values | Split complex configuration across several YAML files |
+| kstatus watcher | `helm status` reports the real state of each deployed resource |
+| WebAssembly plugins | New optional plugin runtime; existing plugins keep working |
+| Renamed flags | `--atomic` → `--rollback-on-failure`, `--force` → `--force-replace` |
 
 ## Next Steps
 
 - [Helm Charts Guide](https://helm.sh/docs/topics/charts/)
 - [Chart Template Guide](https://helm.sh/docs/chart_template_guide/)
-- [Chart Development Tips](https://helm.sh/docs/howto/charts_tips_and_tricks/) 
+- [Helm 4 Overview](https://helm.sh/docs/overview/)
+- [Artifact Hub — search 800+ charts](https://artifacthub.io/)
+- [Istio Installation Guide](/docs/containers/istio)
+- [Kubernetes Installation Guide](/docs/containers/kubernetes)

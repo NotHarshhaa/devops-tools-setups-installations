@@ -1,246 +1,251 @@
 ---
 title: Minikube Installation Guide
-description: Complete guide for installing Minikube for local Kubernetes development across different operating systems.
+description: Install Minikube v1.39 on Linux, macOS and Windows, start a local Kubernetes cluster with the right driver, manage add-ons, load images and troubleshoot common failures.
 ---
 
-Minikube is a tool that makes it easy to run Kubernetes locally. It runs a single-node Kubernetes cluster inside a VM on your laptop.
+Minikube runs a single-node Kubernetes cluster locally, inside a container or a virtual
+machine. This guide installs **Minikube v1.39** and walks through the commands you use
+every day.
+
+<Callout title="Minikube is for learning and development">
+  Minikube is not a production platform. For a real cluster, use the
+  [kubeadm guide](/docs/containers/kubernetes) or a managed Kubernetes service.
+</Callout>
 
 ## Prerequisites
 
 - 2 CPUs or more
-- 2GB of free memory
-- 20GB of free disk space
-- Internet connection
-- Container or virtual machine manager (Docker, VirtualBox, etc.)
+- 2 GB of free memory (4 GB or more recommended)
+- 20 GB of free disk space
+- Internet access to pull images
+- A container or virtual machine driver: Docker, Podman, QEMU, KVM, Hyper-V, VirtualBox,
+  VMware Fusion/Workstation or Parallels
 
 ## Installation Instructions
 
-<Tabs defaultValue="ubuntu">
+### Linux
+
+<Tabs defaultValue="binary">
   <TabsList>
-    <TabsTrigger value="ubuntu">Ubuntu/Debian</TabsTrigger>
-    <TabsTrigger value="centos">CentOS/RHEL</TabsTrigger>
-    <TabsTrigger value="fedora">Fedora</TabsTrigger>
-    <TabsTrigger value="arch">Arch Linux</TabsTrigger>
-    <TabsTrigger value="alpine">Alpine</TabsTrigger>
-    <TabsTrigger value="suse">SUSE</TabsTrigger>
-    <TabsTrigger value="windows">Windows</TabsTrigger>
+    <TabsTrigger value="binary">Binary</TabsTrigger>
+    <TabsTrigger value="deb">Debian package</TabsTrigger>
+    <TabsTrigger value="rpm">RPM package</TabsTrigger>
   </TabsList>
 
-  <TabsContent value="ubuntu">
-    ### Ubuntu/Debian Installation
-
+  <TabsContent value="binary">
     ```bash
-    # Install required packages
-    sudo apt update
-    sudo apt install -y curl wget apt-transport-https
+    # Download the latest stable release (x86_64)
+    curl -LO https://github.com/kubernetes/minikube/releases/latest/download/minikube-linux-amd64
+    sudo install minikube-linux-amd64 /usr/local/bin/minikube && rm minikube-linux-amd64
 
-    # Download Minikube binary
-    curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
-
-    # Install Minikube
-    sudo install minikube-linux-amd64 /usr/local/bin/minikube
-
-    # Install kubectl
-    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-    sudo install kubectl /usr/local/bin/kubectl
-
-    # Start Minikube
-    minikube start
-
-    # Verify installation
-    minikube status
-    kubectl get nodes
+    # On ARM64 use minikube-linux-arm64 instead
     ```
   </TabsContent>
 
-  <TabsContent value="centos">
-    ### CentOS/RHEL Installation
-
+  <TabsContent value="deb">
     ```bash
-    # Install required packages
-    sudo yum install -y curl wget
+    curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube_latest_amd64.deb
+    sudo dpkg -i minikube_latest_amd64.deb
 
-    # Download Minikube binary
-    curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
-
-    # Install Minikube
-    sudo install minikube-linux-amd64 /usr/local/bin/minikube
-
-    # Install kubectl
-    cat <<EOF | sudo tee /etc/yum.repos.d/kubernetes.repo
-    [kubernetes]
-    name=Kubernetes
-    baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-\$basearch
-    enabled=1
-    gpgcheck=1
-    gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
-    EOF
-    sudo yum install -y kubectl
-
-    # Start Minikube
-    minikube start
-
-    # Verify installation
-    minikube status
-    kubectl get nodes
+    # On ARM64 use minikube_latest_arm64.deb
     ```
   </TabsContent>
 
-  <TabsContent value="fedora">
-    ### Fedora Installation
-
+  <TabsContent value="rpm">
     ```bash
-    # Install required packages
-    sudo dnf install -y curl wget
+    curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-latest.x86_64.rpm
+    sudo rpm -Uvh minikube-latest.x86_64.rpm
 
-    # Download Minikube binary
-    curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
-
-    # Install Minikube
-    sudo install minikube-linux-amd64 /usr/local/bin/minikube
-
-    # Install kubectl
-    sudo dnf install -y kubectl
-
-    # Start Minikube
-    minikube start
-
-    # Verify installation
-    minikube status
-    kubectl get nodes
-    ```
-  </TabsContent>
-
-  <TabsContent value="arch">
-    ### Arch Linux Installation
-
-    ```bash
-    # Install Minikube and kubectl
-    sudo pacman -Sy minikube kubectl
-
-    # Start Minikube
-    minikube start
-
-    # Verify installation
-    minikube status
-    kubectl get nodes
-    ```
-  </TabsContent>
-
-  <TabsContent value="alpine">
-    ### Alpine Linux Installation
-
-    ```bash
-    # Install required packages
-    sudo apk add curl wget
-
-    # Download Minikube binary
-    curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
-
-    # Install Minikube
-    sudo install minikube-linux-amd64 /usr/local/bin/minikube
-
-    # Install kubectl
-    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-    sudo install kubectl /usr/local/bin/kubectl
-
-    # Start Minikube
-    minikube start
-
-    # Verify installation
-    minikube status
-    kubectl get nodes
-    ```
-  </TabsContent>
-
-  <TabsContent value="suse">
-    ### SUSE Linux Installation
-
-    ```bash
-    # Install required packages
-    sudo zypper install -y curl wget
-
-    # Download Minikube binary
-    curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
-
-    # Install Minikube
-    sudo install minikube-linux-amd64 /usr/local/bin/minikube
-
-    # Install kubectl
-    sudo zypper install -y kubectl
-
-    # Start Minikube
-    minikube start
-
-    # Verify installation
-    minikube status
-    kubectl get nodes
-    ```
-  </TabsContent>
-
-  <TabsContent value="windows">
-    ### Windows Installation
-
-    ```powershell
-    # Install using Chocolatey
-    choco install minikube kubernetes-cli
-
-    # Alternative: Download installer from official website
-    # Navigate to: https://minikube.sigs.k8s.io/docs/start/
-
-    # Start Minikube
-    minikube start
-
-    # Verify installation
-    minikube status
-    kubectl get nodes
+    # On ARM64 use minikube-latest.aarch64.rpm
     ```
   </TabsContent>
 </Tabs>
 
-## Basic Usage
-
-### Starting Minikube
+### macOS
 
 ```bash
-# Start with default configuration
+# Homebrew (recommended)
+brew install minikube
+
+# Or the binary
+curl -LO https://github.com/kubernetes/minikube/releases/latest/download/minikube-darwin-arm64
+sudo install minikube-darwin-arm64 /usr/local/bin/minikube
+```
+
+If `which minikube` fails after a Homebrew install, relink it:
+
+```bash
+brew unlink minikube
+brew link minikube
+```
+
+### Windows
+
+```powershell
+# Windows Package Manager
+winget install Kubernetes.minikube
+
+# Chocolatey
+choco install minikube
+
+# Or the .exe installer
+# https://storage.googleapis.com/minikube/releases/latest/minikube-installer.exe
+```
+
+### Install kubectl
+
+Minikube can download a matching `kubectl` for you, but having a standalone client is
+handy:
+
+```bash
+KUBECTL_VERSION="$(curl -sL https://dl.k8s.io/release/stable.txt)"
+curl -LO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
+sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+```
+
+## Starting the Cluster
+
+```bash
+# Start with the default driver (Docker if it is available)
 minikube start
 
-# Start with specific Kubernetes version
-minikube start --kubernetes-version=v1.24.0
+# Explicitly choose a driver
+minikube start --driver=docker
+minikube start --driver=podman
+minikube start --driver=kvm2
 
-# Start with more resources
+# Give the cluster more resources
 minikube start --cpus=4 --memory=8192mb
 
-# Start with specific driver
-minikube start --driver=docker
+# Start a multi-node cluster
+minikube start --nodes=3
+
+# Pin a Kubernetes version (one of the three latest minor releases)
+minikube start --kubernetes-version=v1.36.0
+
+# Use containerd instead of the Docker runtime inside the node
+minikube start --container-runtime=containerd
 ```
 
-### Managing Addons
+On Windows, Hyper-V must be enabled before starting Minikube:
+
+```powershell
+Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All
+```
+
+### Verify the Cluster
 
 ```bash
-# List available addons
+# Cluster status
+minikube status
+
+# Nodes
+kubectl get nodes -o wide
+
+# System pods
+kubectl get pods -A
+
+# Or use the bundled kubectl
+minikube kubectl -- get pods -A
+```
+
+Add an alias so `kubectl` always targets the cluster:
+
+```bash
+echo 'alias kubectl="minikube kubectl --"' >> $HOME/.bashrc
+source $HOME/.bashrc
+```
+
+## Deploying Your First Application
+
+```bash
+# Create a deployment and expose it
+kubectl create deployment hello-minikube --image=kicbase/echo-server:1.0
+kubectl expose deployment hello-minikube --type=NodePort --port=8080
+
+# Open it in a browser
+minikube service hello-minikube
+
+# Or forward the port instead
+kubectl port-forward service/hello-minikube 7080:8080
+```
+
+For a `LoadBalancer` service, run the tunnel in a separate terminal:
+
+```bash
+minikube tunnel
+```
+
+Then read the external IP from `kubectl get services`.
+
+## Managing Add-ons
+
+```bash
+# List the available add-ons
 minikube addons list
 
-# Enable an addon
-minikube addons enable dashboard
+# Enable the ingress controller
 minikube addons enable ingress
 
-# Access dashboard
+# Enable the dashboard
+minikube addons enable dashboard
+
+# Open the dashboard
 minikube dashboard
+
+# Disable an add-on
+minikube addons disable ingress
 ```
 
-### Working with Docker
+<Callout title="Ingress needs a tunnel">
+  With the Docker driver, the ingress address is only reachable while `minikube tunnel`
+  is running. Use `127.0.0.1` instead of the advertised address when testing locally.
+</Callout>
+
+## Working with Images
+
+Building locally is slow because the image has to travel to the node. Load it directly
+instead:
 
 ```bash
-# Point shell to minikube's Docker daemon
+# Build with the host daemon
+docker build -t my-app:1.0 .
+
+# Load the image into the Minikube node
+minikube image load my-app:1.0
+
+# Or point your shell at the in-cluster daemon
 eval $(minikube docker-env)
+docker build -t my-app:1.0 .
 
-# Build image using minikube's Docker
-docker build -t my-app .
-
-# Revert to host's Docker
+# Return to the host daemon
 eval $(minikube docker-env -u)
+```
+
+## Managing Clusters
+
+```bash
+# Create a second cluster with an older Kubernetes version
+minikube start -p aged --kubernetes-version=v1.35.0
+
+# List the profiles
+minikube profile list
+
+# Switch between them
+minikube profile aged
+
+# Pause and resume
+minikube pause
+minikube unpause
+
+# Stop and delete
+minikube stop
+minikube delete
+minikube delete --all
+
+# Change the defaults for the next start
+minikube config set memory 9001
+minikube config set cpus 4
 ```
 
 ## Troubleshooting
@@ -248,124 +253,132 @@ eval $(minikube docker-env -u)
 <Accordion type="single">
   <AccordionItem value="issue-1">
     <AccordionTrigger>
-      Unable to start cluster
+      Unable to start the cluster / exit code 127
     </AccordionTrigger>
     <AccordionContent>
-      Try the following:
+      Minikube could not find or start your container runtime or hypervisor:
       ```bash
-      # Delete and recreate cluster
-      minikube delete
+      # Check the driver status
       minikube start --driver=docker
+      systemctl status docker
 
-      # Check system requirements
+      # Get verbose logs
       minikube start --alsologtostderr -v=4
+
+      # Start from a clean state
+      minikube delete
       ```
     </AccordionContent>
   </AccordionItem>
 
   <AccordionItem value="issue-2">
     <AccordionTrigger>
-      Connection refused
+      Connection refused when talking to the cluster
     </AccordionTrigger>
     <AccordionContent>
-      Check if minikube is running:
+      The cluster is probably stopped or was moved to another profile:
       ```bash
       minikube status
-      minikube stop
+      minikube profile list
       minikube start
       ```
+      Confirm the kubeconfig context points at the right cluster with
+      `kubectl config current-context`.
     </AccordionContent>
   </AccordionItem>
 
   <AccordionItem value="issue-3">
     <AccordionTrigger>
-      Docker driver issues
+      The Docker driver fails with permission errors
     </AccordionTrigger>
     <AccordionContent>
-      Verify Docker setup:
+      Minikube needs access to the Docker socket:
       ```bash
-      # Check Docker status
-      systemctl status docker
+      sudo usermod -aG docker $USER
+      newgrp docker
 
-      # Try different driver
-      minikube start --driver=virtualbox
+      # If you use rootless Docker, make sure the daemon is running
+      # and that $DOCKER_HOST points at the rootless socket
+      systemctl --user status docker
+      echo $DOCKER_HOST
       ```
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-4">
+    <AccordionTrigger>
+      ImagePullBackOff after deploying an application
+    </AccordionTrigger>
+    <AccordionContent>
+      The node cannot reach the registry, or the image only exists on your machine:
+      ```bash
+      # Load a locally built image into the node
+      minikube image load my-app:1.0
+
+      # Check the pull error
+      kubectl describe pod <pod-name>
+      ```
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-5">
+    <AccordionTrigger>
+      The dashboard or ingress address is not reachable
+    </AccordionTrigger>
+    <AccordionContent>
+      Run the tunnel and use the loopback address:
+      ```bash
+      minikube tunnel
+      kubectl get ingress
+      # Use http://127.0.0.1:<port> in the browser
+      ```
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-6">
+    <AccordionTrigger>
+      The cluster is slow or out of resources
+    </AccordionTrigger>
+    <AccordionContent>
+      Check what the node is actually using and raise the limits:
+      ```bash
+      kubectl top nodes
+      minikube stop
+      minikube start --cpus=4 --memory=8192mb
+      ```
+      On macOS and Windows, giving the virtual machine more memory in the hypervisor
+      settings helps as well.
     </AccordionContent>
   </AccordionItem>
 </Accordion>
 
-## Advanced Configuration
-
-### 1. Multiple Clusters
-
-```bash
-# Create named cluster
-minikube start -p cluster2
-
-# Switch between clusters
-minikube profile cluster2
-
-# List all clusters
-minikube profile list
-```
-
-### 2. Networking
-
-```bash
-# Access service
-minikube service my-service
-
-# Get service URL
-minikube service my-service --url
-
-# Enable ingress
-minikube addons enable ingress
-```
-
-### 3. Persistent Storage
-
-```bash
-# Create PersistentVolume
-kubectl apply -f - <<EOF
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: pv0001
-spec:
-  accessModes:
-    - ReadWriteOnce
-  capacity:
-    storage: 1Gi
-  hostPath:
-    path: /data/pv0001/
-EOF
-```
-
 ## Best Practices
 
-1. **Resource Management**
+1. **Use a named profile per project** so teams do not overwrite each other's cluster:
    ```bash
-   # Monitor resource usage
-   minikube dashboard
-   kubectl top nodes
-   kubectl top pods
+   minikube start -p payments
    ```
 
-2. **Image Management**
+2. **Pin the Kubernetes version** in CI so a new Minikube release cannot change your
+   test matrix under you.
+
+3. **Load images instead of pulling them** — it is dramatically faster:
    ```bash
-   # Cache images
-   minikube cache add nginx:latest
-   minikube cache list
+   minikube image build -t my-app:1.0 .
    ```
 
-3. **Backup Configuration**
+4. **Keep the cluster small** — one node with 2 CPUs is enough for most development work.
+
+5. **Reset when things get weird** — a fresh cluster is faster to fix than a broken one:
    ```bash
-   # Export cluster config
-   kubectl get all --all-namespaces -o yaml > cluster-backup.yaml
+   minikube delete
+   minikube start
    ```
 
 ## Next Steps
 
-- [Kubernetes Basics](https://kubernetes.io/docs/tutorials/kubernetes-basics/)
-- [Deploy Applications](https://kubernetes.io/docs/tasks/run-application/run-stateless-application-deployment/)
-- [Minikube Documentation](https://minikube.sigs.k8s.io/docs/) 
+- [Minikube Documentation](https://minikube.sigs.k8s.io/docs/)
+- [Helm Installation Guide](/docs/containers/helm)
+- [Istio Installation Guide](/docs/containers/istio)
+- [Kubernetes Installation Guide](/docs/containers/kubernetes)
+- [Learn Kubernetes Basics](https://kubernetes.io/docs/tutorials/kubernetes-basics/)

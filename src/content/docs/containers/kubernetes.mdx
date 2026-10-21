@@ -1,272 +1,351 @@
 ---
 title: Kubernetes Installation Guide
-description: Complete guide for installing Kubernetes (kubeadm, kubelet, kubectl) across different operating systems with package manager specific commands.
+description: Install Kubernetes v1.37 with kubeadm, kubelet and kubectl from the official pkgs.k8s.io repositories, configure containerd, install a CNI and join worker nodes.
 ---
 
-This guide provides step-by-step instructions for installing Kubernetes components on various operating systems.
+This guide installs **Kubernetes v1.37** with `kubeadm`, `kubelet` and `kubectl` using the
+official community package repositories, `containerd` as the container runtime and Calico as
+the pod network.
+
+<Callout title="The legacy repositories are gone">
+  The old `apt.kubernetes.io` and `yum.kubernetes.io` repositories were frozen in September
+  2023 and no longer receive packages. Everything below uses `pkgs.k8s.io`, which serves
+  builds from v1.24 onwards. There is a dedicated repository per minor version — for
+  example `v1.37`.
+</Callout>
 
 ## Prerequisites
 
-- 2 CPUs or more
-- 2GB of RAM per node
-- Full network connectivity between nodes
-- Unique hostname, MAC address, and product_uuid for every node
-- Certain ports opened on your machines
-- Swap disabled
+- 2 CPUs or more per node
+- 2 GB of RAM minimum per node (4 GB or more for the control plane)
+- Full network connectivity between nodes (all ports open)
+- Unique hostname, MAC address and product UUID on every node
+- Swap disabled (or explicitly configured — see below)
+- `containerd` installed and configured to use the systemd cgroup driver
 
-## Installation Instructions
+## Installing the Container Runtime
+
+Kubernetes talks to the runtime through the CRI. `containerd` is the recommended default.
+
+```bash
+# Debian / Ubuntu
+sudo apt update
+sudo apt install -y containerd
+
+# RHEL / CentOS / Fedora
+sudo dnf install -y containerd
+```
+
+Enable the `br_netfilter` module and the systemd cgroup driver:
+
+```bash
+# Load the modules required by Kubernetes
+sudo modprobe overlay
+sudo modprobe br_netfilter
+
+# Make them persistent across reboots
+cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
+overlay
+br_netfilter
+EOF
+
+# Configure the bridge to forward iptables traffic
+cat <<EOF | sudo tee /etc/sysctl.d/99-kubernetes-cri.conf
+net.bridge.bridge-nf-call-iptables  = 1
+net.bridge.bridge-nf-call-ip6tables = 1
+net.ipv4.ip_forward                 = 1
+EOF
+
+sudo sysctl --system
+
+# Generate the default containerd configuration and switch it to systemd cgroups
+sudo mkdir -p /etc/containerd
+sudo containerd config default | sudo tee /etc/containerd/config.toml > /dev/null
+sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml
+
+sudo systemctl enable --now containerd
+sudo systemctl restart containerd
+
+# Install crictl for debugging the runtime (shipped separately from containerd)
+CRICTL_VERSION=v1.37.0
+curl -fsSL -o /tmp/crictl.tar.gz \
+  "https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/crictl-${CRICTL_VERSION}-linux-amd64.tar.gz"
+sudo tar -C /usr/local/bin -xzf /tmp/crictl.tar.gz
+
+# Confirm the runtime is healthy
+sudo crictl info | head -n 5
+```
+
+### Swap
+
+Swap is off by default in `kubeadm` pre-flight checks:
+
+```bash
+# Disable swap for the running system
+sudo swapoff -a
+
+# Comment out swap entries in /etc/fstab so they do not come back after a reboot
+sudo sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
+```
+
+<Callout title="Kubernetes 1.28+ and swap">
+  Since Kubernetes 1.28 the kubelet can be configured to use swap via the
+  `memorySwap.swapBehavior` setting in the kubelet configuration file. Swap is still
+  discouraged for performance reasons, and the default behaviour is to fail the pod.
+</Callout>
+
+## Installing kubeadm, kubelet and kubectl
+
+The steps below are identical for the control plane and every worker node.
 
 <Tabs defaultValue="ubuntu">
   <TabsList>
     <TabsTrigger value="ubuntu">Ubuntu/Debian</TabsTrigger>
-    <TabsTrigger value="centos">CentOS/RHEL</TabsTrigger>
-    <TabsTrigger value="fedora">Fedora</TabsTrigger>
-    <TabsTrigger value="suse">SUSE</TabsTrigger>
-    <TabsTrigger value="windows">Windows</TabsTrigger>
+    <TabsTrigger value="rpm">RHEL/CentOS/Fedora</TabsTrigger>
+    <TabsTrigger value="kubectl">kubectl only</TabsTrigger>
+    <TabsTrigger value="windows">Windows client</TabsTrigger>
   </TabsList>
 
   <TabsContent value="ubuntu">
-    ### Ubuntu/Debian Installation
+    ### Ubuntu / Debian (apt)
 
     ```bash
-    # Update package index
+    # Create the keyring directory (not present by default before Debian 12 / Ubuntu 22.04)
+    sudo mkdir -p -m 755 /etc/apt/keyrings
+
+    # Download the signing key for the v1.37 package repositories
+    curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.37/deb/Release.key \
+      | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+    # Add the v1.37 repository
+    echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.37/deb/ /' \
+      | sudo tee /etc/apt/sources.list.d/kubernetes.list
+
     sudo apt update
 
-    # Install prerequisites
-    sudo apt install -y apt-transport-https ca-certificates curl
-
-    # Add Kubernetes GPG key
-    curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/kubernetes-archive-keyring.gpg
-
-    # Add Kubernetes repository
-    echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
-
-    # Update package list
-    sudo apt update
-
-    # Install Kubernetes components
+    # Install the components
     sudo apt install -y kubelet kubeadm kubectl
 
-    # Pin package versions
+    # Hold the versions so an upgrade never happens automatically
     sudo apt-mark hold kubelet kubeadm kubectl
 
-    # Disable swap
-    sudo swapoff -a
-    sudo sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
-
-    # Enable kernel modules
-    cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
-    overlay
-    br_netfilter
-    EOF
-
-    sudo modprobe overlay
-    sudo modprobe br_netfilter
-
-    # Configure sysctl params
-    cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
-    net.bridge.bridge-nf-call-iptables  = 1
-    net.bridge.bridge-nf-call-ip6tables = 1
-    net.ipv4.ip_forward                 = 1
-    EOF
-
-    sudo sysctl --system
+    # Enable the kubelet (it will crash-loop until kubeadm init runs)
+    sudo systemctl enable --now kubelet
     ```
   </TabsContent>
 
-  <TabsContent value="centos">
-    ### CentOS/RHEL Installation
+  <TabsContent value="rpm">
+    ### RHEL / CentOS / Fedora (dnf)
 
     ```bash
-    # Configure repository
+    # Add the v1.37 repository
     cat <<EOF | sudo tee /etc/yum.repos.d/kubernetes.repo
     [kubernetes]
     name=Kubernetes
-    baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-\$basearch
+    baseurl=https://pkgs.k8s.io/core:/stable:/v1.37/rpm/
     enabled=1
     gpgcheck=1
-    gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
-    exclude=kubelet kubeadm kubectl
+    gpgkey=https://pkgs.k8s.io/core:/stable:/v1.37/rpm/repodata/repomd.xml.key
+    exclude=kubelet kubeadm kubectl cri-tools kubernetes-cni
     EOF
 
-    # Set SELinux to permissive mode
-    sudo setenforce 0
-    sudo sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
+    # Install the components
+    # DNF4 (Fedora < 41, RHEL/CentOS < 10)
+    sudo dnf install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
 
-    # Install Kubernetes components
-    sudo yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
+    # DNF5 (Fedora 41+, RHEL/CentOS 10+) or when weak deps pull in iptables
+    sudo dnf install -y kubelet kubeadm kubectl --setopt=disable_excludes=kubernetes --setopt=install_weak_deps=False
 
-    # Enable and start kubelet
+    # Enable the kubelet
     sudo systemctl enable --now kubelet
-
-    # Disable swap
-    sudo swapoff -a
-    sudo sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
-
-    # Configure kernel modules
-    cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
-    overlay
-    br_netfilter
-    EOF
-
-    sudo modprobe overlay
-    sudo modprobe br_netfilter
-
-    # Configure sysctl params
-    cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
-    net.bridge.bridge-nf-call-iptables  = 1
-    net.bridge.bridge-nf-call-ip6tables = 1
-    net.ipv4.ip_forward                 = 1
-    EOF
-
-    sudo sysctl --system
     ```
   </TabsContent>
 
-  <TabsContent value="fedora">
-    ### Fedora Installation
+  <TabsContent value="kubectl">
+    ### Install kubectl only (no cluster)
 
     ```bash
-    # Configure repository
-    cat <<EOF | sudo tee /etc/yum.repos.d/kubernetes.repo
-    [kubernetes]
-    name=Kubernetes
-    baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-\$basearch
-    enabled=1
-    gpgcheck=1
-    gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
-    EOF
+    # Install the latest stable kubectl
+    KUBECTL_VERSION="$(curl -sL https://dl.k8s.io/release/stable.txt)"
+    curl -LO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
+    sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 
-    # Install Kubernetes components
-    sudo dnf install -y kubelet kubeadm kubectl
-
-    # Enable kubelet
-    sudo systemctl enable --now kubelet
-
-    # Disable swap
-    sudo swapoff -a
-    sudo sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
-
-    # Configure kernel modules
-    cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
-    overlay
-    br_netfilter
-    EOF
-
-    sudo modprobe overlay
-    sudo modprobe br_netfilter
-
-    # Configure sysctl params
-    cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
-    net.bridge.bridge-nf-call-iptables  = 1
-    net.bridge.bridge-nf-call-ip6tables = 1
-    net.ipv4.ip_forward                 = 1
-    EOF
-
-    sudo sysctl --system
+    # Verify
+    kubectl version --client
     ```
-  </TabsContent>
 
-  <TabsContent value="suse">
-    ### SUSE Linux Installation
-
-    ```bash
-    # Add Kubernetes repository
-    sudo zypper addrepo --type yum --gpgcheck-strict \
-      https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64 \
-      kubernetes
-
-    # Import GPG key
-    sudo rpm --import https://packages.cloud.google.com/yum/doc/yum-key.gpg
-    sudo rpm --import https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
-
-    # Install Kubernetes components
-    sudo zypper install -y kubelet kubeadm kubectl
-
-    # Enable kubelet
-    sudo systemctl enable kubelet
-    sudo systemctl start kubelet
-
-    # Disable swap
-    sudo swapoff -a
-    sudo sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
-
-    # Configure kernel modules
-    cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
-    overlay
-    br_netfilter
-    EOF
-
-    sudo modprobe overlay
-    sudo modprobe br_netfilter
-
-    # Configure sysctl params
-    cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
-    net.bridge.bridge-nf-call-iptables  = 1
-    net.bridge.bridge-nf-call-ip6tables = 1
-    net.ipv4.ip_forward                 = 1
-    EOF
-
-    sudo sysctl --system
-    ```
+    On Apple Silicon, replace `linux/amd64` with `linux/arm64`.
   </TabsContent>
 
   <TabsContent value="windows">
-    ### Windows Installation
+    ### Windows (client only)
 
     ```powershell
-    # Install Chocolatey if not already installed
-    Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+    # Install kubectl with the Windows Package Manager
+    winget install Kubernetes.kubectl
 
-    # Install kubectl
+    # Or with Chocolatey
     choco install kubernetes-cli
 
-    # Verify installation
+    # Verify
     kubectl version --client
-
-    # Note: For running Kubernetes on Windows, it's recommended to:
-    # 1. Use Docker Desktop with Kubernetes enabled
-    # 2. Use WSL 2 with a Linux distribution
-    # 3. Use Minikube
     ```
+
+    Windows **nodes** are supported by Kubernetes but require a Windows base image and a
+    matching container runtime (containerd). Most teams run the control plane and workers
+    on Linux and use Windows only for mixed-workload scheduling.
   </TabsContent>
 </Tabs>
 
 ## Initializing the Control Plane
 
-After installing the components, initialize the control plane node:
+Before you start, decide on two values:
+
+- **Pod network CIDR** — the range used for pod IPs. It must not overlap with your
+  host or corporate networks. `10.244.0.0/16` is a safe default.
+- **Service network CIDR** — the range used for cluster services. `10.96.0.0/12` is the
+  Kubernetes default.
+
+Create a kubeadm configuration file so the cluster is reproducible:
 
 ```bash
-# Initialize the control plane
-sudo kubeadm init --pod-network-cidr=192.168.0.0/16
+# Create the working directory
+mkdir -p ~/kubeadm-config && cd ~/kubeadm-config
 
-# Configure kubectl for the current user
+# Write the configuration
+cat <<EOF > kubeadm-config.yaml
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: InitConfiguration
+localAPIEndpoint:
+  advertiseAddress: 192.168.1.10
+  bindPort: 6443
+nodeRegistration:
+  criSocket: unix:///run/containerd/containerd.sock
+  kubeletExtraArgs:
+    - name: cgroup-driver
+      value: systemd
+---
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: ClusterConfiguration
+kubernetesVersion: v1.37.1
+networking:
+  podSubnet: 10.244.0.0/16
+  serviceSubnet: 10.96.0.0/12
+---
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+cgroupDriver: systemd
+EOF
+
+# Initialise the control plane
+sudo kubeadm init --config kubeadm-config.yaml --upload-certs
+```
+
+<Callout title="High availability">
+  Passing `--upload-certs` lets additional control-plane nodes join later with
+  `kubeadm join --control-plane`. If you plan to convert this cluster to a highly
+  available topology, create a load balancer and set `--control-plane-endpoint` to its
+  DNS name from the start — it cannot be added later.
+</Callout>
+
+### Configure kubectl for your user
+
+```bash
 mkdir -p $HOME/.kube
 sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 sudo chown $(id -u):$(id -g) $HOME/.kube/config
 
-# Install Calico network plugin
-kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
+# Make it the default for future shells
+echo 'export KUBECONFIG=$HOME/.kube/config' >> $HOME/.bashrc
+source $HOME/.bashrc
 ```
+
+### Install the Pod Network
+
+CoreDNS stays in `Pending` until a CNI plugin is installed. Calico is the most common
+choice:
+
+```bash
+# Install Calico
+kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
+
+# Wait for the network to become ready
+kubectl wait --for=condition=Ready nodes --all --timeout=300s
+```
+
+For a managed installation, the Tigera operator offers pod-to-pod encryption, network
+policy and BGP routing. See the [Calico documentation](https://docs.tigera.io/calico/).
 
 ## Joining Worker Nodes
 
-On worker nodes, run the join command that was output by `kubeadm init`:
+`kubeadm init` prints the exact command to run on each worker. Use the token it gives you:
 
 ```bash
-sudo kubeadm join <control-plane-host>:<control-plane-port> \
-    --token <token> \
-    --discovery-token-ca-cert-hash sha256:<hash>
+sudo kubeadm join 192.168.1.10:6443 \
+  --token <token> \
+  --discovery-token-ca-cert-hash sha256:<hash>
 ```
 
-## Verification
+The token is a credential — anyone holding it can add a node to your cluster. Rotate it
+regularly:
 
 ```bash
-# Check node status
-kubectl get nodes
+# List the active tokens
+sudo kubeadm token list
 
-# Check system pods
+# Create a new token
+sudo kubeadm token create
+
+# Delete all expired tokens
+sudo kubeadm token delete <token-id>
+```
+
+## Verifying the Installation
+
+```bash
+# All nodes should report Ready
+kubectl get nodes -o wide
+
+# All system pods should be Running
 kubectl get pods -n kube-system
+
+# Check the control plane health
+sudo kubeadm status
+
+# Confirm the container runtime is wired up correctly
+sudo crictl ps -a
+
+# Deploy a test workload
+kubectl create deployment hello --image=nginx:alpine
+kubectl expose deployment hello --type=NodePort --port=80
+kubectl get svc hello
+```
+
+## Upgrading the Cluster
+
+Upgrades must go one minor version at a time (for example 1.35 to 1.36 to 1.37).
+
+```bash
+# On the control plane: upgrade the packages
+sudo apt update && sudo apt install -y kubeadm=1.37.1-1.1
+sudo apt-mark unhold kubeadm && sudo apt-mark hold kubeadm
+
+# Check what the upgrade will do
+sudo kubeadm upgrade plan
+
+# Apply the control plane upgrade
+sudo kubeadm upgrade apply v1.37.1
+
+# On every worker node: upgrade the packages
+sudo apt update && sudo apt install -y kubelet=1.37.1-1.1 kubectl=1.37.1-1.1
+sudo apt-mark unhold kubelet kubectl && sudo apt-mark hold kubelet kubectl
+sudo systemctl daemon-reload
+sudo systemctl restart kubelet
+
+# Back on the control plane, approve the node upgrade
+kubectl drain <node-name> --ignore-daemonsets --delete-emptydir-data
+sudo kubeadm upgrade node
+kubectl uncordon <node-name>
 ```
 
 ## Troubleshooting
@@ -274,23 +353,71 @@ kubectl get pods -n kube-system
 <Accordion type="single">
   <AccordionItem value="issue-1">
     <AccordionTrigger>
-      Node NotReady status
+      kubeadm init fails during pre-flight checks
     </AccordionTrigger>
     <AccordionContent>
-      Check network plugin installation:
+      Read the exact failure message — it names the check that failed. The usual causes are
+      swap still enabled, the wrong cgroup driver, or a container runtime that is not
+      running:
       ```bash
-      kubectl get pods -n kube-system
-      kubectl describe node <node-name>
+      sudo swapoff -a
+      sudo systemctl status containerd
+      sudo containerd config default | grep SystemdCgroup
       ```
     </AccordionContent>
   </AccordionItem>
 
   <AccordionItem value="issue-2">
     <AccordionTrigger>
-      kubeadm init fails
+      kubelet enters CrashLoopBackOff
     </AccordionTrigger>
     <AccordionContent>
-      Reset kubeadm and try again:
+      The kubelet expects to be configured by `kubeadm` and crashes until it is:
+      ```bash
+      sudo journalctl -u kubelet -n 50 --no-pager
+      sudo systemctl restart kubelet
+      ```
+      If the log mentions a cgroup mismatch, set `cgroupDriver: systemd` in the
+      `KubeletConfiguration` and make sure containerd uses `SystemdCgroup = true`.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-3">
+    <AccordionTrigger>
+      Nodes stay in NotReady after installing the CNI
+    </AccordionTrigger>
+    <AccordionContent>
+      CoreDNS cannot start until the pod network is up:
+      ```bash
+      kubectl get pods -n kube-system
+      kubectl describe node <node-name>
+      kubectl get pods -n kube-system -o wide
+      ```
+      Confirm the CNI DaemonSet is running and that the pod subnet does not overlap with
+      your host network.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-4">
+    <AccordionTrigger>
+      The node is tainted with node.kubernetes.io/not-ready
+    </AccordionTrigger>
+    <AccordionContent>
+      This taint is applied automatically while the node is not ready and is removed
+      automatically once it recovers. To clear it manually:
+      ```bash
+      kubectl taint nodes <node-name> node.kubernetes.io/not-ready-
+      ```
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-5">
+    <AccordionTrigger>
+      kubeadm reset a cluster by mistake
+    </AccordionTrigger>
+    <AccordionContent>
+      `kubeadm reset` removes the cluster state from the node. It cannot recover etcd
+      data — restore it from your backup before restarting:
       ```bash
       sudo kubeadm reset
       sudo rm -rf /etc/cni/net.d
@@ -299,29 +426,31 @@ kubectl get pods -n kube-system
     </AccordionContent>
   </AccordionItem>
 
-  <AccordionItem value="issue-3">
+  <AccordionItem value="issue-6">
     <AccordionTrigger>
-      Pod networking issues
+      Image pulls fail with a registry error
     </AccordionTrigger>
     <AccordionContent>
-      Check CNI plugin installation:
+      Check the node can reach the registry and that any pull secret exists in the right
+      namespace:
       ```bash
-      kubectl get pods -n kube-system | grep calico
-      kubectl logs -n kube-system calico-node-xxxxx
+      kubectl get secrets -n default
+      kubectl describe pod <pod-name>
       ```
+      For rate-limited registries, mirror the images into your own registry and point the
+      kubelet at it.
     </AccordionContent>
   </AccordionItem>
 </Accordion>
 
 ## Security Recommendations
 
-1. **Enable RBAC**
+1. **Enforce the restricted Pod Security Standard**
    ```bash
-   kubectl create role example-role --verb=get --resource=pods
-   kubectl create rolebinding example-rolebinding --role=example-role --user=example-user
+   kubectl label --overwrite ns default pod-security.kubernetes.io/enforce=restricted
    ```
 
-2. **Network Policies**
+2. **Deny traffic by default with NetworkPolicy**
    ```yaml
    apiVersion: networking.k8s.io/v1
    kind: NetworkPolicy
@@ -330,20 +459,36 @@ kubectl get pods -n kube-system
    spec:
      podSelector: {}
      policyTypes:
-     - Ingress
-     - Egress
+       - Ingress
+       - Egress
    ```
 
-3. **Regular Updates**
+3. **Use RBAC instead of cluster-admin**
    ```bash
-   sudo apt update
-   sudo apt upgrade -y kubelet kubeadm kubectl
-   sudo kubeadm upgrade plan
-   sudo kubeadm upgrade apply
+   kubectl create role pod-reader --verb=get,list --resource=pods
+   kubectl create rolebinding pod-reader-binding --role=pod-reader --user=developer
+   ```
+
+4. **Encrypt secrets at rest**
+   ```bash
+   sudo kubeadm init phase feature enable encryption --config=encryption-config.yaml
+   ```
+
+5. **Back up etcd regularly**
+   ```bash
+   sudo ETCDCTL_API=3 etcdctl \
+     --endpoints=https://127.0.0.1:2379 \
+     --cacert=/etc/kubernetes/pki/etcd/ca.crt \
+     --cert=/etc/kubernetes/pki/etcd/server.crt \
+     --key=/etc/kubernetes/pki/etcd/server.key \
+     snapshot save /var/backups/etcd-$(date +%F).db
    ```
 
 ## Next Steps
 
-- [Configure High Availability](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/high-availability/)
-- [Deploy Applications](https://kubernetes.io/docs/tasks/run-application/run-stateless-application-deployment/)
-- [Configure Storage](https://kubernetes.io/docs/concepts/storage/persistent-volumes/) 
+- [Create a Highly Available Cluster](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/high-availability/)
+- [Deploy a Stateless Application](https://kubernetes.io/docs/tasks/run-application/run-stateless-application-deployment/)
+- [Configure Persistent Storage](https://kubernetes.io/docs/concepts/storage/persistent-volumes/)
+- [Pod Security Standards](https://kubernetes.io/docs/concepts/security/pod-security-standards/)
+- [Minikube for local development](/docs/containers/minikube)
+- [Helm Installation Guide](/docs/containers/helm)

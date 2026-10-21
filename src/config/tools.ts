@@ -116,7 +116,7 @@ export const tools: ToolMeta[] = [
     slug: "containers/docker",
     name: "Docker",
     description:
-      "Install the Docker Engine and Desktop, then learn the day-to-day commands for building and running containers.",
+      "Install Docker Engine 29 from the official apt and dnf repositories, then configure the daemon, Buildx, Compose and rootless mode.",
     category: "containers",
     tags: ["containers", "docker", "runtime", "deployment"],
   },
@@ -124,7 +124,7 @@ export const tools: ToolMeta[] = [
     slug: "containers/kubernetes",
     name: "Kubernetes",
     description:
-      "Set up a Kubernetes cluster, deploy workloads and verify the cluster with kubectl.",
+      "Install Kubernetes v1.37 with kubeadm and containerd, deploy a CNI and join worker nodes to the cluster.",
     category: "containers",
     tags: ["containers", "orchestration", "scaling", "k8s"],
   },
@@ -132,7 +132,7 @@ export const tools: ToolMeta[] = [
     slug: "containers/helm",
     name: "Helm",
     description:
-      "Install Helm, manage chart repositories and roll out releases to Kubernetes clusters.",
+      "Install Helm 4, verify the release signature, manage chart repositories and install charts from OCI registries.",
     category: "containers",
     tags: ["containers", "kubernetes", "packaging", "charts"],
   },
@@ -140,7 +140,7 @@ export const tools: ToolMeta[] = [
     slug: "containers/istio",
     name: "Istio",
     description:
-      "Install a service mesh, define traffic policies and secure east-west communication.",
+      "Install Istio 1.31 with istioctl, pick a configuration profile and enable sidecar or ambient mode.",
     category: "containers",
     tags: ["containers", "service-mesh", "networking", "security"],
   },
@@ -148,7 +148,7 @@ export const tools: ToolMeta[] = [
     slug: "containers/minikube",
     name: "Minikube",
     description:
-      "Run a local Kubernetes cluster for development and testing on a single machine.",
+      "Install Minikube v1.39 and run a local Kubernetes cluster with the driver that suits your machine.",
     category: "containers",
     tags: ["containers", "kubernetes", "local", "development"],
   },
@@ -156,7 +156,7 @@ export const tools: ToolMeta[] = [
     slug: "containers/openshift",
     name: "OpenShift",
     description:
-      "Install an OpenShift platform and learn the workflow for deploying containerised applications.",
+      "Install OpenShift 4.22 with OpenShift Local (CRC) for development or the agent-based installer for production.",
     category: "containers",
     tags: ["containers", "platform", "enterprise", "kubernetes"],
   },

@@ -164,7 +164,7 @@ const components = {
     <hr className={cn("my-4 md:my-8", className)} {...props} />
   ),
   table: ({ className, ...props }: React.HTMLAttributes<HTMLTableElement>) => (
-    <div className="my-6 w-full overflow-y-auto">
+    <div className="my-6 w-full max-w-full overflow-x-auto">
       <table
         className={cn(
           "relative w-full overflow-hidden border-none text-sm",

@@ -18,7 +18,10 @@ function UnderlinedTabsList({
   return (
     <TabsPrimitive.List
       data-slot="underlined-tabs-list"
-      className={cn("text-muted-foreground border-b", className)}
+      className={cn(
+        "text-muted-foreground border-b flex overflow-x-auto",
+        className,
+      )}
       {...props}
     />
   );

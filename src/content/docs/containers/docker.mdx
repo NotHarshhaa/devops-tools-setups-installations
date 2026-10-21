@@ -1,243 +1,408 @@
 ---
 title: Docker Installation Guide
-description: Comprehensive guide for installing Docker across different operating systems with package manager specific commands.
+description: Install Docker Engine 29 on Linux, macOS and Windows using the official apt, dnf and package-manager repositories, then configure the daemon, Buildx and Compose.
 ---
 
-This guide provides detailed instructions for installing Docker on various operating systems using their native package managers.
+Docker Engine packages the container runtime (`containerd`), the `docker` CLI, the
+Buildx builder and the Compose v2 plugin. This guide installs the **Docker Engine 29.x**
+release line from Docker's official repositories.
+
+<Callout title="Verified for Docker Engine 29.x">
+  The commands below follow the current official Docker documentation. Docker Engine 29
+  requires a 64-bit host on Ubuntu 22.04 LTS or newer, Debian 12 or newer, CentOS Stream 9
+  or newer, or Fedora 41 or newer.
+</Callout>
 
 ## System Requirements
 
-- 64-bit processor
-- Minimum 4GB RAM
-- Supported operating system (see below)
-- Internet connection for package downloads
+- 64-bit processor (x86_64, arm64, armhf, s390x or ppc64le)
+- Minimum 4 GB RAM (8 GB or more for comfortable build performance)
+- Supported operating system (see the tabs below)
+- Internet access to `download.docker.com`
+- Kernel 4.9 or newer with `overlayfs` and `br_netfilter` support
+
+<Callout title="Firewall note">
+  Docker publishes container ports directly, bypassing `ufw` and `firewalld` rules. Docker
+  only supports `iptables-nft` and `iptables-legacy` — rules created with `nft` are not
+  applied. Add your rules to the `DOCKER-USER` chain instead.
+</Callout>
+
+## Removing Conflicting Packages
+
+Distributions ship an unofficial `docker.io` package that conflicts with the official
+packages. Remove it before you start:
+
+```bash
+# Debian / Ubuntu
+sudo apt remove $(dpkg --get-selections docker.io docker-compose docker-compose-v2 docker-doc docker-buildx podman-docker containerd runc | cut -f1)
+
+# RHEL / CentOS / Fedora
+sudo dnf remove docker docker-client docker-client-latest docker-common docker-latest \
+  docker-latest-logrotate docker-logrotate docker-engine
+```
+
+`apt` or `dnf` will report that you have none of these packages installed if you are
+starting from a clean machine — that is expected.
 
 ## Installation Instructions
+
+### Linux
 
 <Tabs defaultValue="ubuntu">
   <TabsList>
     <TabsTrigger value="ubuntu">Ubuntu/Debian</TabsTrigger>
-    <TabsTrigger value="centos">CentOS/RHEL</TabsTrigger>
+    <TabsTrigger value="rpm">RHEL/CentOS</TabsTrigger>
     <TabsTrigger value="fedora">Fedora</TabsTrigger>
     <TabsTrigger value="arch">Arch Linux</TabsTrigger>
     <TabsTrigger value="alpine">Alpine</TabsTrigger>
     <TabsTrigger value="suse">SUSE</TabsTrigger>
-    <TabsTrigger value="windows">Windows</TabsTrigger>
   </TabsList>
 
   <TabsContent value="ubuntu">
-    ### Ubuntu/Debian Installation
-    
+    ### Ubuntu / Debian (apt)
+
     ```bash
-    # Update package index
+    # Install prerequisites and create the keyring directory
+    sudo apt update
+    sudo apt install -y ca-certificates curl
+    sudo install -m 0755 -d /etc/apt/keyrings
+
+    # Add Docker's official signing key
+    sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+    sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+    # Add the repository (deb822 format)
+    sudo tee /etc/apt/sources.list.d/docker.sources <<EOF
+    Types: deb
+    URIs: https://download.docker.com/linux/ubuntu
+    Suites: $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}")
+    Components: stable
+    Architectures: $(dpkg --print-architecture)
+    Signed-By: /etc/apt/keyrings/docker.asc
+    EOF
+
     sudo apt update
 
-    # Install prerequisites
-    sudo apt install -y \
-      apt-transport-https \
-      ca-certificates \
-      curl \
-      gnupg \
-      lsb-release
+    # Install Docker Engine, Buildx and the Compose plugin
+    sudo apt install -y docker-ce docker-ce-cli containerd.io \
+      docker-buildx-plugin docker-compose-plugin
 
-    # Add Docker's official GPG key
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+    # Start the daemon and enable it at boot
+    sudo systemctl enable --now docker
 
-    # Set up the stable repository
-    echo \
-      "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
-      $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-
-    # Install Docker Engine
-    sudo apt update
-    sudo apt install -y docker-ce docker-ce-cli containerd.io
-
-    # Start and enable Docker
-    sudo systemctl start docker
-    sudo systemctl enable docker
-
-    # Verify installation
-    sudo docker --version
+    # Verify
     sudo docker run hello-world
-    ```
-
-    ### Post-Installation Steps
-
-    ```bash
-    # Create docker group
-    sudo groupadd docker
-
-    # Add your user to docker group
-    sudo usermod -aG docker $USER
-
-    # Apply new group membership
-    newgrp docker
     ```
   </TabsContent>
 
-  <TabsContent value="centos">
-    ### CentOS/RHEL Installation
+  <TabsContent value="rpm">
+    ### RHEL / CentOS / Rocky / Alma (dnf)
 
     ```bash
-    # Remove old versions
-    sudo yum remove docker \
-      docker-client \
-      docker-client-latest \
-      docker-common \
-      docker-latest \
-      docker-latest-logrotate \
-      docker-logrotate \
-      docker-engine
+    # Install the repository management plugin
+    sudo dnf -y install dnf-plugins-core
 
-    # Install required packages
-    sudo yum install -y yum-utils
+    # Add Docker's official repository
+    sudo dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
 
-    # Add Docker repository
-    sudo yum-config-manager \
-      --add-repo \
-      https://download.docker.com/linux/centos/docker-ce.repo
+    # Install Docker Engine, Buildx and the Compose plugin
+    sudo dnf install -y docker-ce docker-ce-cli containerd.io \
+      docker-buildx-plugin docker-compose-plugin
 
-    # Install Docker Engine
-    sudo yum install -y docker-ce docker-ce-cli containerd.io
+    # If prompted to accept the GPG key, verify the fingerprint matches
+    # 060A 61C5 1B55 8A7F 742B 77AA C52F EB6B 621E 9F35
 
-    # Start and enable Docker
-    sudo systemctl start docker
-    sudo systemctl enable docker
+    # Start the daemon and enable it at boot
+    sudo systemctl enable --now docker
 
-    # Verify installation
-    sudo docker --version
+    # Verify
     sudo docker run hello-world
     ```
   </TabsContent>
 
   <TabsContent value="fedora">
-    ### Fedora Installation
+    ### Fedora (dnf)
 
     ```bash
-    # Remove old versions
-    sudo dnf remove docker \
-      docker-client \
-      docker-client-latest \
-      docker-common \
-      docker-latest \
-      docker-latest-logrotate \
-      docker-logrotate \
-      docker-selinux \
-      docker-engine-selinux \
-      docker-engine
-
-    # Add Docker repository
     sudo dnf -y install dnf-plugins-core
-    sudo dnf config-manager \
-      --add-repo \
-      https://download.docker.com/linux/fedora/docker-ce.repo
 
-    # Install Docker Engine
-    sudo dnf install -y docker-ce docker-ce-cli containerd.io
+    # Fedora uses its own repository path
+    sudo dnf config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo
 
-    # Start and enable Docker
-    sudo systemctl start docker
-    sudo systemctl enable docker
+    sudo dnf install -y docker-ce docker-ce-cli containerd.io \
+      docker-buildx-plugin docker-compose-plugin
 
-    # Verify installation
-    sudo docker --version
+    sudo systemctl enable --now docker
+
+    # Verify
     sudo docker run hello-world
     ```
   </TabsContent>
 
   <TabsContent value="arch">
-    ### Arch Linux Installation
+    ### Arch Linux (pacman)
 
     ```bash
-    # Install Docker
-    sudo pacman -Sy docker
+    # Docker is available in the official Arch repositories
+    sudo pacman -Syu docker
 
-    # Start and enable Docker
-    sudo systemctl start docker
-    sudo systemctl enable docker
+    # Start the daemon and enable it at boot
+    sudo systemctl enable --now docker
 
-    # Verify installation
-    sudo docker --version
+    # Verify
     sudo docker run hello-world
     ```
   </TabsContent>
 
   <TabsContent value="alpine">
-    ### Alpine Linux Installation
+    ### Alpine Linux (apk)
 
     ```bash
-    # Update package index
     sudo apk update
+    sudo apk add docker docker-cli docker-compose
 
-    # Install Docker
-    sudo apk add docker
+    # Register the service and start it
+    sudo rc-update add docker default
+    sudo rc-service docker start
 
-    # Start and enable Docker
-    sudo rc-update add docker boot
-    sudo service docker start
-
-    # Verify installation
-    sudo docker --version
+    # Verify
     sudo docker run hello-world
     ```
   </TabsContent>
 
   <TabsContent value="suse">
-    ### SUSE Linux Installation
+    ### SUSE Linux (zypper)
 
     ```bash
-    # Add Docker repository
-    sudo zypper addrepo \
-      https://download.docker.com/linux/sles/docker-ce.repo
+    # Add Docker's official repository
+    sudo zypper addrepo https://download.docker.com/linux/sles/docker-ce.repo
 
-    # Refresh repositories
-    sudo zypper refresh
+    # Install Docker Engine, Buildx and the Compose plugin
+    sudo zypper install -y docker-ce docker-ce-cli containerd.io \
+      docker-buildx-plugin docker-compose-plugin
 
-    # Install Docker
-    sudo zypper install docker-ce docker-ce-cli containerd.io
+    sudo systemctl enable --now docker
 
-    # Start and enable Docker
-    sudo systemctl start docker
-    sudo systemctl enable docker
-
-    # Verify installation
-    sudo docker --version
+    # Verify
     sudo docker run hello-world
-    ```
-  </TabsContent>
-
-  <TabsContent value="windows">
-    ### Windows Installation
-
-    ```powershell
-    # Install Docker Desktop using Chocolatey
-    choco install docker-desktop
-
-    # Verify installation
-    docker --version
-    docker run hello-world
-    ```
-
-    #### Alternative Installation Methods
-
-    1. **Direct Download**
-    - Download Docker Desktop from [Docker Hub](https://hub.docker.com/editions/community/docker-ce-desktop-windows/)
-    - Run the installer
-    - Follow the installation wizard
-
-    2. **WSL 2 Requirements**
-    - Enable WSL 2 feature
-    - Install Linux kernel update package
-    - Set WSL 2 as default
-    ```powershell
-    wsl --set-default-version 2
     ```
   </TabsContent>
 </Tabs>
 
-## Troubleshooting
+### macOS
 
-### Common Issues
+Docker Desktop is the recommended installation on macOS. It bundles the Docker Engine,
+Kubernetes (optional), Kubernetes Dashboard and the Compose plugin.
+
+```bash
+# Install with Homebrew
+brew install --cask docker
+
+# Or download Docker Desktop for Mac (Apple Silicon / Intel)
+# https://docs.docker.com/desktop/setup/install/mac-install/
+
+# Start the app, then verify
+docker run hello-world
+```
+
+### Windows
+
+Docker Desktop for Windows uses WSL 2 as its backend by default.
+
+```powershell
+# Install with the Windows Package Manager
+winget install Docker.DockerDesktop
+
+# Alternative: Chocolatey
+choco install docker-desktop
+
+# Enable WSL 2 for any other Linux tooling you run
+wsl --set-default-version 2
+wsl --update
+
+# Verify (after starting Docker Desktop)
+docker run hello-world
+```
+
+<Callout title="Windows containers">
+  Docker Desktop runs Linux containers. To run Windows containers, use the Windows base
+  images and switch the image OS in Docker Desktop settings.
+</Callout>
+
+### Convenience Script (Testing Only)
+
+The convenience script installs the latest stable release non-interactively. It is **not**
+recommended for production, because it does not let you pin versions and may upgrade
+components unexpectedly.
+
+```bash
+# Preview what the script will do before running it
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh ./get-docker.sh --dry-run
+
+# Install
+sudo sh get-docker.sh
+```
+
+## Post-Installation Configuration
+
+### Run Docker as a Non-Root User
+
+The `docker` group grants root-equivalent privileges on the host. Add only the users that
+need it, and sign out and back in afterwards:
+
+```bash
+# Add your user to the docker group
+sudo usermod -aG docker $USER
+
+# Log out and back in (or refresh the group in the current shell)
+newgrp docker
+
+# Verify you no longer need sudo
+docker ps
+```
+
+<Callout title="Understand the risk">
+  Membership of the `docker` group is equivalent to root access on that machine, because
+  the daemon can mount the host filesystem. On shared or production hosts prefer
+  [rootless mode](#rootless-mode) instead.
+</Callout>
+
+### Rootless Mode
+
+Rootless Docker runs the daemon as an unprivileged user inside a user namespace. It is the
+recommended setup on multi-tenant development machines.
+
+```bash
+# Install the rootless prerequisites
+sudo apt install -y uidmap dbus-user-session slirp4netns fuse-overlayfs
+
+# Create the rootless user (skip if it already exists)
+sudo useradd -m -s /bin/bash dockeruser
+sudo usermod -aG systemd-user dockeruser
+
+# Install the rootless extras package
+sudo apt install -y docker-ce-rootless-extras
+
+# Switch to the user and start the daemon
+su - dockeruser
+dockerd-rootless-setuptool.sh install
+systemctl --user enable --now docker
+```
+
+Verify the mode:
+
+```bash
+docker info | grep "rootless"
+# rootless: true
+```
+
+### Configure the Daemon
+
+Docker reads `/etc/docker/daemon.json`. Restart the daemon after every change:
+
+```bash
+sudo tee /etc/docker/daemon.json <<EOF
+{
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "10m",
+    "max-file": "3"
+  },
+  "live-restore": true,
+  "userland-proxy": false,
+  "default-runtime": "runc"
+}
+EOF
+
+sudo systemctl restart docker
+```
+
+| Setting | Why it matters |
+| --- | --- |
+| `log-opts.max-size` / `max-file` | Without a limit, container logs fill up the disk |
+| `live-restore` | Keeps containers running while the daemon restarts or upgrades |
+| `default-ulimits` | Raise `nofile` for high-traffic services |
+| `no-new-privileges` | Blocks privilege escalation from inside a container |
+
+### Shell Completion
+
+```bash
+# Bash (current shell)
+sudo curl -fsSL https://raw.githubusercontent.com/docker/cli/master/contrib/completion/bash/docker \
+  -o /etc/bash_completion.d/docker
+
+# Zsh
+sudo curl -fsSL https://raw.githubusercontent.com/docker/cli/master/contrib/completion/zsh/_docker \
+  -o /usr/share/zsh/completion/_docker
+
+# Restart your shell to pick it up
+```
+
+## Verifying the Installation
+
+```bash
+# Client and server versions
+docker version
+
+# Full daemon information
+docker info
+
+# Compose v2 (installed as a plugin, invoked as a subcommand)
+docker compose version
+
+# Buildx (multi-platform builds)
+docker buildx version
+
+# End-to-end test
+docker run --rm hello-world
+
+# Run a container and inspect it
+docker run -d --name web -p 8080:80 nginx:alpine
+docker ps
+docker logs web
+docker rm -f web
+```
+
+Expected output from `docker version`: both a `Client` and a `Server` section. If the
+`Server` section is missing, the daemon is not running.
+
+## Upgrading Docker Engine
+
+```bash
+# Debian / Ubuntu
+sudo apt update
+sudo apt install --only-upgrade docker-ce docker-ce-cli containerd.io \
+  docker-buildx-plugin docker-compose-plugin
+
+# RHEL / CentOS / Fedora
+sudo dnf upgrade --refresh docker-ce docker-ce-cli containerd.io \
+  docker-buildx-plugin docker-compose-plugin
+```
+
+<Callout title="Plan the upgrade">
+  `live-restore: true` keeps running containers alive while the daemon restarts.
+  Test the upgrade on a staging host first and pin the version if you need a predictable
+  rollback path.
+</Callout>
+
+## Uninstalling Docker Engine
+
+```bash
+# Remove the packages
+sudo apt purge docker-ce docker-ce-cli containerd.io docker-buildx-plugin \
+  docker-compose-plugin docker-ce-rootless-extras
+
+# Remove the data (containers, images, volumes, networks)
+sudo rm -rf /var/lib/docker
+sudo rm -rf /var/lib/containerd
+
+# Remove the repository and key
+sudo rm /etc/apt/sources.list.d/docker.sources
+sudo rm /etc/apt/keyrings/docker.asc
+```
+
+## Troubleshooting
 
 <Accordion type="single">
   <AccordionItem value="issue-1">
@@ -245,12 +410,13 @@ This guide provides detailed instructions for installing Docker on various opera
       Permission denied while trying to connect to the Docker daemon socket
     </AccordionTrigger>
     <AccordionContent>
-      This usually means your user is not part of the docker group. Run:
+      Your user is not in the `docker` group:
       ```bash
       sudo groupadd docker
       sudo usermod -aG docker $USER
       newgrp docker
       ```
+      Log out and back in for the change to take effect.
     </AccordionContent>
   </AccordionItem>
 
@@ -259,11 +425,15 @@ This guide provides detailed instructions for installing Docker on various opera
       Cannot connect to the Docker daemon
     </AccordionTrigger>
     <AccordionContent>
-      Make sure Docker daemon is running:
+      Check that the service is running and inspect the logs:
       ```bash
-      sudo systemctl start docker
       sudo systemctl status docker
+      sudo journalctl -u docker -n 50 --no-pager
+      sudo systemctl start docker
       ```
+      A `failed to start daemon ... error while loading daemon configuration` message
+      usually means `/etc/docker/daemon.json` is not valid JSON. Validate it with
+      `jq . /etc/docker/daemon.json`.
     </AccordionContent>
   </AccordionItem>
 
@@ -272,65 +442,113 @@ This guide provides detailed instructions for installing Docker on various opera
       Docker command not found after installation
     </AccordionTrigger>
     <AccordionContent>
-      Try logging out and back in, or run:
+      The CLI lives in `/usr/bin` or `/usr/local/bin`. Refresh your shell and confirm the
+      path:
       ```bash
       source ~/.bashrc
+      which docker
+      export PATH=$PATH:/usr/local/bin
       ```
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-4">
+    <AccordionTrigger>
+      GPG or repository errors during installation
+    </AccordionTrigger>
+    <AccordionContent>
+      A stale keyring breaks signature verification. Reset the repository state:
+      ```bash
+      sudo rm -f /etc/apt/sources.list.d/docker.list /etc/apt/sources.list.d/docker.sources
+      sudo rm -f /etc/apt/keyrings/docker.asc
+      ```
+      Then re-run the repository setup steps and confirm the key fingerprint matches
+      `060A 61C5 1B55 8A7F 742B 77AA C52F EB6B 621E 9F35`.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-5">
+    <AccordionTrigger>
+      Published ports are not reachable
+    </AccordionTrigger>
+    <AccordionContent>
+      Docker bypasses `ufw` and `firewalld`. Add an explicit allow rule to the
+      `DOCKER-USER` chain:
+      ```bash
+      sudo iptables -I DOCKER-USER -p tcp --dport 8080 -j ACCEPT
+      ```
+      Confirm the container is publishing the port with `docker port <container>`.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-6">
+    <AccordionTrigger>
+      The disk is full and containers fail to start
+    </AccordionTrigger>
+    <AccordionContent>
+      Reclaim space from unused images, stopped containers and build cache:
+      ```bash
+      docker system df
+      docker system prune -a --volumes
+      ```
+      Add the log rotation options from the daemon configuration above to stop logs from
+      growing without bound.
     </AccordionContent>
   </AccordionItem>
 </Accordion>
 
-## Post-Installation Configuration
+## Best Practices
 
-### Docker Compose Installation
+1. **Pin image digests in production**
+   ```bash
+   docker pull nginx@sha256:<digest>
+   ```
+   Tags move; digests do not.
 
-<Tabs defaultValue="linux">
-  <TabsList>
-    <TabsTrigger value="linux">Linux</TabsTrigger>
-    <TabsTrigger value="windows">Windows</TabsTrigger>
-  </TabsList>
+2. **Never run containers as root inside the image**
+   ```dockerfile
+   USER 1001:1001
+   ```
 
-  <TabsContent value="linux">
-    ```bash
-    # Download Docker Compose
-    sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+3. **Use multi-stage builds** to keep the final image small
+   ```dockerfile
+   FROM golang:1.25 AS build
+   WORKDIR /src
+   COPY . .
+   RUN CGO_ENABLED=0 go build -o /out/app ./cmd/app
 
-    # Apply executable permissions
-    sudo chmod +x /usr/local/bin/docker-compose
+   FROM gcr.io/distroless/static-debian12
+   COPY --from=build /out/app /app
+   ENTRYPOINT ["/app"]
+   ```
 
-    # Verify installation
-    docker-compose --version
-    ```
-  </TabsContent>
+4. **Scan images before you deploy them**
+   ```bash
+   docker scout cves nginx:alpine
+   ```
 
-  <TabsContent value="windows">
-    ```powershell
-    # Docker Compose is included with Docker Desktop for Windows
-    docker-compose --version
-    ```
-  </TabsContent>
-</Tabs>
+5. **Use Buildx for multi-platform images**
+   ```bash
+   docker buildx create --use --name multiarch
+   docker buildx build --platform linux/amd64,linux/arm64 -t myapp:1.0 --push .
+   ```
 
-### System Configuration
-
-```bash
-# Configure log rotation
-sudo tee /etc/docker/daemon.json <<EOF
-{
-  "log-driver": "json-file",
-  "log-opts": {
-    "max-size": "10m",
-    "max-file": "3"
-  }
-}
-EOF
-
-# Restart Docker
-sudo systemctl restart docker
-```
+6. **Separate build and runtime concerns** with `docker compose` profiles
+   ```yaml
+   services:
+     api:
+       build: ./api
+       profiles: ["app"]
+     db:
+       image: postgres:17-alpine
+       profiles: ["app"]
+   ```
 
 ## Next Steps
 
-- [Docker Getting Started Guide](https://docs.docker.com/get-started/)
+- [Docker Getting Started](https://docs.docker.com/get-started/)
 - [Docker Compose Overview](https://docs.docker.com/compose/)
-- [Docker Security Best Practices](https://docs.docker.com/engine/security/) 
+- [Buildx Documentation](https://docs.docker.com/reference/cli/docker/buildx/)
+- [Docker Rootless Mode](https://docs.docker.com/engine/security/rootless/)
+- [Docker Engine Security](https://docs.docker.com/engine/security/)
+- [Kubernetes Installation Guide](/docs/containers/kubernetes)

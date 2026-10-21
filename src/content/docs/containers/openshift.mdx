@@ -1,310 +1,370 @@
 ---
 title: OpenShift Installation Guide
-description: Comprehensive guide for installing OpenShift Container Platform (OCP) and OpenShift Origin (OKD) across different operating systems.
+description: Install OpenShift Container Platform 4.22 or OpenShift Local (CRC) for local development, install the oc CLI and deploy a production cluster with the agent-based installer.
 ---
 
-This guide covers the installation of both OpenShift Container Platform (OCP) and OpenShift Origin (OKD) - the community distribution of OpenShift.
+OpenShift is Kubernetes with a developer-focused platform on top: integrated builds,
+deployments, routes, operators and a multi-tenant security model. This guide covers the
+three ways to get it running — locally with **OpenShift Local (CRC)**, on a single node
+for development, and in production with the **agent-based installer**.
+
+<Callout title="Which edition?">
+  **OpenShift Container Platform (OCP)** is the supported product and requires a Red Hat
+  subscription. **OKD** is the free community distribution of the same source and is a
+  good way to try the platform without a subscription.
+</Callout>
 
 ## Prerequisites
 
-- Minimum 4 CPU cores
-- Minimum 16GB RAM
-- 100GB available disk space
-- Internet connectivity
-- Valid Red Hat subscription (for OCP)
+### For OpenShift Local (CRC)
 
-## Installation Methods
+- 4 CPU cores or more
+- 16 GB RAM or more (CRC refuses to start with less)
+- 100 GB of free disk space
+- A supported CPU with virtualization enabled (Intel VT-x or AMD-V)
+- On Linux: `libvirt` and `qemu-kvm` installed and running
+- On macOS: the `crc` installer package
+- On Windows: Hyper-V enabled (or WSL2 with the `crc` binary)
 
-### 1. CodeReady Containers (CRC) - Local Development
+### For a production installation
 
-CRC provides a minimal OpenShift 4 cluster that runs on your local machine. This is ideal for development and testing.
+- 3 or more bare-metal or virtual machines
+- A Red Hat subscription (or an OpenShift Developer subscription for a trial)
+- DNS and a load balancer for the API endpoint
+- A disconnected or connected registry for the release images
 
-<Tabs defaultValue="ubuntu">
+## Method 1: OpenShift Local (CRC)
+
+CRC runs a complete single-node OpenShift cluster on your workstation.
+
+### Installing the CRC Binary
+
+<Tabs defaultValue="linux">
   <TabsList>
-    <TabsTrigger value="ubuntu">Ubuntu/Debian</TabsTrigger>
-    <TabsTrigger value="centos">CentOS/RHEL</TabsTrigger>
-    <TabsTrigger value="fedora">Fedora</TabsTrigger>
+    <TabsTrigger value="linux">Linux</TabsTrigger>
+    <TabsTrigger value="macos">macOS</TabsTrigger>
     <TabsTrigger value="windows">Windows</TabsTrigger>
   </TabsList>
 
-  <TabsContent value="ubuntu">
-    ### Ubuntu/Debian Installation
-
+  <TabsContent value="linux">
     ```bash
-    # Install required packages
-    sudo apt update
-    sudo apt install -y libvirt-daemon libvirt-daemon-system network-manager
+    # Install the host dependencies (Debian / Ubuntu)
+    sudo apt install -y libvirt-daemon-system libvirt-clients bridge-utils libvirt-daemon qemu-kvm
 
     # Download CRC
-    curl -LO https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/crc/latest/crc-linux-amd64.tar.xz
+    curl -LO https://mirror.openshift.com/pub/openshift-v4/clients/crc/latest/crc-linux-amd64.tar.xz
 
-    # Extract the archive
-    tar xvf crc-linux-amd64.tar.xz
-    cd crc-linux-*
+    # Extract and install
+    tar xf crc-linux-amd64.tar.xz
+    sudo mv crc-linux-amd64/crc /usr/local/bin/
+    rm -rf crc-linux-amd64
 
-    # Move binary to PATH
-    sudo mv crc /usr/local/bin/
-
-    # Setup CRC
-    crc setup
-
-    # Start OpenShift cluster
-    crc start
+    # Verify
+    crc version
     ```
+
+    On ARM64 use `crc-linux-arm64.tar.xz` instead.
   </TabsContent>
 
-  <TabsContent value="centos">
-    ### CentOS/RHEL Installation
-
+  <TabsContent value="macos">
     ```bash
-    # Install required packages
-    sudo yum install -y libvirt NetworkManager
+    # Download the macOS installer package
+    curl -LO https://mirror.openshift.com/pub/openshift-v4/clients/crc/latest/crc-macos-installer.pkg
 
-    # Download CRC
-    curl -LO https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/crc/latest/crc-linux-amd64.tar.xz
-
-    # Extract the archive
-    tar xvf crc-linux-amd64.tar.xz
-    cd crc-linux-*
-
-    # Move binary to PATH
-    sudo mv crc /usr/local/bin/
-
-    # Setup CRC
-    crc setup
-
-    # Start OpenShift cluster
-    crc start
-    ```
-  </TabsContent>
-
-  <TabsContent value="fedora">
-    ### Fedora Installation
-
-    ```bash
-    # Install required packages
-    sudo dnf install -y libvirt NetworkManager
-
-    # Download CRC
-    curl -LO https://developers.redhat.com/content-gateway/rest/mirror/pub/openshift-v4/clients/crc/latest/crc-linux-amd64.tar.xz
-
-    # Extract the archive
-    tar xvf crc-linux-amd64.tar.xz
-    cd crc-linux-*
-
-    # Move binary to PATH
-    sudo mv crc /usr/local/bin/
-
-    # Setup CRC
-    crc setup
-
-    # Start OpenShift cluster
-    crc start
-    ```
-  </TabsContent>
-
-  <TabsContent value="windows">
-    ### Windows Installation
-
-    ```powershell
-    # Install using Chocolatey
-    choco install openshift-cli
-
-    # Download CRC from Red Hat website
-    # Navigate to: https://developers.redhat.com/products/openshift-local/overview
-
-    # Extract the archive
-    Expand-Archive crc-windows-amd64.zip -DestinationPath C:\crc
-
-    # Add to PATH
-    $env:Path += ";C:\crc"
-
-    # Setup CRC
-    crc setup
-
-    # Start OpenShift cluster
-    crc start
-    ```
-  </TabsContent>
-</Tabs>
-
-### 2. OpenShift CLI (oc)
-
-The OpenShift CLI is required for interacting with OpenShift clusters.
-
-<Tabs defaultValue="ubuntu">
-  <TabsList>
-    <TabsTrigger value="ubuntu">Ubuntu/Debian</TabsTrigger>
-    <TabsTrigger value="centos">CentOS/RHEL</TabsTrigger>
-    <TabsTrigger value="fedora">Fedora</TabsTrigger>
-    <TabsTrigger value="windows">Windows</TabsTrigger>
-  </TabsList>
-
-  <TabsContent value="ubuntu">
-    ```bash
-    # Download OpenShift CLI
-    curl -LO https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/linux/oc.tar.gz
-
-    # Extract the archive
-    tar xvf oc.tar.gz
-
-    # Move binary to PATH
-    sudo mv oc /usr/local/bin/
-    sudo mv kubectl /usr/local/bin/
-
-    # Verify installation
-    oc version
-    ```
-  </TabsContent>
-
-  <TabsContent value="centos">
-    ```bash
-    # Download OpenShift CLI
-    curl -LO https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/linux/oc.tar.gz
-
-    # Extract the archive
-    tar xvf oc.tar.gz
-
-    # Move binary to PATH
-    sudo mv oc /usr/local/bin/
-    sudo mv kubectl /usr/local/bin/
-
-    # Verify installation
-    oc version
-    ```
-  </TabsContent>
-
-  <TabsContent value="fedora">
-    ```bash
-    # Install using DNF
-    sudo dnf install openshift-clients
-
-    # Verify installation
-    oc version
+    # Install it
+    sudo installer -pkg crc-macos-installer.pkg -target /
     ```
   </TabsContent>
 
   <TabsContent value="windows">
     ```powershell
-    # Install using Chocolatey
-    choco install openshift-cli
+    # Download the Windows installer
+    curl -LO https://mirror.openshift.com/pub/openshift-v4/clients/crc/latest/crc-windows-installer.zip
 
-    # Verify installation
+    # Extract it
+    Expand-Archive crc-windows-installer.zip -DestinationPath C:\crc
+
+    # Add it to your PATH (run PowerShell as Administrator)
+    $oldPath = [Environment]::GetEnvironmentVariable('Path', [System.EnvironmentVariableTarget]::Machine)
+    if ($oldPath.Split(';') -notcontains 'C:\crc') {
+      [Environment]::SetEnvironmentVariable('Path', ('{0};C:\crc' -f $oldPath), 'Machine')
+    }
+
+    # Restart your terminal so the new PATH is picked up
+    crc version
+    ```
+  </TabsContent>
+</Tabs>
+
+### Setting Up and Starting the Cluster
+
+```bash
+# Install the host prerequisites (virtual machine, networking)
+crc setup
+
+# Start the cluster (this takes 5-15 minutes on first run)
+crc start
+```
+
+To run the paid OpenShift Container Platform edition, add your Red Hat pull secret:
+
+```bash
+# Create a pull secret at https://console.redhat.com/openshift/create/local
+crc config set pull-secret /path/to/pull-secret.txt
+
+# Start with the OCP release
+crc start
+```
+
+### Working with the Cluster
+
+```bash
+# Open the web console
+crc console
+
+# Log in with the developer account
+oc login -u developer -p developer
+
+# Check the cluster
+oc get nodes
+oc get clusterversion
+oc get pods -n openshift-apiserver
+```
+
+```bash
+# Create a project and deploy an application
+oc new-project demo
+oc new-app https://github.com/openshift/hello-world.git
+
+# Watch the rollout
+oc get pods -w
+
+# Expose the application with a route
+oc expose svc/hello-world
+oc get route hello-world
+```
+
+### Managing the CRC Instance
+
+```bash
+# Check the status
+crc status
+
+# Stop and start again
+crc stop
+crc start
+
+# Delete the cluster and free the disk space
+crc delete
+
+# Open a shell inside the VM
+crc console
+```
+
+## Method 2: The OpenShift CLI (oc)
+
+`oc` is the OpenShift client. It is a superset of `kubectl` and works against any
+Kubernetes cluster.
+
+<Tabs defaultValue="linux">
+  <TabsList>
+    <TabsTrigger value="linux">Linux</TabsTrigger>
+    <TabsTrigger value="macos">macOS</TabsTrigger>
+    <TabsTrigger value="windows">Windows</TabsTrigger>
+  </TabsList>
+
+  <TabsContent value="linux">
+    ```bash
+    # Download the archive
+    curl -LO https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/linux/oc.tar.gz
+
+    # Extract and install (the archive contains oc and kubectl)
+    tar xzf oc.tar.gz
+    sudo mv oc kubectl /usr/local/bin/
+
+    # Verify
+    oc version
+    ```
+  </TabsContent>
+
+  <TabsContent value="macos">
+    ```bash
+    curl -LO https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/mac/oc.tar.gz
+    tar xzf oc.tar.gz
+    sudo mv oc kubectl /usr/local/bin/
+    oc version
+    ```
+  </TabsContent>
+
+  <TabsContent value="windows">
+    ```powershell
+    # Download the archive
+    curl.exe -LO https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/windows/oc.zip
+
+    # Extract it
+    Expand-Archive oc.zip -DestinationPath C:\oc
+
+    # Add it to your PATH (run PowerShell as Administrator)
+    $oldPath = [Environment]::GetEnvironmentVariable('Path', [System.EnvironmentVariableTarget]::Machine)
+    if ($oldPath.Split(';') -notcontains 'C:\oc') {
+      [Environment]::SetEnvironmentVariable('Path', ('{0};C:\oc' -f $oldPath), 'Machine')
+    }
+
     oc version
     ```
   </TabsContent>
 </Tabs>
 
-### 3. Production Installation
+## Method 3: Production Installation
 
-For production environments, OpenShift can be installed on various platforms:
+The agent-based installer is the recommended way to install a production cluster. It is
+simple, uses the same `install-config.yaml` on every node, and supports disconnected
+environments.
 
-<Accordion type="single">
-  <AccordionItem value="bare-metal">
-    <AccordionTrigger>
-      Bare Metal Installation
-    </AccordionTrigger>
-    <AccordionContent>
-      1. **Prerequisites**
-      - DHCP server
-      - DNS server
-      - Load balancer
-      - Web server for hosting installation files
+### Download the Installer
 
-      2. **Installation Steps**
-      ```bash
-      # Download OpenShift installer
-      curl -LO https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-install-linux.tar.gz
+```bash
+curl -LO https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-install-linux.tar.gz
+tar xzf openshift-install-linux.tar.gz
+sudo mv openshift-install /usr/local/bin/
+openshift-install version
+```
 
-      # Extract installer
-      tar xvf openshift-install-linux.tar.gz
+### Create the Install Configuration
 
-      # Create installation configuration
-      ./openshift-install create install-config --dir=<installation_directory>
+```bash
+mkdir -p ~/ocp-install && cd ~/ocp-install
 
-      # Create manifests
-      ./openshift-install create manifests --dir=<installation_directory>
+openshift-install create install-config --dir=.
+```
 
-      # Create cluster
-      ./openshift-install create cluster --dir=<installation_directory>
-      ```
-    </AccordionContent>
-  </AccordionItem>
+This writes an `install-config.yaml` that you must edit before continuing:
 
-  <AccordionItem value="cloud">
-    <AccordionTrigger>
-      Cloud Provider Installation
-    </AccordionTrigger>
-    <AccordionContent>
-      OpenShift can be installed on major cloud providers:
+```yaml
+apiVersion: v1
+baseDomain: example.com
+metadata:
+  name: my-cluster
+compute:
+  - name: master
+    replicas: 3
+  - name: worker
+    replicas: 3
+controlPlaneTopology: HighlyAvailable
+network:
+  type: OVNKubernetes
+  machineNetwork:
+    - cidr: 10.0.0.0/16
+  clusterNetwork:
+    - cidr: 10.128.0.0/14
+    hostPrefix: 23
+  serviceNetwork:
+    - 172.30.0.0/16
+platform:
+  baremetal: {}
+sshKey: |
+  ssh-rsa AAAA... your-public-key
+```
 
-      1. **AWS**
-      ```bash
-      # Create cluster on AWS
-      openshift-install create cluster --dir=<installation_directory> \
-        --infrastructure=aws
-      ```
+### Install the Cluster
 
-      2. **Azure**
-      ```bash
-      # Create cluster on Azure
-      openshift-install create cluster --dir=<installation_directory> \
-        --infrastructure=azure
-      ```
+```bash
+# Create the manifests and bootstrap the cluster
+openshift-install create manifests --dir=.
+openshift-install create cluster --dir=. --wait-for-node-ready
 
-      3. **Google Cloud**
-      ```bash
-      # Create cluster on GCP
-      openshift-install create cluster --dir=<installation_directory> \
-        --infrastructure=gcp
-      ```
-    </AccordionContent>
-  </AccordionItem>
-</Accordion>
+# Wait for the cluster to finish installing
+openshift-install wait for cluster --timeout=30m
+
+# Log in with the generated kubeadmin credentials
+oc login -u kubeadmin -p "$(cat ~/ocp-install/kubeadmin-password)"
+```
+
+### Other Installation Methods
+
+| Method | When to use it |
+| --- | --- |
+| Agent-based installer | Recommended for most production clusters, including disconnected installs |
+| Installer-provisioned infrastructure (IPI) | You want the installer to create the VMs/bare metal hosts themselves |
+| Assisted installer | You want Red Hat to guide you through a hosted installation |
+| OKD (installer-provisioned) | The free community distribution, same install flow as OCP |
 
 ## Post-Installation Configuration
 
-### 1. Access the Cluster
+### Projects (Namespaces)
 
 ```bash
-# Get cluster credentials
-oc login -u kubeadmin -p <password> <cluster_url>
+# Create a project
+oc new-project my-app
 
-# View cluster status
-oc get nodes
+# List projects
+oc get projects
+
+# Grant a developer access to their own project
+oc adm policy add-role-to-user edit <username> -n my-app
+```
+
+### Routes and TLS
+
+```bash
+# Create a route for a service
+oc expose svc/my-service --hostname=my-app.apps.example.com
+
+# Terminate TLS at the route
+oc create route edge my-service --hostname=my-app.apps.example.com --tls-certificate=cert --tls-private-key=key
+```
+
+### Build and Deploy from Source
+
+```bash
+# Build a container image from a Git repository
+oc new-build https://github.com/openshift/hello-world.git
+
+# Start the build
+oc start-build hello-world
+
+# Deploy the resulting image
+oc new-app hello-world
+
+# Follow the build logs
+oc logs -f bc/hello-world
+```
+
+### Storage
+
+```yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: fast-ssd
+provisioner: openshift-storage.noobaa.io/obc
+parameters:
+  bucketName: my-bucket
+  region: us-east-1
+```
+
+```bash
+# Check the default storage classes
+oc get storageclass
+
+# Create a persistent volume claim
+oc create -f pvc.yaml
+```
+
+## Upgrading the Cluster
+
+```bash
+# Check the available upgrade paths
+oc adm upgrade
+
+# Check the current version
 oc get clusterversion
-```
 
-### 2. Configure Authentication
+# Start the upgrade
+oc adm upgrade --to-latest=true
 
-```yaml
-apiVersion: config.openshift.io/v1
-kind: OAuth
-metadata:
-  name: cluster
-spec:
-  identityProviders:
-  - name: htpasswd_provider
-    mappingMethod: claim
-    type: HTPasswd
-    htpasswd:
-      fileData:
-        name: htpasswd-secret
-```
-
-### 3. Configure Storage
-
-```yaml
-apiVersion: config.openshift.io/v1
-kind: Storage
-metadata:
-  name: cluster
-spec:
-  storageClassDevices:
-    - devicePaths:
-      - /dev/sdb
-      storageClassName: standard
-      volumeMode: Block
+# Watch the rollout
+oc get clusterversion -w
 ```
 
 ## Troubleshooting
@@ -312,38 +372,102 @@ spec:
 <Accordion type="single">
   <AccordionItem value="issue-1">
     <AccordionTrigger>
-      Installation Timeout
+      crc setup or crc start fails on Linux
     </AccordionTrigger>
     <AccordionContent>
-      Check installation logs:
+      Virtualisation is usually the problem:
       ```bash
-      ./openshift-install gather bootstrap --dir=<installation_directory>
+      # Check that KVM is available
+      egrep -c '(vmx|svm)' /proc/cpuinfo
+
+      # Make sure libvirt is running
+      sudo systemctl enable --now libvirtd
+
+      # Retry
+      crc setup
+      crc start
       ```
+      Also confirm the machine has at least 16 GB of RAM and 100 GB of free disk.
     </AccordionContent>
   </AccordionItem>
 
   <AccordionItem value="issue-2">
     <AccordionTrigger>
-      Node Not Ready
+      crc start fails with a pull secret error
     </AccordionTrigger>
     <AccordionContent>
-      Check node status and logs:
+      The OpenShift Container Platform edition needs a Red Hat pull secret:
       ```bash
-      oc describe node <node_name>
-      oc adm node-logs <node_name>
+      crc config set pull-secret /path/to/pull-secret.txt
+      crc start
       ```
+      Download a new pull secret from the Red Hat console if the old one expired.
     </AccordionContent>
   </AccordionItem>
 
   <AccordionItem value="issue-3">
     <AccordionTrigger>
-      Authentication Issues
+      The installation times out
     </AccordionTrigger>
     <AccordionContent>
-      Check OAuth configuration:
+      Collect the bootstrap logs to see where it stopped:
       ```bash
+      # For CRC
+      crc logs
+
+      # For a production install
+      ./openshift-install gather bootstrap --dir=.
+      ```
+      Common causes are a missing DNS entry for the API endpoint, a firewall blocking the
+      required ports, or a node that cannot reach the registry.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-4">
+    <AccordionTrigger>
+      Nodes stay NotReady
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      oc describe node <node-name>
+      oc adm node-logs <node-name>
+
+      # Drain a node before you work on it
+      oc adm drain <node-name> --ignore-daemonsets
+      ```
+      Check that the machine network CIDR in `install-config.yaml` matches the real
+      network of your hosts.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-5">
+    <AccordionTrigger>
+      Authentication problems
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # Inspect the identity providers
       oc get oauth cluster -o yaml
       oc get pods -n openshift-authentication
+
+      # Log in with the kubeadmin user after a fresh install
+      oc login -u kubeadmin -p "$(cat ~/ocp-install/kubeadmin-password)"
+      ```
+      If you removed the `kubeadmin` user, generate a new one with
+      `oc adm policy add-cluster-role-to-user cluster-admin <username>`.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-6">
+    <AccordionTrigger>
+      Collecting support data
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # Gather diagnostic data before you open a support case
+      oc adm must-gather
+
+      # The archive is written to ./must-gather/
       ```
     </AccordionContent>
   </AccordionItem>
@@ -351,7 +475,13 @@ spec:
 
 ## Security Best Practices
 
-1. **Configure Network Policies**
+1. **Never run as the `kubeadmin` user** — it is a break-glass account. Create real users
+   in the identity provider and grant them roles instead.
+
+2. **Use projects for tenancy** and apply the `edit` role per project rather than
+   granting cluster-wide access.
+
+3. **Deny traffic by default with NetworkPolicy**
    ```yaml
    apiVersion: networking.k8s.io/v1
    kind: NetworkPolicy
@@ -360,10 +490,10 @@ spec:
    spec:
      podSelector: {}
      policyTypes:
-     - Ingress
+       - Ingress
    ```
 
-2. **Enable Audit Logging**
+4. **Enable audit logging**
    ```yaml
    apiVersion: config.openshift.io/v1
    kind: Audit
@@ -373,17 +503,19 @@ spec:
      profile: WriteRequestBodies
    ```
 
-3. **Regular Updates**
-   ```bash
-   # Check for available updates
-   oc adm upgrade
+5. **Encrypt traffic between nodes** with the OpenShift encryption operators for
+   Secrets and ConfigMaps.
 
-   # Apply update
-   oc adm upgrade --to-latest=true
+6. **Keep the cluster updated** — OpenShift requires regular upgrades to stay supported:
+   ```bash
+   oc adm upgrade
    ```
 
 ## Next Steps
 
 - [OpenShift Documentation](https://docs.openshift.com/)
+- [OpenShift Local (CRC) Documentation](https://developers.redhat.com/products/openshift-local/overview)
 - [OpenShift Developer Guide](https://docs.openshift.com/container-platform/latest/developers_guide/index.html)
-- [OpenShift Security Guide](https://docs.openshift.com/container-platform/latest/security/index.html) 
+- [OpenShift Security Guide](https://docs.openshift.com/container-platform/latest/security/index.html)
+- [Kubernetes Installation Guide](/docs/containers/kubernetes)
+- [Helm Installation Guide](/docs/containers/helm)
