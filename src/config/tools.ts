@@ -236,7 +236,7 @@ export const tools: ToolMeta[] = [
     slug: "cloud/aws-cli",
     name: "AWS CLI",
     description:
-      "Install and configure the AWS CLI with credentials, profiles and shell completion.",
+      "Install AWS CLI v2 with the signed install script, authenticate with IAM Identity Center or OIDC and automate AWS from your terminal.",
     category: "cloud",
     tags: ["cloud", "aws", "cli", "credentials"],
   },
@@ -244,7 +244,7 @@ export const tools: ToolMeta[] = [
     slug: "cloud/azure-cli",
     name: "Azure CLI",
     description:
-      "Install the Azure CLI, sign in with a service principal and manage subscriptions.",
+      "Install Azure CLI 2.91, sign in with device code or a managed identity and manage resources, deployments and Bicep files.",
     category: "cloud",
     tags: ["cloud", "azure", "cli", "credentials"],
   },
@@ -252,7 +252,7 @@ export const tools: ToolMeta[] = [
     slug: "cloud/gcloud-cli",
     name: "Google Cloud CLI",
     description:
-      "Install the gcloud CLI, authenticate and manage Google Cloud projects.",
+      "Install the Google Cloud CLI 590, authenticate with ADC or service account impersonation and automate Google Cloud with gcloud.",
     category: "cloud",
     tags: ["cloud", "gcp", "cli", "credentials"],
   },

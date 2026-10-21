@@ -1,239 +1,272 @@
 ---
 title: Google Cloud CLI Installation Guide
-description: Complete guide for installing and configuring Google Cloud Command Line Interface (gcloud CLI) across different operating systems.
+description: Install the Google Cloud CLI 590 on Linux, macOS and Windows, authenticate with IAM, manage configurations and automate Google Cloud with gcloud.
 ---
 
-The Google Cloud CLI (gcloud) is a command-line tool for managing Google Cloud resources and services.
+The Google Cloud CLI (`gcloud`) is the command-line tool for Google Cloud. It manages
+resources, configures authentication and installs the companion tools you need.
 
-## Prerequisites
+<Callout title="Versions used in this guide">
+  Google Cloud CLI **590.0.0** · the `google-cloud-cli` apt and rpm packages ·
+  **Python 3.10 – 3.15** supported · `gcloud storage` replaces the legacy `gsutil` ·
+  components are installed as **separate packages** when you use apt or rpm
+</Callout>
 
-- Active Google Cloud account
-- Internet connection
-- Python 3.7 or later (for some operating systems)
-- Administrative privileges
+<Callout title="Components work differently with package managers">
+  `gcloud components install` only works with a tarball or Homebrew installation. When you
+  install with `apt` or `yum`, the component manager is disabled and you install
+  components as packages such as `google-cloud-cli-kubectl` or
+  `google-cloud-cli-gke-gcloud-auth-plugin` instead.
+</Callout>
+
+## System Requirements
+
+- A 64-bit operating system: Linux, macOS or Windows
+- Python 3.10 to 3.15 (the Linux x86_64 package bundles its own interpreter)
+- A Google Cloud project and an account with access to it
+- `curl`, `tar` and `unzip` for the manual installation
 
 ## Installation Instructions
 
 <Tabs defaultValue="ubuntu">
   <TabsList>
     <TabsTrigger value="ubuntu">Ubuntu/Debian</TabsTrigger>
-    <TabsTrigger value="centos">CentOS/RHEL</TabsTrigger>
+    <TabsTrigger value="rpm">RHEL/CentOS</TabsTrigger>
     <TabsTrigger value="fedora">Fedora</TabsTrigger>
-    <TabsTrigger value="arch">Arch Linux</TabsTrigger>
-    <TabsTrigger value="alpine">Alpine</TabsTrigger>
-    <TabsTrigger value="suse">SUSE</TabsTrigger>
+    <TabsTrigger value="macos">macOS</TabsTrigger>
     <TabsTrigger value="windows">Windows</TabsTrigger>
+    <TabsTrigger value="docker">Docker</TabsTrigger>
   </TabsList>
 
   <TabsContent value="ubuntu">
-    ### Ubuntu/Debian Installation
+    ### Ubuntu / Debian (apt)
 
     ```bash
-    # Add the Cloud SDK distribution URI as a package source
-    echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | \
-      sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+    # Install the signing key in a keyring
+    sudo mkdir -p -m 755 /usr/share/keyrings
+    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg \
+      | sudo gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg
+    sudo chmod a+r /usr/share/keyrings/cloud.google.gpg
 
-    # Import the Google Cloud public key
-    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
-      sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
+    # Add the Cloud SDK repository
+    echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" \
+      | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
 
-    # Update and install the Cloud SDK
+    # Install
     sudo apt update
     sudo apt install -y google-cloud-cli
 
-    # Initialize gcloud
+    # Initialize
     gcloud init
 
-    # Verify installation
+    # Verify
     gcloud --version
     ```
+
+    <Callout title="Do not use apt-key">
+      `apt-key` is deprecated and removed on Ubuntu 22.04+ and Debian 12. The command
+      above writes the key to a keyring and references it with `signed-by`, which works on
+      every current distribution.
+    </Callout>
   </TabsContent>
 
-  <TabsContent value="centos">
-    ### CentOS/RHEL Installation
+  <TabsContent value="rpm">
+    ### RHEL / CentOS / Rocky / Alma (dnf)
 
     ```bash
     # Add the Cloud SDK repository
     sudo tee -a /etc/yum.repos.d/google-cloud-sdk.repo << EOM
     [google-cloud-cli]
     name=Google Cloud CLI
-    baseurl=https://packages.cloud.google.com/yum/repos/cloud-sdk-el8-x86_64
+    baseurl=https://packages.cloud.google.com/yum/repos/cloud-sdk-el9-x86_64
     enabled=1
     gpgcheck=1
     repo_gpgcheck=0
     gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg
-           https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
     EOM
 
-    # Install the Cloud SDK
-    sudo yum install -y google-cloud-cli
+    # Install
+    sudo dnf install -y google-cloud-cli
 
-    # Initialize gcloud
     gcloud init
-
-    # Verify installation
     gcloud --version
     ```
   </TabsContent>
 
   <TabsContent value="fedora">
-    ### Fedora Installation
+    ### Fedora (dnf)
 
     ```bash
-    # Add the Cloud SDK repository
-    sudo dnf install -y dnf-utils
     sudo tee -a /etc/yum.repos.d/google-cloud-sdk.repo << EOM
     [google-cloud-cli]
     name=Google Cloud CLI
-    baseurl=https://packages.cloud.google.com/yum/repos/cloud-sdk-el8-x86_64
+    baseurl=https://packages.cloud.google.com/yum/repos/cloud-sdk-el9-x86_64
     enabled=1
     gpgcheck=1
     repo_gpgcheck=0
     gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg
-           https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
     EOM
 
-    # Install the Cloud SDK
     sudo dnf install -y google-cloud-cli
 
-    # Initialize gcloud
     gcloud init
-
-    # Verify installation
     gcloud --version
     ```
   </TabsContent>
 
-  <TabsContent value="arch">
-    ### Arch Linux Installation
+  <TabsContent value="macos">
+    ### macOS
 
     ```bash
-    # Install using pacman
-    sudo pacman -Sy google-cloud-sdk
+    # Homebrew
+    brew install --cask google-cloud-sdk
 
-    # Initialize gcloud
-    gcloud init
-
-    # Verify installation
-    gcloud --version
-    ```
-  </TabsContent>
-
-  <TabsContent value="alpine">
-    ### Alpine Linux Installation
-
-    ```bash
-    # Install required packages
-    sudo apk add --no-cache python3 py3-pip curl
-
-    # Download and install Cloud SDK
-    curl -O https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-VERSION-linux-x86_64.tar.gz
-    tar -xf google-cloud-cli-VERSION-linux-x86_64.tar.gz
+    # Or the versioned archive
+    curl -O https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-darwin-x86_64.tar.gz
+    tar -xf google-cloud-cli-darwin-x86_64.tar.gz
     ./google-cloud-sdk/install.sh
 
-    # Initialize gcloud
-    ./google-cloud-sdk/bin/gcloud init
+    # Add the shell completion and PATH
+    echo "source ~/google-cloud-sdk/path.bash.inc" >> ~/.zshrc
+    echo "source ~/google-cloud-sdk/completion.bash.inc" >> ~/.zshrc
+    source ~/.zshrc
 
-    # Add to PATH
-    echo "source ~/google-cloud-sdk/path.bash.inc" >> ~/.bashrc
-    echo "source ~/google-cloud-sdk/completion.bash.inc" >> ~/.bashrc
-    source ~/.bashrc
-
-    # Verify installation
-    gcloud --version
-    ```
-  </TabsContent>
-
-  <TabsContent value="suse">
-    ### SUSE Linux Installation
-
-    ```bash
-    # Add the Cloud SDK repository
-    sudo zypper addrepo https://packages.cloud.google.com/yum/repos/cloud-sdk-el7-x86_64 google-cloud-sdk
-    sudo rpm --import https://packages.cloud.google.com/yum/doc/yum-key.gpg
-    sudo rpm --import https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
-
-    # Install the Cloud SDK
-    sudo zypper install -y google-cloud-cli
-
-    # Initialize gcloud
     gcloud init
-
-    # Verify installation
     gcloud --version
     ```
   </TabsContent>
 
   <TabsContent value="windows">
-    ### Windows Installation
+    ### Windows
 
     ```powershell
-    # Install using Chocolatey
+    # Chocolatey
     choco install google-cloud-sdk
 
-    # Alternative: Download installer
-    # Navigate to: https://cloud.google.com/sdk/docs/install-sdk#windows
+    # Or the interactive installer
+    # https://cloud.google.com/sdk/docs/install-sdk#windows
+    ```
 
-    # Initialize gcloud
+    ```powershell
+    # The installer adds a "Google Cloud SDK Shell" shortcut
+    # that opens a terminal with gcloud already on the PATH
     gcloud init
-
-    # Verify installation
     gcloud --version
     ```
   </TabsContent>
+
+  <TabsContent value="docker">
+    ### Docker
+
+    ```bash
+    docker run --rm -it \
+      -v $HOME/.config/gcloud:/root/.config/gcloud \
+      google/cloud-sdk:590.0.0 \
+      gcloud info
+    ```
+
+    Use the `:stable` tag for the latest release, or pin the version for reproducible
+    builds.
+  </TabsContent>
 </Tabs>
 
-## Configuration
-
-### Initial Setup
+## Verifying the Installation
 
 ```bash
-# Initialize gcloud and authenticate
+# Version and components
+gcloud --version
+
+# The active configuration
+gcloud info
+
+# The projects you can reach
+gcloud projects list
+```
+
+## Authentication
+
+```bash
+# Interactive login — opens a browser
 gcloud init
 
-# Authenticate with application-default credentials
+# Log in again without re-running init
+gcloud auth login
+
+# Use a device code on a headless machine
+gcloud auth login --no-launch-browser
+```
+
+### Application Default Credentials
+
+Every Google Cloud client library and every tool that talks to the API uses ADC:
+
+```bash
+# Create the ADC file for local development
 gcloud auth application-default login
 
-# Set project
-gcloud config set project PROJECT_ID
-
-# Set compute zone
-gcloud config set compute/zone us-central1-a
+# Check what ADC currently points at
+gcloud auth application-default print-access-token
 ```
 
-### Multiple Configurations
+### Service accounts and impersonation
 
 ```bash
-# Create new configuration
-gcloud config configurations create my-config
-
-# List configurations
-gcloud config configurations list
-
-# Switch configurations
-gcloud config configurations activate my-config
-
-# View current configuration
-gcloud config list
-```
-
-### Service Account Setup
-
-```bash
-# Create service account
-gcloud iam service-accounts create my-service-account \
+# Create a service account
+gcloud iam service-accounts create my-sa \
   --display-name "My Service Account"
 
-# Download service account key
-gcloud iam service-accounts keys create key.json \
-  --iam-account my-service-account@PROJECT_ID.iam.gserviceaccount.com
+# Grant it the least privilege it needs
+gcloud projects add-iam-policy-binding PROJECT_ID \
+  --member="serviceAccount:my-sa@PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/viewer"
 
-# Activate service account
-gcloud auth activate-service-account \
-  --key-file=key.json
+# Impersonate it instead of downloading a key
+gcloud auth application-default login \
+  --impersonate-service-account=my-sa@PROJECT_ID.iam.gserviceaccount.com
 ```
 
-## Basic Usage
+<Callout title="Avoid service account key files">
+  Long-lived JSON keys end up in environment variables, CI logs and repositories.
+  Prefer workload identity federation or service account impersonation — both give
+  short-lived credentials with no key to leak.
+</Callout>
+
+## Configurations
+
+A configuration is a named set of properties (account, project, region, zone):
+
+```bash
+# Create one
+gcloud config configurations create my-config
+
+# List them
+gcloud config configurations list
+
+# Switch to one
+gcloud config configurations activate my-config
+
+# See the active properties
+gcloud config list
+
+# Set properties
+gcloud config set project PROJECT_ID
+gcloud config set compute/region europe-west4
+gcloud config set compute/zone europe-west4-a
+```
+
+```yaml
+# ~/.config/gcloud/configurations/config_my-config
+[core]
+account = user@example.com
+project = my-project-id
+disable_usage_reporting = True
+
+[compute]
+zone = europe-west4-a
+region = europe-west4
+```
+
+## Everyday Commands
 
 ### Compute Engine
 
@@ -241,33 +274,77 @@ gcloud auth activate-service-account \
 # List instances
 gcloud compute instances list
 
-# Create instance
+# Create an instance
 gcloud compute instances create my-instance \
   --machine-type=e2-medium \
-  --image-family=debian-10 \
-  --image-project=debian-cloud
+  --image-family=ubuntu-2404-lts-amd64 \
+  --image-project=ubuntu-os-cloud \
+  --zone=europe-west4-a
 
-# SSH into instance
-gcloud compute ssh my-instance
+# SSH into it
+gcloud compute ssh my-instance --zone=europe-west4-a
 
-# Stop instance
-gcloud compute instances stop my-instance
+# Stop and delete
+gcloud compute instances stop my-instance --zone=europe-west4-a
+gcloud compute instances delete my-instance --zone=europe-west4-a
 ```
 
 ### Cloud Storage
 
 ```bash
-# Create bucket
-gsutil mb gs://my-bucket
-
-# Copy files to bucket
-gsutil cp local-file.txt gs://my-bucket/
+# Use gcloud storage — gsutil is the legacy tool
+gcloud storage buckets create gs://my-bucket --location=EU
 
 # List buckets
-gsutil ls
+gcloud storage ls
 
-# Set bucket permissions
-gsutil iam ch user:john@example.com:objectViewer gs://my-bucket
+# Copy files
+gcloud storage cp ./file.txt gs://my-bucket/
+gcloud storage rs --recursive ./local-dir gs://my-bucket/dir/
+
+# IAM on a bucket
+gcloud storage buckets add-iam-policy-binding gs://my-bucket \
+  --member="user:john@example.com" \
+  --role="roles/storage.objectViewer"
+```
+
+### Kubernetes Engine
+
+```bash
+# Install the auth plugin for GKE (a separate package when installed with apt)
+sudo apt install -y google-cloud-cli-gke-gcloud-auth-plugin
+
+# Get the credentials for a cluster
+gcloud container clusters get-credentials my-cluster --region=europe-west4
+
+# Then use kubectl
+kubectl get nodes
+```
+
+## Components and Extra Tools
+
+```bash
+# With a tarball or Homebrew installation you can manage components
+gcloud components list
+gcloud components install kubectl
+gcloud components update
+```
+
+```bash
+# With apt or rpm, install the matching package instead
+sudo apt install -y google-cloud-cli-kubectl
+sudo apt install -y google-cloud-cli-gke-gcloud-auth-plugin
+sudo apt install -y google-cloud-cli-docker-credential-gcr
+```
+
+## Upgrading
+
+```bash
+# With apt or rpm
+sudo apt update && sudo apt install --only-upgrade google-cloud-cli
+
+# With a tarball installation
+gcloud components update
 ```
 
 ## Troubleshooting
@@ -275,61 +352,100 @@ gsutil iam ch user:john@example.com:objectViewer gs://my-bucket
 <Accordion type="single">
   <AccordionItem value="issue-1">
     <AccordionTrigger>
-      Authentication Issues
+      gcloud: command not found
     </AccordionTrigger>
     <AccordionContent>
-      Check authentication:
       ```bash
-      # List active account
-      gcloud auth list
+      # Check where it is
+      which gcloud
 
-      # Revoke credentials
-      gcloud auth revoke
-
-      # Login again
-      gcloud auth login
-
-      # Check application default credentials
-      gcloud auth application-default print-access-token
+      # Add the SDK to your PATH
+      export PATH="$PATH:$(/usr/lib/google-cloud-sdk/bin)"
+      echo 'export PATH="$PATH:/usr/lib/google-cloud-sdk/bin"' >> ~/.bashrc
       ```
     </AccordionContent>
   </AccordionItem>
 
   <AccordionItem value="issue-2">
     <AccordionTrigger>
-      Configuration Problems
+      "The component manager is disabled for this installation"
     </AccordionTrigger>
     <AccordionContent>
-      Verify configuration:
+      You installed the CLI with `apt` or `yum`, where components are packages:
       ```bash
-      # Check current config
-      gcloud config list
-
-      # Reset configuration
-      gcloud config unset project
-      gcloud config unset compute/zone
-
-      # Reinitialize
-      gcloud init
+      sudo apt install -y google-cloud-cli-kubectl
       ```
+      Use `gcloud components install` only with a tarball or Homebrew installation.
     </AccordionContent>
   </AccordionItem>
 
   <AccordionItem value="issue-3">
     <AccordionTrigger>
-      Component Issues
+      Authentication errors
     </AccordionTrigger>
     <AccordionContent>
-      Manage components:
       ```bash
-      # List components
-      gcloud components list
+      # Which account is active?
+      gcloud auth list
 
-      # Update components
-      gcloud components update
+      # Log in again
+      gcloud auth login
 
-      # Install specific component
-      gcloud components install COMPONENT_ID
+      # Drop the cached credentials and start over
+      gcloud auth revoke --all
+      gcloud auth application-default login
+      ```
+      If the account needs MFA, `gcloud auth login` prompts for the second factor.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-4">
+    <AccordionTrigger>
+      "The project was not found" or a quota error
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # Which project is selected?
+      gcloud config list
+      gcloud config set project PROJECT_ID
+
+      # Do you have access to it?
+      gcloud projects get-iam-policy PROJECT_ID
+      ```
+      The CLI also needs the `serviceusage.services.use` permission on the target service —
+      ask an owner to grant `roles/serviceusage.serviceUsageConsumer`.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-5">
+    <AccordionTrigger>
+      gcloud is slow or hangs
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # See the API calls
+      gcloud compute instances list --verbosity=debug
+
+      # Skip the usage report prompt and the update check
+      gcloud config set core/disable_usage_reporting true
+      gcloud config set core/disable_prompts true
+      ```
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-6">
+    <AccordionTrigger>
+      Permission denied on a specific command
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # Check the effective permissions of the active account
+      gcloud projects get-iam-policy PROJECT_ID \
+        --flatten="bindings[].members" \
+        --filter="bindings.members:user:my-user@example.com"
+
+      # Check the active service account, if any
+      gcloud auth list --filter=status:ACTIVE --format="value(account)"
       ```
     </AccordionContent>
   </AccordionItem>
@@ -337,88 +453,22 @@ gsutil iam ch user:john@example.com:objectViewer gs://my-bucket
 
 ## Best Practices
 
-1. **Project Organization**
-   ```bash
-   # Create and manage projects
-   gcloud projects create my-project-id
-   gcloud config set project my-project-id
-
-   # Use labels for resources
-   gcloud compute instances create my-instance \
-     --labels=environment=production,team=devops
-   ```
-
-2. **Security**
-   ```bash
-   # Use service accounts for automation
-   gcloud iam service-accounts create my-sa \
-     --display-name "My Service Account"
-
-   # Grant minimal permissions
-   gcloud projects add-iam-policy-binding PROJECT_ID \
-     --member="serviceAccount:my-sa@PROJECT_ID.iam.gserviceaccount.com" \
-     --role="roles/viewer"
-   ```
-
-3. **Resource Management**
-   ```bash
-   # Use resource policies
-   gcloud compute resource-policies create snapshot-schedule \
-     policy-name --schedule="0 */12 * * *" \
-     --snapshot-labels=type=automated
-   ```
-
-## Advanced Configuration
-
-### Environment Variables
-
-```bash
-# Set project ID
-export GOOGLE_CLOUD_PROJECT="your-project-id"
-
-# Set application credentials
-export GOOGLE_APPLICATION_CREDENTIALS="path/to/service-account-key.json"
-
-# Set default region
-export CLOUDSDK_COMPUTE_REGION="us-central1"
-```
-
-### Configuration File
-
-```yaml
-# ~/.config/gcloud/configurations/config_default
-[core]
-account = user@example.com
-project = my-project-id
-disable_usage_reporting = True
-
-[compute]
-zone = us-central1-a
-region = us-central1
-
-[container]
-cluster = my-cluster
-```
-
-## Components and Extensions
-
-```bash
-# List available components
-gcloud components list
-
-# Install specific components
-gcloud components install beta
-gcloud components install kubectl
-
-# Update all components
-gcloud components update
-
-# Remove component
-gcloud components remove COMPONENT_ID
-```
+1. **Use named configurations** per project or environment and activate them explicitly.
+2. **Use impersonation or workload identity federation** instead of service account keys.
+3. **Grant the narrowest role** that works — start from `roles/viewer` and add on.
+4. **Use `gcloud storage`**, not the legacy `gsutil`.
+5. **Always pass `--project` and `--zone` explicitly in scripts** so the command does not
+   depend on the active configuration.
+6. **Use `--format=json` and `--filter`** to get machine-readable output.
+7. **Pin the CLI version** in CI images.
+8. **Keep `gcloud config set core/disable_usage_reporting true`** in automation so
+   non-interactive runs never block on a prompt.
 
 ## Next Steps
 
-- [Google Cloud CLI Reference](https://cloud.google.com/sdk/gcloud/reference)
-- [Google Cloud CLI Cheat Sheet](https://cloud.google.com/sdk/docs/cheatsheet)
-- [Google Cloud Best Practices](https://cloud.google.com/docs/enterprise/best-practices-for-enterprise-organizations) 
+- [Google Cloud CLI Documentation](https://cloud.google.com/sdk/docs)
+- [gcloud CLI Reference](https://cloud.google.com/sdk/gcloud/reference)
+- [gcloud CLI Cheat Sheet](https://cloud.google.com/sdk/docs/cheatsheet)
+- [Managing gcloud CLI components](https://cloud.google.com/sdk/docs/components)
+- [Terraform Installation Guide](/docs/infrastructure/terraform)
+- [Ansible Installation Guide](/docs/infrastructure/ansible)

@@ -1,349 +1,274 @@
 ---
 title: AWS CLI Installation Guide
-description: Complete guide for installing and configuring AWS Command Line Interface (CLI) across different operating systems.
+description: Install AWS CLI v2 on Linux, macOS and Windows with the signed install script, authenticate with IAM Identity Center or SSO, and automate AWS from your terminal.
 ---
 
-The AWS Command Line Interface (AWS CLI) is a unified tool to manage your AWS services from the command line.
+The AWS Command Line Interface is the unified tool for managing AWS services from a
+terminal or a script. Version 2 is a self-contained binary — it bundles its own Python
+runtime, so you do not need Python installed.
 
-## Prerequisites
+<Callout title="Versions used in this guide">
+  AWS CLI **2.38.3** · the signed install script (`install.sh` / `install.ps1`) ·
+  AWS CLI **v1 reached end of life on 31 July 2025** — never install it again
+</Callout>
 
-- Active AWS account
-- Access key ID and secret access key
-- Python 3.7 or later (for some operating systems)
-- Internet connection
+<Callout title="AWS CLI v1 is end of life">
+  Version 1 is no longer maintained and no longer receives security updates. It is also
+  still the default package in some older Linux distributions (`aws-cli` on Arch, the
+  `awscli` package on Alpine). If `aws --version` reports `aws-cli/1.x`, replace it with
+  version 2.
+</Callout>
+
+## System Requirements
+
+- A 64-bit operating system: Linux (x86_64 or ARM), macOS 11+, or 64-bit Windows
+- No Python required — version 2 bundles its own interpreter
+- `glibc`, `groff` and `less` on Linux (present by default on most distributions)
+- An AWS account and a way to authenticate: IAM Identity Center, an IAM user, or a role
 
 ## Installation Instructions
 
-<Tabs defaultValue="ubuntu">
+<Tabs defaultValue="linux">
   <TabsList>
-    <TabsTrigger value="ubuntu">Ubuntu/Debian</TabsTrigger>
-    <TabsTrigger value="centos">CentOS/RHEL</TabsTrigger>
-    <TabsTrigger value="fedora">Fedora</TabsTrigger>
-    <TabsTrigger value="arch">Arch Linux</TabsTrigger>
-    <TabsTrigger value="alpine">Alpine</TabsTrigger>
-    <TabsTrigger value="suse">SUSE</TabsTrigger>
+    <TabsTrigger value="linux">Linux</TabsTrigger>
+    <TabsTrigger value="macos">macOS</TabsTrigger>
     <TabsTrigger value="windows">Windows</TabsTrigger>
+    <TabsTrigger value="docker">Docker</TabsTrigger>
   </TabsList>
 
-  <TabsContent value="ubuntu">
-    ### Ubuntu/Debian Installation
+  <TabsContent value="linux">
+    ### Linux (x86_64 and ARM)
+
+    The install script is the recommended method. It verifies the download and installs
+    for the current user by default:
 
     ```bash
-    # Install required packages
-    sudo apt update
-    sudo apt install -y unzip curl
+    # Install for the current user (into $HOME/.local)
+    curl -fsSL https://awscli.amazonaws.com/v2/install.sh | bash
 
-    # Download AWS CLI
+    # Install for all users (into /usr/local) — needs sudo
+    curl -fsSL https://awscli.amazonaws.com/v2/install.sh | sudo bash -s -- --system
+
+    # Verify
+    aws --version
+    ```
+
+    #### Verify the script before you run it (optional)
+
+    The script is signed with a PGP key, so you can check it first:
+
+    ```bash
+    # Download the script and its signature
+    curl -fsSL https://awscli.amazonaws.com/v2/install.sh -o install.sh
+    curl -fsSL https://awscli.amazonaws.com/v2/install.sh.sig -o install.sh.sig
+
+    # Import the AWS CLI public key and verify
+    gpg --import <(curl -fsSL https://awscli.amazonaws.com/v2/install.sh.asc)
+    gpg --verify install.sh.sig install.sh
+
+    # Then install
+    bash install.sh
+    ```
+
+    The signing key fingerprint is
+    `FB5D B77F D5C1 18B8 0511 ADA8 A631 0ACC 4672 475C`.
+
+    #### Command line installer (for version pinning)
+
+    Use this if you need a specific version, because the install script always fetches the
+    latest release:
+
+    ```bash
+    # Download and unzip
     curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-
-    # Extract the archive
     unzip awscliv2.zip
 
-    # Install AWS CLI
+    # Install (defaults: /usr/local/aws-cli and /usr/local/bin)
     sudo ./aws/install
 
-    # Verify installation
+    # Verify and clean up
     aws --version
-
-    # Clean up
     rm -rf aws awscliv2.zip
     ```
-  </TabsContent>
 
-  <TabsContent value="centos">
-    ### CentOS/RHEL Installation
+    On ARM64, use `awscli-exe-linux-aarch64.zip` instead.
 
-    ```bash
-    # Install required packages
-    sudo yum install -y unzip curl
-
-    # Download AWS CLI
-    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-
-    # Extract the archive
-    unzip awscliv2.zip
-
-    # Install AWS CLI
-    sudo ./aws/install
-
-    # Verify installation
-    aws --version
-
-    # Clean up
-    rm -rf aws awscliv2.zip
-    ```
-  </TabsContent>
-
-  <TabsContent value="fedora">
-    ### Fedora Installation
+    #### Snap package
 
     ```bash
-    # Install required packages
-    sudo dnf install -y unzip curl
-
-    # Download AWS CLI
-    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-
-    # Extract the archive
-    unzip awscliv2.zip
-
-    # Install AWS CLI
-    sudo ./aws/install
-
-    # Verify installation
-    aws --version
-
-    # Clean up
-    rm -rf aws awscliv2.zip
+    sudo snap install aws-cli --classic
     ```
+
+    Snap keeps the CLI up to date automatically, but you cannot pin a minor version.
   </TabsContent>
 
-  <TabsContent value="arch">
-    ### Arch Linux Installation
+  <TabsContent value="macos">
+    ### macOS
 
     ```bash
-    # Install AWS CLI using pacman
-    sudo pacman -Sy aws-cli
+    # Install for the current user
+    curl -fsSL https://awscli.amazonaws.com/v2/install.sh | bash
 
-    # Verify installation
+    # Or use the graphical installer
+    curl "https://awscli.amazonaws.com/AWSCLIV2.pkg" -o "AWSCLIV2.pkg"
+    sudo installer -pkg AWSCLIV2.pkg -target /
+
+    # Verify
+    which aws
     aws --version
     ```
-  </TabsContent>
 
-  <TabsContent value="alpine">
-    ### Alpine Linux Installation
-
-    ```bash
-    # Install required packages
-    sudo apk add --no-cache python3 py3-pip
-
-    # Install AWS CLI
-    pip3 install --upgrade pip
-    pip3 install awscli
-
-    # Verify installation
-    aws --version
-    ```
-  </TabsContent>
-
-  <TabsContent value="suse">
-    ### SUSE Linux Installation
-
-    ```bash
-    # Install required packages
-    sudo zypper install -y unzip curl
-
-    # Download AWS CLI
-    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-
-    # Extract the archive
-    unzip awscliv2.zip
-
-    # Install AWS CLI
-    sudo ./aws/install
-
-    # Verify installation
-    aws --version
-
-    # Clean up
-    rm -rf aws awscliv2.zip
-    ```
+    <Callout title="macOS support window">
+      AWS CLI 2.21.0 and later require **macOS 11 or newer**. Older CLI versions support
+      macOS 10.15 and below.
+    </Callout>
   </TabsContent>
 
   <TabsContent value="windows">
-    ### Windows Installation
+    ### Windows (PowerShell)
 
     ```powershell
-    # Install using Chocolatey
-    choco install awscli
+    # Install for the current user
+    irm https://awscli.amazonaws.com/v2/install.ps1 | iex
 
-    # Alternative: Download MSI installer
-    # Navigate to: https://aws.amazon.com/cli/
-    # Download and run the MSI installer
+    # Install for all users (run PowerShell as Administrator)
+    irm 'https://awscli.amazonaws.com/v2/install.ps1' -OutFile install.ps1; try { .\install.ps1 -System } finally { Remove-Item install.ps1 }
 
-    # Verify installation
+    # Verify
     aws --version
     ```
+
+    #### MSI installer
+
+    ```powershell
+    # All users
+    msiexec.exe /i https://awscli.amazonaws.com/AWSCLIV2.msi
+
+    # Current user only (no admin rights needed)
+    msiexec.exe /i https://awscli.amazonaws.com/AWSCLIV2-User.msi
+    ```
+
+    #### Chocolatey
+
+    ```powershell
+    choco install awscli
+    ```
+  </TabsContent>
+
+  <TabsContent value="docker">
+    ### Docker
+
+    ```bash
+    docker run --rm -it \
+      -v $HOME/.aws:/root/.aws:ro \
+      -v $PWD:/work \
+      -w /work \
+      amazon/aws-cli:2 \
+      aws sts get-caller-identity
+    ```
+
+    The `amazon/aws-cli` image is published for both `linux/amd64` and `linux/arm64`.
   </TabsContent>
 </Tabs>
 
-## Configuration
-
-### Initial Setup
+## Verifying the Installation
 
 ```bash
-# Configure AWS CLI
-aws configure
+# Version and build information
+aws --version
 
-# Enter the following information when prompted:
-# AWS Access Key ID: YOUR_ACCESS_KEY
-# AWS Secret Access Key: YOUR_SECRET_KEY
-# Default region name: YOUR_REGION (e.g., us-west-2)
-# Default output format: json
+# Confirm you can reach AWS and who you are
+aws sts get-caller-identity
+
+# List the services you can call
+aws help
 ```
 
-### Multiple Profiles
+## Authentication
+
+### IAM Identity Center (formerly AWS SSO)
+
+The recommended way to give people access — no long-lived keys, and access is tied to your
+identity provider.
 
 ```bash
-# Configure additional profile
+# Start the SSO login and open the browser
+aws sso login --profile my-profile
+
+# Then use the profile
+aws s3 ls --profile my-profile
+```
+
+Or let the CLI guide you through it interactively:
+
+```bash
+aws configure sso
+```
+
+### Named profiles with static credentials
+
+```bash
+# Create a profile
 aws configure --profile production
 
-# Use specific profile
-aws s3 ls --profile production
-
-# List configured profiles
 aws configure list-profiles
+aws s3 ls --profile production
 ```
 
-### Environment Variables
+### Roles and temporary credentials
 
 ```bash
-# Set AWS credentials via environment variables
-export AWS_ACCESS_KEY_ID="YOUR_ACCESS_KEY"
-export AWS_SECRET_ACCESS_KEY="YOUR_SECRET_KEY"
-export AWS_DEFAULT_REGION="us-west-2"
+# Assume a role and export the temporary credentials
+aws sts assume-role --role-arn arn:aws:iam::123456789012:role/deploy \
+  --role-session-name my-session
+
+# Or use a credential process in ~/.aws/config
 ```
 
-## Basic Usage
+```ini
+[profile deploy]
+region = eu-central-1
+role_arn = arn:aws:iam::123456789012:role/deploy
+source_profile = default
+credential_process = aws --profile default sts assume-role --role-arn arn:aws:iam::123456789012:role/deploy --role-session-name gcloud --duration-seconds 3600
+```
 
-### S3 Commands
+### Service accounts for automation
 
 ```bash
-# List buckets
-aws s3 ls
-
-# Copy file to S3
-aws s3 cp file.txt s3://my-bucket/
-
-# Sync directory with S3
-aws s3 sync local-dir s3://my-bucket/dir/
+# Never use a long-lived key in CI — use OIDC instead
 ```
 
-### EC2 Commands
-
-```bash
-# List instances
-aws ec2 describe-instances
-
-# Start instance
-aws ec2 start-instances --instance-ids i-1234567890abcdef0
-
-# Stop instance
-aws ec2 stop-instances --instance-ids i-1234567890abcdef0
+```yaml
+# GitHub Actions
+- uses: aws-actions/configure-aws-credentials@v6
+  with:
+    role-to-assume: arn:aws:iam::123456789012:role/gha-deploy
 ```
 
-## Troubleshooting
+<Callout title="Prefer OIDC over access keys">
+  Access keys are long-lived secrets that leak through CI logs and environment files.
+  Federated roles (OIDC) give your pipeline short-lived credentials scoped to one role
+  and one repository.
+</Callout>
 
-<Accordion type="single">
-  <AccordionItem value="issue-1">
-    <AccordionTrigger>
-      AWS CLI not found
-    </AccordionTrigger>
-    <AccordionContent>
-      Check PATH and reinstall if necessary:
-      ```bash
-      # Check AWS CLI location
-      which aws
-
-      # Add to PATH if needed
-      export PATH=$PATH:/usr/local/bin/aws
-
-      # Reinstall if necessary
-      sudo ./aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli --update
-      ```
-    </AccordionContent>
-  </AccordionItem>
-
-  <AccordionItem value="issue-2">
-    <AccordionTrigger>
-      Authentication Failures
-    </AccordionTrigger>
-    <AccordionContent>
-      Verify credentials:
-      ```bash
-      # Check configured credentials
-      aws configure list
-
-      # Verify credentials file
-      cat ~/.aws/credentials
-
-      # Test authentication
-      aws sts get-caller-identity
-      ```
-    </AccordionContent>
-  </AccordionItem>
-
-  <AccordionItem value="issue-3">
-    <AccordionTrigger>
-      Region Issues
-    </AccordionTrigger>
-    <AccordionContent>
-      Check and update region settings:
-      ```bash
-      # View current region
-      aws configure get region
-
-      # List available regions
-      aws ec2 describe-regions
-
-      # Set new region
-      aws configure set region us-west-2
-      ```
-    </AccordionContent>
-  </AccordionItem>
-</Accordion>
-
-## Best Practices
-
-1. **Credential Management**
-   ```bash
-   # Use AWS CLI credential helper
-   aws configure set credential_process /path/to/credential/helper
-
-   # Use AWS SSO
-   aws configure sso
-   ```
-
-2. **Security**
-   ```bash
-   # Enable MFA
-   aws iam create-virtual-mfa-device
-   aws iam enable-mfa-device
-
-   # Rotate access keys
-   aws iam create-access-key
-   aws iam delete-access-key
-   ```
-
-3. **Resource Tagging**
-   ```bash
-   # Tag resources
-   aws ec2 create-tags \
-     --resources i-1234567890abcdef0 \
-     --tags Key=Environment,Value=Production
-   ```
-
-## Advanced Configuration
-
-### AWS CLI Configuration File
+## Configuration Files
 
 ```ini
 # ~/.aws/config
 [default]
-region = us-west-2
+region = eu-central-1
 output = json
-cli_pager =
 
 [profile dev]
 region = us-east-1
 output = text
+cli_pager =
 
 [profile prod]
 region = eu-west-1
-output = yaml
+output = json
 ```
-
-### Credential File
 
 ```ini
 # ~/.aws/credentials
@@ -356,8 +281,196 @@ aws_access_key_id = PROD_ACCESS_KEY
 aws_secret_access_key = PROD_SECRET_KEY
 ```
 
+```bash
+# Change a setting without the interactive prompt
+aws configure set region us-west-2 --profile prod
+aws configure set output json --profile prod
+
+# Turn off the pager for scripted output
+export AWS_PAGER=""
+```
+
+## Everyday Commands
+
+### S3
+
+```bash
+# List buckets
+aws s3 ls
+
+# Copy a file up and down
+aws s3 cp file.txt s3://my-bucket/
+aws s3 cp s3://my-bucket/file.txt ./
+
+# Sync a directory (only changed files)
+aws s3 sync ./local s3://my-bucket/dir/ --delete
+
+# Large transfers: use the S3 Transfer tools
+aws s3 cp ./big-dir s3://my-bucket/ --recursive --no-progress
+```
+
+### EC2
+
+```bash
+# List instances
+aws ec2 describe-instances --query 'Reservations[].Instances[].InstanceId' --output text
+
+# Start and stop
+aws ec2 start-instances --instance-ids i-1234567890abcdef0
+aws ec2 stop-instances --instance-ids i-1234567890abcdef0
+
+# Run a command on an instance through SSM
+aws ssm send-command --instance-ids i-1234567890abcdef0 --document-name AWS-RunShellScript \
+  --parameters 'commands=["uptime"]'
+```
+
+### Handy one-liners
+
+```bash
+# Who am I?
+aws sts get-caller-identity
+
+# The last 20 CloudTrail entries
+aws cloudtrail lookup-events --max-results 20 \
+  --query 'Events[].{Time:EventTime,Event:EventName,User:Username}'
+
+# Tail the logs of a Lambda function
+aws logs tail /aws/lambda/my-function --follow
+```
+
+## Upgrading
+
+```bash
+# If you installed with the install script or an official installer
+aws update
+```
+
+```bash
+# If you installed with the command line installer, replace the binary
+sudo ./aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli --update
+```
+
+## Troubleshooting
+
+<Accordion type="single">
+  <AccordionItem value="issue-1">
+    <AccordionTrigger>
+      aws: command not found
+    </AccordionTrigger>
+    <AccordionContent>
+      The install script puts the binary in `$HOME/.local/bin` for a per-user install.
+      ```bash
+      # Add it to your PATH
+      export PATH="$HOME/.local/bin:$PATH"
+      echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+
+      # Check where the CLI actually is
+      which aws
+      ```
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-2">
+    <AccordionTrigger>
+      The version is 1.x after installing version 2
+    </AccordionTrigger>
+    <AccordionContent>
+      An old CLI is still on the PATH ahead of the new one:
+      ```bash
+      type -a aws
+      which -a aws
+      ```
+      On Arch and Alpine the distribution package is still version 1 — remove it first:
+      ```bash
+      sudo pacman -Rns aws-cli   # Arch
+      sudo apk del aws-cli       # Alpine
+      ```
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-3">
+    <AccordionTrigger>
+      Authentication errors or "ExpiredToken"
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # See which credentials are in play
+      aws configure list
+
+      # Confirm the identity and the token expiry
+      aws sts get-caller-identity
+      ```
+      For SSO profiles, refresh the session with `aws sso login --profile my-profile`.
+      For assumed roles, the session expired — assume the role again.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-4">
+    <AccordionTrigger>
+      "Could not find credentials" or "Region is not set"
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # Set the region for a profile
+      aws configure set region eu-central-1 --profile prod
+
+      # Or export it for one command
+      AWS_REGION=eu-central-1 aws ec2 describe-instances
+      ```
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-5">
+    <AccordionTrigger>
+      "AccessDenied" even though the policy looks right
+    </AccordionTrigger>
+    <AccordionContent>
+      IAM changes take a few seconds to propagate. Check the effective permissions:
+      ```bash
+      aws sts get-caller-identity
+      aws iam simulate-principal-policy \
+        --policy-source-arn arn:aws:iam::123456789012:user/my-user \
+        --action-names s3:ListBucket --resource-arns arn:aws:s3:::my-bucket
+      ```
+      A deny in a resource-based policy (bucket policy, SCP) also wins over an allow.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-6">
+    <AccordionTrigger>
+      The CLI is slow or a command hangs
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # See the API calls and their timing
+      aws s3 ls --debug
+
+      # Disable the pager in scripts
+      export AWS_PAGER=""
+      ```
+      A proxy that intercepts TLS also breaks the CLI — check `HTTPS_PROXY` and
+      `NO_PROXY`.
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>
+
+## Best Practices
+
+1. **Use IAM Identity Center or OIDC** instead of long-lived access keys.
+2. **Use named profiles** per environment and pass `--profile` explicitly in scripts.
+3. **Never commit credentials** — keep `~/.aws/credentials` out of version control and
+   restrict its permissions with `chmod 600`.
+4. **Use `--output json` in automation** and parse with `jq`.
+5. **Pin the CLI version** in CI images so a new release cannot change your pipeline.
+6. **Enable CloudTrail and Config** so every API call is recorded.
+7. **Use `aws s3api`** when you need exact control over the request the API receives.
+8. **Prefer the S3 Transfer tools** (`aws s3 cp --recursive`) for large data movement.
+
 ## Next Steps
 
-- [AWS CLI Command Reference](https://awscli.amazonaws.com/v2/documentation/api/latest/index.html)
-- [AWS CLI Configuration](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)
-- [AWS CLI Best Practices](https://docs.aws.amazon.com/cli/latest/userguide/cli-usage-parameters.html) 
+- [AWS CLI v2 Documentation](https://docs.aws.amazon.com/cli/latest/userguide/)
+- [AWS CLI Command Reference](https://docs.aws.amazon.com/cli/latest/reference/)
+- [Configuring the AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)
+- [AWS IAM Identity Center](https://docs.aws.amazon.com/singlesignon/)
+- [Terraform Installation Guide](/docs/infrastructure/terraform)
+- [Ansible Installation Guide](/docs/infrastructure/ansible)

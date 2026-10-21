@@ -1,339 +1,260 @@
 ---
 title: Azure CLI Installation Guide
-description: Complete guide for installing and configuring Azure Command Line Interface (CLI) across different operating systems.
+description: Install Azure CLI 2.91 on Linux, macOS, Windows and Docker, authenticate with device code, service principals and federated credentials, and manage Azure resources from the terminal.
 ---
 
-The Azure Command Line Interface (Azure CLI) is a cross-platform command-line tool for managing Azure resources.
+The Azure CLI (`az`) is Microsoft's cross-platform tool for managing Azure resources. It
+runs on Linux, macOS and Windows, in a container, or directly in Azure Cloud Shell.
 
-## Prerequisites
+<Callout title="Versions used in this guide">
+  Azure CLI **2.91.0** · the official `packages.microsoft.com` apt and dnf repositories ·
+  Bicep (`az bicep`) ships with the CLI · managed identity and federated credentials for
+  automation
+</Callout>
 
-- Active Azure subscription
-- Internet connection
-- Python 3.6 or later (for some operating systems)
-- Administrative privileges
+## System Requirements
+
+- A 64-bit operating system: Linux, macOS or Windows
+- Python 3.10 or newer on Linux (the Windows MSI and the Docker image bundle their own)
+- An Azure subscription and a way to authenticate
+- The CLI installs to `/opt/az` on Ubuntu and Debian, and `/lib64/az` on RHEL-family
+  distributions
 
 ## Installation Instructions
 
 <Tabs defaultValue="ubuntu">
   <TabsList>
     <TabsTrigger value="ubuntu">Ubuntu/Debian</TabsTrigger>
-    <TabsTrigger value="centos">CentOS/RHEL</TabsTrigger>
+    <TabsTrigger value="rpm">RHEL/CentOS</TabsTrigger>
     <TabsTrigger value="fedora">Fedora</TabsTrigger>
-    <TabsTrigger value="arch">Arch Linux</TabsTrigger>
-    <TabsTrigger value="alpine">Alpine</TabsTrigger>
-    <TabsTrigger value="suse">SUSE</TabsTrigger>
+    <TabsTrigger value="macos">macOS</TabsTrigger>
     <TabsTrigger value="windows">Windows</TabsTrigger>
+    <TabsTrigger value="docker">Docker</TabsTrigger>
   </TabsList>
 
   <TabsContent value="ubuntu">
-    ### Ubuntu/Debian Installation
+    ### Ubuntu / Debian (apt)
 
     ```bash
-    # Get packages needed for the installation process
+    # Prerequisites
     sudo apt update
     sudo apt install -y ca-certificates curl apt-transport-https lsb-release gnupg
 
-    # Download and install the Microsoft signing key
-    curl -sL https://packages.microsoft.com/keys/microsoft.asc | \
-      gpg --dearmor | \
-      sudo tee /etc/apt/trusted.gpg.d/microsoft.gpg > /dev/null
+    # Install the Microsoft signing key in a keyring
+    sudo mkdir -p -m 755 /etc/apt/keyrings
+    curl -sL https://packages.microsoft.com/keys/microsoft.asc \
+      | sudo gpg --dearmor -o /etc/apt/keyrings/microsoft.gpg
+    sudo chmod a+r /etc/apt/keyrings/microsoft.gpg
 
-    # Add the Azure CLI software repository
+    # Add the Azure CLI repository
     AZ_REPO=$(lsb_release -cs)
-    echo "deb [arch=`dpkg --print-architecture`] https://packages.microsoft.com/repos/azure-cli/ $AZ_REPO main" | \
-      sudo tee /etc/apt/sources.list.d/azure-cli.list
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/microsoft.gpg] https://packages.microsoft.com/repos/azure-cli/ $AZ_REPO main" \
+      | sudo tee /etc/apt/sources.list.d/azure-cli.list
 
-    # Install Azure CLI
+    # Install
     sudo apt update
     sudo apt install -y azure-cli
 
-    # Verify installation
-    az --version
+    # Verify
+    az version
     ```
   </TabsContent>
 
-  <TabsContent value="centos">
-    ### CentOS/RHEL Installation
+  <TabsContent value="rpm">
+    ### RHEL / CentOS / Rocky / Alma (dnf)
 
     ```bash
-    # Import Microsoft repository key
+    # Import the Microsoft signing key
     sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
 
-    # Add Azure CLI repository
-    echo -e "[azure-cli]
-    name=Azure CLI
-    baseurl=https://packages.microsoft.com/yumrepos/azure-cli
-    enabled=1
-    gpgcheck=1
-    gpgkey=https://packages.microsoft.com/keys/microsoft.asc" | \
-      sudo tee /etc/yum.repos.d/azure-cli.repo
+    # Add the Azure CLI repository
+    sudo dnf install -y dnf-plugins-core
+    sudo dnf config-manager --add-repo https://packages.microsoft.com/yumrepos/azure-cli
+    sudo dnf config-manager --set-enabled azure-cli
 
-    # Install Azure CLI
-    sudo yum install -y azure-cli
+    # Install
+    sudo dnf install -y azure-cli
 
-    # Verify installation
-    az --version
+    az version
     ```
   </TabsContent>
 
   <TabsContent value="fedora">
-    ### Fedora Installation
+    ### Fedora (dnf)
 
     ```bash
-    # Import Microsoft repository key
     sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
 
-    # Add Azure CLI repository
-    sudo dnf install -y dnf-utils
+    sudo dnf install -y dnf-plugins-core
     sudo dnf config-manager --add-repo https://packages.microsoft.com/yumrepos/azure-cli
     sudo dnf config-manager --set-enabled azure-cli
 
-    # Install Azure CLI
     sudo dnf install -y azure-cli
 
-    # Verify installation
-    az --version
+    az version
     ```
   </TabsContent>
 
-  <TabsContent value="arch">
-    ### Arch Linux Installation
+  <TabsContent value="macos">
+    ### macOS (Homebrew)
 
     ```bash
-    # Install Azure CLI using pacman
-    sudo pacman -Sy azure-cli
+    brew install azure-cli
 
-    # Verify installation
-    az --version
-    ```
-  </TabsContent>
+    # Update later with
+    brew upgrade azure-cli
 
-  <TabsContent value="alpine">
-    ### Alpine Linux Installation
-
-    ```bash
-    # Install required packages
-    sudo apk add --no-cache python3 py3-pip
-
-    # Install Azure CLI
-    pip3 install --upgrade pip
-    pip3 install azure-cli
-
-    # Verify installation
-    az --version
-    ```
-  </TabsContent>
-
-  <TabsContent value="suse">
-    ### SUSE Linux Installation
-
-    ```bash
-    # Import Microsoft repository key
-    sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
-
-    # Add Azure CLI repository
-    sudo zypper addrepo --name 'Azure CLI' --check \
-      https://packages.microsoft.com/yumrepos/azure-cli azure-cli
-
-    # Install Azure CLI
-    sudo zypper install --no-confirm azure-cli
-
-    # Verify installation
-    az --version
+    az version
     ```
   </TabsContent>
 
   <TabsContent value="windows">
-    ### Windows Installation
+    ### Windows
 
     ```powershell
-    # Install using Chocolatey
+    # Windows Package Manager
+    winget install Microsoft.AzureCLI
+
+    # Microsoft Installer (MSI)
+    msiexec.exe /i https://aka.ms/installazurecliwindows
+
+    # Chocolatey
     choco install azure-cli
 
-    # Alternative: Download MSI installer
-    # Navigate to: https://aka.ms/installazurecliwindows
-    # Download and run the MSI installer
+    az version
+    ```
+  </TabsContent>
 
-    # Verify installation
-    az --version
+  <TabsContent value="docker">
+    ### Docker
+
+    ```bash
+    docker run --rm -it \
+      -v $HOME/.azure:/root/.azure \
+      mcr.microsoft.com/azure-cli:2.91.0 \
+      az version
+    ```
+
+    For an interactive session, mount the config directory and set the terminal type:
+    ```bash
+    docker run --rm -it \
+      -v $HOME/.azure:/root/.azure \
+      -e TERM=xterm \
+      mcr.microsoft.com/azure-cli:2.91.0 \
+      bash
     ```
   </TabsContent>
 </Tabs>
 
-## Configuration
-
-### Initial Setup
+## Verifying the Installation
 
 ```bash
-# Login to Azure
+# Version, core version and installed extensions
+az version
+
+# List the installed extensions
+az extension list
+
+# The CLI comes with Bicep — no separate install needed
+az bicep version
+```
+
+## Authentication
+
+### Interactive login
+
+```bash
+# Opens a browser
 az login
 
-# List subscriptions
-az account list
-
-# Set default subscription
-az account set --subscription "My Subscription"
-```
-
-### Environment Configuration
-
-```bash
-# Set default output format
-az configure --defaults output=table
-
-# Set default location
-az configure --defaults location=westus2
-
-# View current configuration
-az configure --list-defaults
-```
-
-### Multiple Accounts
-
-```bash
-# Login with different account
+# For a headless machine, print a code and open it on any device
 az login --use-device-code
 
-# Switch between accounts
-az account set --subscription "Other Subscription"
+# Log in to a specific tenant
+az login --tenant <tenant-id>
 
-# List accounts
+# See what you are signed in to
+az account show
+```
+
+### Service principal with a certificate (recommended for automation)
+
+```bash
+# Create the app registration
+az ad sp create-for-rbac \
+  --name my-app \
+  --role Contributor \
+  --scopes /subscriptions/<subscription-id>
+```
+
+```bash
+# Add a certificate credential and export the public key
+az ad sp credential reset \
+  --id <app-id> \
+  --append \
+  --cert "$(openssl req -new -x509 -nodes -days 365 -out /dev/null -subj '/CN=azure-cli' | openssl x509 -pubkey -noout | openssl pkey -pubin -outform der | base64 -w0)"
+
+# Log in with the certificate
+az login --service-principal \
+  --username <app-id> \
+  --tenant <tenant-id> \
+  --cert @cert.pem
+```
+
+### Managed identity and federated credentials
+
+On any Azure resource that has a managed identity, the CLI picks it up automatically —
+no secrets at all:
+
+```bash
+# Inside a VM, AKS pod or App Service with a managed identity
+az account show
+
+# On GitHub Actions, use the OIDC federation
+az login --service-principal \
+  --username <app-id> \
+  --tenant <tenant-id> \
+  --federated-token "$AZURE_FEDERATED_TOKEN"
+```
+
+```yaml
+# GitHub Actions
+permissions:
+  id-token: write
+  contents: read
+steps:
+  - uses: azure/login@v2
+    with:
+      client-id: ${{ secrets.AZURE_CLIENT_ID }}
+      tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+      subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+```
+
+## Working with Subscriptions
+
+```bash
+# List the subscriptions you can see
 az account list --output table
+
+# Switch the active subscription
+az account set --subscription "My Subscription"
+
+# List every subscription in a directory
+az account list --all --output table
 ```
 
-## Basic Usage
-
-### Resource Groups
+## Configuration
 
 ```bash
-# Create resource group
-az group create --name myResourceGroup --location westus2
+# Set the defaults you always want
+az configure --defaults output=json location=westus2
 
-# List resource groups
-az group list --output table
+# See the current defaults
+az configure --list-defaults
 
-# Delete resource group
-az group delete --name myResourceGroup --yes
+# Export them for another environment
+az configure --defaults output=table group=myResourceGroup
 ```
-
-### Virtual Machines
-
-```bash
-# Create VM
-az vm create \
-  --resource-group myResourceGroup \
-  --name myVM \
-  --image UbuntuLTS \
-  --admin-username azureuser \
-  --generate-ssh-keys
-
-# List VMs
-az vm list --output table
-
-# Start/Stop VM
-az vm start --resource-group myResourceGroup --name myVM
-az vm stop --resource-group myResourceGroup --name myVM
-```
-
-## Troubleshooting
-
-<Accordion type="single">
-  <AccordionItem value="issue-1">
-    <AccordionTrigger>
-      Authentication Issues
-    </AccordionTrigger>
-    <AccordionContent>
-      Check authentication status:
-      ```bash
-      # Clear cached credentials
-      az logout
-
-      # Login again
-      az login
-
-      # Check current account
-      az account show
-      ```
-    </AccordionContent>
-  </AccordionItem>
-
-  <AccordionItem value="issue-2">
-    <AccordionTrigger>
-      Extension Problems
-    </AccordionTrigger>
-    <AccordionContent>
-      Manage extensions:
-      ```bash
-      # List installed extensions
-      az extension list
-
-      # Update extensions
-      az extension update --name <extension-name>
-
-      # Remove problematic extension
-      az extension remove --name <extension-name>
-      ```
-    </AccordionContent>
-  </AccordionItem>
-
-  <AccordionItem value="issue-3">
-    <AccordionTrigger>
-      Performance Issues
-    </AccordionTrigger>
-    <AccordionContent>
-      Check and clear cache:
-      ```bash
-      # Clear CLI cache
-      az cache purge
-
-      # Check CLI version
-      az version
-
-      # Update CLI
-      az upgrade
-      ```
-    </AccordionContent>
-  </AccordionItem>
-</Accordion>
-
-## Best Practices
-
-1. **Resource Management**
-   ```bash
-   # Use resource groups for organization
-   az group create --name myApp-prod --location westus2 --tags Environment=Production
-
-   # Use tags for resource tracking
-   az resource tag --tags Environment=Production \
-     --resource-group myResourceGroup \
-     --name myResource \
-     --resource-type "Microsoft.Web/sites"
-   ```
-
-2. **Security**
-   ```bash
-   # Use service principals for automation
-   az ad sp create-for-rbac --name myApp
-
-   # Manage role assignments
-   az role assignment create \
-     --assignee <principal-id> \
-     --role Contributor \
-     --resource-group myResourceGroup
-   ```
-
-3. **Automation**
-   ```bash
-   # Create deployment from template
-   az deployment group create \
-     --resource-group myResourceGroup \
-     --template-file template.json \
-     --parameters parameters.json
-   ```
-
-## Advanced Configuration
-
-### Azure CLI Configuration File
 
 ```json
 // ~/.azure/config
@@ -349,34 +270,198 @@ az vm stop --resource-group myResourceGroup --name myVM
 }
 ```
 
-### Environment Variables
+## Everyday Commands
+
+### Resource groups
 
 ```bash
-# Set environment variables
-export AZURE_SUBSCRIPTION_ID="your-subscription-id"
-export AZURE_TENANT_ID="your-tenant-id"
-export AZURE_CLIENT_ID="your-client-id"
-export AZURE_CLIENT_SECRET="your-client-secret"
+az group create --name myResourceGroup --location westus2 --tags Environment=Production
+az group list --output table
+az group delete --name myResourceGroup --yes
+```
+
+### Virtual machines
+
+```bash
+# Create a VM
+az vm create \
+  --resource-group myResourceGroup \
+  --name myVM \
+  --image UbuntuLTS \
+  --admin-username azureuser \
+  --generate-ssh-keys
+
+# List, start and stop
+az vm list --output table
+az vm start --resource-group myResourceGroup --name myVM
+az vm stop --resource-group myResourceGroup --name myVM
+
+# Open a shell (Cloud Shell)
+az vm ssh --resource-group myResourceGroup --name myVM
+```
+
+### Deployments
+
+```bash
+# Deploy an ARM template
+az deployment group create \
+  --resource-group myResourceGroup \
+  --template-file template.json \
+  --parameters parameters.json
+
+# Deploy Bicep — az bicep is included with the CLI
+az bicep build main.bicep --outfile main.json
+az deployment group create --resource-group myResourceGroup --template-file main.json
+
+# Deploy straight from a Bicep file
+az deployment group create \
+  --resource-group myResourceGroup \
+  --template-file main.bicep \
+  --parameters env=prod
 ```
 
 ## Extensions
 
 ```bash
-# List available extensions
+# List the extensions in the index
 az extension list-available --output table
 
-# Install extension
-az extension add --name <extension-name>
+# Install one
+az extension add --name aks-preview
 
-# Update all extensions
-az extension update --all
-
-# Remove extension
-az extension remove --name <extension-name>
+# Update or remove
+az extension update --name aks-preview
+az extension remove --name aks-preview
 ```
+
+## Upgrading
+
+```bash
+# Check the current version
+az version
+
+# Upgrade the CLI
+az upgrade
+
+# If the automatic upgrade is blocked, install the latest package
+sudo apt update && sudo apt install --only-upgrade azure-cli
+```
+
+## Troubleshooting
+
+<Accordion type="single">
+  <AccordionItem value="issue-1">
+    <AccordionTrigger>
+      az: command not found
+    </AccordionTrigger>
+    <AccordionContent>
+      The CLI installs to `/opt/az` and symlinks into `/usr/bin`. If the symlink is
+      missing:
+      ```bash
+      which az
+      ls /opt/az/bin/az
+      export PATH="$PATH:/opt/az/bin"
+      ```
+      On macOS with Homebrew, run `brew link azure-cli`.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-2">
+    <AccordionTrigger>
+      Authentication errors
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # Clear the cached credentials
+      az logout
+
+      # Log in again
+      az login --use-device-code
+
+      # See which account and subscription are active
+      az account show
+      ```
+      If the tenant requires MFA, the device-code flow is the most reliable way to
+      authenticate from a terminal.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-3">
+    <AccordionTrigger>
+      "Please run 'az login' to setup account" or a subscription error
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      az account list
+      az account set --subscription "<subscription-id>"
+      ```
+      A service principal only sees the subscriptions its role assignment covers — check
+      with `az role assignment list --assignee <object-id>`.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-4">
+    <AccordionTrigger>
+      An extension fails to install or update
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # List what is installed
+      az extension list
+
+      # Remove the broken one and install it again
+      az extension remove --name <extension-name>
+      az extension add --name <extension-name>
+
+      # Extensions must match the CLI's major version
+      az extension list-available | grep <extension-name>
+      ```
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-5">
+    <AccordionTrigger>
+      The CLI is slow
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # Table output is what is slow — it has to collect every column
+      az group list --output table
+      az group list --output json --query "[].{name:name,location:location}"
+      ```
+      Use `--query` to reduce the amount of data the CLI has to fetch and format.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-6">
+    <AccordionTrigger>
+      "az bicep: command not found"
+    </AccordionTrigger>
+    <AccordionContent>
+      Bicep is bundled with the CLI in 2.91.0. If it is missing, install it separately:
+      ```bash
+      az bicep install
+      ```
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>
+
+## Best Practices
+
+1. **Use managed identity or federated credentials** in CI — never a client secret.
+2. **Use a certificate credential** for service principals that run outside Azure.
+3. **Scope role assignments** to the resource group, not the whole subscription.
+4. **Set defaults with `az configure`** so every command uses the same output format.
+5. **Use `--query` with `--output json`** in scripts instead of parsing human-readable output.
+6. **Pin the CLI version** in your CI image and upgrade it deliberately.
+7. **Keep the CLI and the extensions** on matching versions.
+8. **Use Bicep** (`az bicep build`) for infrastructure instead of hand-written JSON.
 
 ## Next Steps
 
-- [Azure CLI Command Reference](https://docs.microsoft.com/cli/azure/reference-index)
-- [Azure CLI Configuration](https://docs.microsoft.com/cli/azure/azure-cli-configuration)
-- [Azure CLI Best Practices](https://docs.microsoft.com/azure/developer/azure-cli/use-cli-effectively) 
+- [Azure CLI Documentation](https://learn.microsoft.com/cli/azure/)
+- [Azure CLI Command Reference](https://learn.microsoft.com/cli/azure/reference-index)
+- [Azure CLI Extensions](https://learn.microsoft.com/cli/azure/azure-cli-extensions-overview)
+- [Bicep Documentation](https://learn.microsoft.com/azure/azure-resource-manager/bicep/)
+- [Terraform Installation Guide](/docs/infrastructure/terraform)
+- [Ansible Installation Guide](/docs/infrastructure/ansible)
