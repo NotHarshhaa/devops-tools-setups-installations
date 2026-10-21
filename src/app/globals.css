@@ -688,6 +688,15 @@
   @apply inline-block min-h-[1rem] w-full px-4 py-0.5;
 }
 
+/* Code blocks always sit on a dark surface. Shiki sets an inline colour on every
+   highlighted token, so this only affects blocks whose language has no tokenizer
+   (for example ```text or ```cfg) and would otherwise render as dark text on a
+   dark background — an empty looking black box. */
+[data-rehype-pretty-code-figure] code,
+[data-rehype-pretty-code-figure] [data-line] {
+  color: #adbac7;
+}
+
 /* On small screens long commands wrap instead of scrolling out of view. */
 @media (max-width: 640px) {
   [data-rehype-pretty-code-figure] code,

@@ -1,0 +1,242 @@
+---
+title: Zed Installation Guide
+description: Install the open-source Zed editor with its install script, pin a specific version, migrate your VS Code settings and use the built-in agent panel and inline assistant.
+---
+
+Zed is a high-performance, open-source code editor with AI built in. It is written in Rust,
+starts instantly and ships an agent that understands the whole project.
+
+<Callout title="Requirements are strict on Linux">
+  Zed needs a **Vulkan 1.3** driver and three desktop portals: `FileChooser`, `OpenURI` and
+  `Secret`. On a headless server or a machine without a GPU driver, the editor will not
+  start.
+</Callout>
+
+## System Requirements
+
+- **macOS** 12 (Monterey) or newer — Intel or Apple silicon
+- **Linux** — 64-bit x86_64 or aarch64, with a Vulkan 1.3 driver and the desktop portals
+  above (Ubuntu, Debian, Fedora, Arch, RHEL and more are supported)
+- **Windows** 11 (22H2+) or Windows 10 (1903+), 64-bit
+- A GPU with DirectX 11 support on Windows
+
+## Installation Instructions
+
+<Tabs defaultValue="linux">
+  <TabsList>
+    <TabsTrigger value="linux">Linux</TabsTrigger>
+    <TabsTrigger value="macos">macOS</TabsTrigger>
+    <TabsTrigger value="windows">Windows</TabsTrigger>
+    <TabsTrigger value="portable">Portable</TabsTrigger>
+  </TabsList>
+
+  <TabsContent value="linux">
+    ### Linux (install script)
+
+    ```bash
+    # Install the latest stable release
+    curl -f https://zed.dev/install.sh | sh
+
+    # Install a specific version
+    curl -f https://zed.dev/install.sh | ZED_VERSION=0.216.0 sh
+
+    # Install the preview build
+    curl -f https://zed.dev/install.sh | ZED_CHANNEL=preview sh
+
+    # Verify
+    zed --version
+    ```
+
+    The script supports `x86_64` and `AArch64` and handles Ubuntu, Arch, Debian, RHEL,
+    CentOS and Fedora. Uninstall with:
+
+    ```bash
+    zed --uninstall
+    ```
+  </TabsContent>
+
+  <TabsContent value="macos">
+    ### macOS
+
+    ```bash
+    # Homebrew (stable)
+    brew install --cask zed
+
+    # Homebrew (preview)
+    brew install --cask zed@preview
+    ```
+
+    You can also download the build from the [download page](https://zed.dev/download) —
+    after a manual install, Zed checks for updates on its own.
+  </TabsContent>
+
+  <TabsContent value="windows">
+    ### Windows
+
+    ```powershell
+    # Windows Package Manager
+    winget install -e --id ZedIndustries.Zed
+    ```
+
+    Or download the installer from the [download page](https://zed.dev/download).
+  </TabsContent>
+
+  <TabsContent value="portable">
+    ### Portable binaries
+
+    Prebuilt binaries for `x86_64` and `aarch64` are published on the
+    [releases page](https://github.com/zed-industries/zed/releases):
+
+    ```bash
+    # Download the tarball
+    curl -LO https://github.com/zed-industries/zed/releases/latest/download/zed-linux-x86_64.tar.gz
+    tar xzf zed-linux-x86_64.tar.gz
+
+    # Run it
+    ./zed
+    ```
+  </TabsContent>
+</Tabs>
+
+## First Run
+
+Zed opens a welcome page with quick actions. Open a project folder to get started:
+
+```bash
+zed ~/projects/my-app
+```
+
+| Action | macOS | Linux / Windows |
+| --- | --- | --- |
+| Command palette | `Cmd+Shift+P` | `Ctrl+Shift+P` |
+| Go to file | `Cmd+P` | `Ctrl+P` |
+| Go to symbol | `Cmd+Shift+O` | `Ctrl+Shift+O` |
+| Find in project | `Cmd+Shift+F` | `Ctrl+Shift+F` |
+| Toggle terminal | `Ctrl+`` | `Ctrl+`` |
+| Agent panel | `Cmd+Shift+A` | `Ctrl+Shift+A` |
+
+## Using the AI Features
+
+Zed ships with an agent and an inline assistant. Configure a provider first:
+
+1. Open the settings editor with `Cmd+,` (macOS) or `Ctrl+,` (Linux / Windows)
+2. Search for `agent` and add your provider API key
+3. Open the Agent Panel with `Cmd+Shift+A` (macOS) or `Ctrl+Shift+A`
+
+```text
+Explain how the authentication flow works in this repository and which files I should
+read first.
+```
+
+### Migrating from VS Code
+
+Zed has a dedicated import guide, and it can import your settings, extensions and
+keybindings:
+
+- **Settings**: `Cmd+Shift+P` → `zed: import vscode settings`
+- **Keybindings**: enable **VS Code keymap** in the keymap settings
+- **Extensions**: the VS Code extension compatibility layer is on by default
+
+You can also read the full [VS Code migration guide](https://zed.dev/docs/migrate/vs-code).
+
+### Vim and Helix Modes
+
+```text
+# In settings.json
+{
+  "vim_mode": true,
+  "helix_mode": false
+}
+```
+
+## Troubleshooting
+
+<Accordion type="single">
+  <AccordionItem value="issue-1">
+    <AccordionTrigger>
+      The editor will not start on Linux
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # The Vulkan driver is the usual reason
+      vulkaninfo --summary
+
+      # The required desktop portals
+      ls /usr/share/xdg-desktop-portals/
+
+      # Run it directly to see the error
+      zed
+      ```
+      On a headless machine use SSH with X11 forwarding, or run Zed on your own machine and
+      edit over SSH with the Remote SSH extension.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-2">
+    <AccordionTrigger>
+      The install script fails
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # Make sure the script is reachable and run it with a shell
+      curl -fL https://zed.dev/install.sh -o install.sh
+      sh install.sh
+
+      # Check the architecture
+      uname -m   # x86_64 or aarch64
+      ```
+      If the script cannot detect your distribution, download the tarball from the
+      [releases page](https://github.com/zed-industries/zed/releases) and run the binary
+      directly.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-3">
+    <AccordionTrigger>
+      The agent does not respond
+    </AccordionTrigger>
+    <AccordionContent>
+      Check the provider settings first:
+      ```text
+      # Settings -> search for "agent"
+      ```
+      The most common cause is a missing API key or a key without credit. Zed shows the
+      provider error in the Agent Panel. You can also run the **Assistant** settings
+      doctor from the command palette.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-4">
+    <AccordionTrigger>
+      Extensions do not behave the same as in VS Code
+    </AccordionTrigger>
+    <AccordionContent>
+      Zed implements the VS Code extension API, but it is not complete. Extensions that
+      depend on a VS Code-specific API — some language servers, for example — will not
+      work. Zed's own extension ecosystem is the reliable path for those languages:
+      ```text
+      # In the command palette
+      zed: install extension
+      ```
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>
+
+## Best Practices
+
+1. **Import your VS Code settings** — it takes two minutes and saves hours.
+2. **Use the Agent Panel for repository-wide questions** and inline assist for small edits.
+3. **Add project instructions** to the settings so the agent knows your conventions.
+4. **Keep the project context file in Git** — it is what makes the agent consistent
+   across the team.
+5. **Review diffs** before accepting an agent change.
+6. **Pin the version** in CI images; Zed moves fast and the config format changes.
+7. **Use the portable binary** when you need the same build on several machines.
+
+## Next Steps
+
+- [Zed Documentation](https://zed.dev/docs)
+- [Zed Agent Panel](https://zed.dev/docs/ai/agent-panel)
+- [Cursor](/docs/ai-ide/cursor)
+- [VS Code AI Extensions](/docs/ai-ide/vscode-extensions)
+- [OpenCode](/docs/ai-ide/opencode) — the same workflow in your terminal

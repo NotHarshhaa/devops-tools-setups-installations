@@ -1,0 +1,72 @@
+---
+title: AI IDE Tools
+description: Install the AI editors, terminal agents and IDE extensions teams are using right now — Cursor, Zed, Claude Code, Gemini CLI, Aider, Goose, OpenCode and more.
+---
+
+AI coding tools fall into three groups, and the right one depends on where you want the
+agent to live:
+
+| Type | Where it runs | Examples |
+| --- | --- | --- |
+| **AI editor** | Inside your IDE, with full context of the open project | Cursor, Zed, Windsurf / Devin Desktop, Kiro |
+| **Terminal agent** | In your shell, editing files and running commands itself | Claude Code, Gemini CLI, Aider, Goose, OpenCode |
+| **IDE extension** | As a VS Code extension on top of an editor you already use | GitHub Copilot, Cline, Roo Code, Continue |
+
+Every guide below covers the **official** installation method for each tool, the
+authentication options, and the common failure modes — so you can get a working setup
+without guessing.
+
+<Callout title="These tools move fast">
+  AI tools ship new versions weekly and rename products occasionally. The commands in
+  these guides are taken from the current upstream documentation, but always check the
+  tool's own install page if something behaves unexpectedly.
+</Callout>
+
+## Available Guides
+
+| Guide | Current release | What it covers |
+| --- | --- | --- |
+| [Cursor](/docs/ai-ide/cursor) | Current stable | Official apt and yum repos, VS Code import, Agent and Plan Mode |
+| [Zed](/docs/ai-ide/zed) | Current stable | Install script, version pinning, built-in agent panel |
+| [Windsurf / Devin Desktop](/docs/ai-ide/windsurf) | Current stable | The rebrand, Codeium repositories, settings import |
+| [Kiro](/docs/ai-ide/kiro) | Current stable | AWS Kiro IDE, CLI, specs and steering |
+| [Claude Code](/docs/ai-ide/claude-code) | 2.1.x | Native installer, signed apt/dnf/apk repos, signature verification |
+| [Gemini CLI](/docs/ai-ide/gemini-cli) | Current stable | npm, npx, Homebrew, OAuth and API keys, Antigravity migration |
+| [Aider](/docs/ai-ide/aider) | Current stable | One-line installer, uv and pipx, model providers, git workflow |
+| [Goose](/docs/ai-ide/goose) | Current stable | Desktop app, CLI installer, providers and MCP extensions |
+| [OpenCode](/docs/ai-ide/opencode) | 1.x / 2.x | Install script, npm, Homebrew, AGENTS.md bootstrap |
+| [VS Code AI Extensions](/docs/ai-ide/vscode-extensions) | Current stable | Copilot, Cline, Roo Code and Continue |
+
+## Choosing a Setup
+
+- **You want an editor that just works** — start with [Cursor](/docs/ai-ide/cursor) or
+  [Zed](/docs/ai-ide/zed). Both import your VS Code settings and keybindings.
+- **You want an agent that works in the terminal and in CI** — use
+  [Claude Code](/docs/ai-ide/claude-code), [Gemini CLI](/docs/ai-ide/gemini-cli) or
+  [OpenCode](/docs/ai-ide/opencode).
+- **You want to keep VS Code** — add [GitHub Copilot, Cline or Continue](/docs/ai-ide/vscode-extensions).
+- **You want an open-source agent with no vendor lock-in** — [Aider](/docs/ai-ide/aider),
+  [Goose](/docs/ai-ide/goose) and [OpenCode](/docs/ai-ide/opencode) all support multiple
+  model providers.
+
+## A Note on API Keys and Secrets
+
+These tools read provider API keys from the environment. Keep them out of your shell
+history and out of Git:
+
+```bash
+# Use a password manager or your CI secret store
+export ANTHROPIC_API_KEY="$(op read 'op://dev/ANTHROPIC_API_KEY')"
+
+# Or a .env file that is never committed
+echo ".env" >> .gitignore
+```
+
+Never paste a provider key into a chat prompt, a commit message, or an issue.
+
+## Next Steps
+
+- [AI IDE Tools on GitHub](https://github.com/topics/ai-coding-assistant)
+- [Model Context Protocol](https://modelcontextprotocol.io/) — the extension standard most of these tools speak
+- [Git Installation Guide](/docs/version-control/git)
+- [Docker Installation Guide](/docs/containers/docker)

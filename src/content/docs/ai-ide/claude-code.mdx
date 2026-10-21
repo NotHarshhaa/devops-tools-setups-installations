@@ -1,0 +1,342 @@
+---
+title: Claude Code Installation Guide
+description: Install Anthropic's Claude Code with the native installer or the signed apt, dnf and apk repositories, authenticate, and verify the release signature.
+---
+
+Claude Code is Anthropic's terminal agent. It reads your repository, edits files, runs
+commands and works through a plan with you — from the shell, in CI, or inside your editor.
+
+<Callout title="Versions used in this guide">
+  Claude Code **2.1.x** · native installer (`claude.ai/install.sh`) · signed apt, dnf and apk
+  repositories with a `stable` and a `latest` channel · release fingerprint
+  `31DD DE24 DDFA B679 F42D 7BD2 BAA9 29FF 1A7E CACE`
+</Callout>
+
+## System Requirements
+
+- **macOS** 13.0+, **Windows** 10 1809+ / Server 2019+, **Ubuntu** 20.04+, **Debian** 10+,
+  **Alpine** 3.19+
+- 4 GB RAM, x86_64 or ARM64
+- An internet connection
+- A Pro, Max, Team, Enterprise or Console account — the free claude.ai plan does not
+  include Claude Code. You can also use it with Amazon Bedrock, Google Cloud or
+  Microsoft Foundry.
+
+## Installation Instructions
+
+### The Native Installer (Recommended)
+
+```bash
+# macOS, Linux and WSL
+curl -fsSL https://claude.ai/install.sh | bash
+```
+
+```powershell
+# Windows PowerShell
+irm https://claude.ai/install.ps1 | iex
+```
+
+```batch
+REM Windows CMD
+curl -fsSL https://claude.ai/install.cmd -o install.cmd && install.cmd && del install.cmd
+```
+
+The installer shows no progress while it downloads. When it finishes, open a new terminal
+and check the version:
+
+```bash
+claude --version
+```
+
+Native installations **update themselves in the background**.
+
+### Linux Package Managers
+
+Claude Code publishes signed apt, dnf and apk repositories. Each has a `stable` channel
+(about a week old, skips regressions) and a `latest` channel (every release as it ships).
+
+<Tabs defaultValue="apt">
+  <TabsList>
+    <TabsTrigger value="apt">apt</TabsTrigger>
+    <TabsTrigger value="dnf">dnf</TabsTrigger>
+    <TabsTrigger value="apk">apk</TabsTrigger>
+  </TabsList>
+
+  <TabsContent value="apt">
+    ```bash
+    # Prerequisites
+    sudo apt install curl gnupg
+
+    # The signing key
+    sudo install -d -m 0755 /etc/apt/keyrings
+    sudo curl -fsSL https://downloads.claude.ai/keys/claude-code.asc \
+      -o /etc/apt/keyrings/claude-code.asc
+
+    # Check the fingerprint — it must be 31DDDE24DDFAB679F42D7BD2BAA929FF1A7ECACE
+    gpg --show-keys /etc/apt/keyrings/claude-code.asc
+
+    # The repository
+    echo "deb [signed-by=/etc/apt/keyrings/claude-code.asc] https://downloads.claude.ai/claude-code/apt/stable stable main" \
+      | sudo tee /etc/apt/sources.list.d/claude-code.list
+
+    sudo apt update
+    sudo apt install claude-code
+    ```
+  </TabsContent>
+
+  <TabsContent value="dnf">
+    ```bash
+    sudo tee /etc/yum.repos.d/claude-code.repo > /dev/null <<'EOF'
+    [claude-code]
+    name=Claude Code
+    baseurl=https://downloads.claude.ai/claude-code/rpm/stable
+    enabled=1
+    gpgcheck=1
+    gpgkey=https://downloads.claude.ai/keys/claude-code.asc
+    EOF
+
+    sudo dnf install claude-code
+    ```
+  </TabsContent>
+
+  <TabsContent value="apk">
+    ```sh
+    wget -O /etc/apk/keys/claude-code.rsa.pub \
+      https://downloads.claude.ai/keys/claude-code.rsa.pub
+    echo "https://downloads.claude.ai/claude-code/apk/stable" >> /etc/apk/repositories
+    apk add claude-code
+    ```
+  </TabsContent>
+</Tabs>
+
+### Other Options
+
+```bash
+# Homebrew (stable channel)
+brew install --cask claude-code
+
+# Homebrew (latest channel)
+brew install --cask claude-code@latest
+```
+
+```powershell
+# WinGet
+winget install Anthropic.ClaudeCode
+```
+
+```bash
+# npm — requires Node.js 22 or newer
+npm install -g @anthropic-ai/claude-code
+```
+
+<Callout title="Never use sudo with npm">
+  `sudo npm install -g` causes permission problems and is a security risk. If the global
+  npm directory is not writable, use the native installer or a package manager instead.
+</Callout>
+
+### Alpine and musl distributions
+
+Alpine needs `bash`, `curl`, `libgcc`, `libstdc++` and `ripgrep`, plus
+`USE_BUILTIN_RIPGREP=0`:
+
+```bash
+apk add bash curl libgcc libstdc++ ripgrep
+```
+
+```json
+{
+  "env": {
+    "USE_BUILTIN_RIPGREP": "0"
+  }
+}
+```
+
+## Signing In
+
+```bash
+# Start an interactive session and follow the browser prompts
+claude
+
+# Or authenticate with an API key
+export ANTHROPIC_API_KEY="sk-ant-..."
+claude
+```
+
+```bash
+# Use a different provider — Bedrock, Google Cloud or Microsoft Foundry
+export CLAUDE_CODE_USE_BEDROCK=1
+export CLAUDE_CODE_USE_VERTEX=1
+export CLAUDE_CODE_USE_FOUNDRY=1
+```
+
+## Updates
+
+```bash
+# Update now
+claude update
+
+# Or let the background updater do it
+```
+
+```json
+{
+  "autoUpdatesChannel": "stable",
+  "minimumVersion": "2.1.100"
+}
+```
+
+- `"latest"` (default) — new features as soon as they ship
+- `"stable"` — about a week old, skips releases with major regressions
+
+```json
+{
+  "env": {
+    "DISABLE_AUTOUPDATER": "1"
+  }
+}
+```
+
+`DISABLE_AUTOUPDATER` only stops the background check — `claude update` still works. Use
+`DISABLE_UPDATES` to block every update path.
+
+## Verifying the Release
+
+Each release publishes a `manifest.json` with the SHA256 checksum of every platform
+binary, signed with the Anthropic GPG key:
+
+```bash
+# 1. Import the key and check the fingerprint
+curl -fsSL https://downloads.claude.ai/keys/claude-code.asc | gpg --import
+gpg --fingerprint security@anthropic.com
+# 31DD DE24 DDFA B679 F42D  7BD2 BAA9 29FF 1A7E CACE
+
+# 2. Download the manifest and its signature
+REPO=https://downloads.claude.ai/claude-code-releases
+VERSION=2.1.89
+curl -fsSLO "$REPO/$VERSION/manifest.json"
+curl -fsSLO "$REPO/$VERSION/manifest.json.sig"
+
+# 3. Verify
+gpg --verify manifest.json.sig manifest.json
+# gpg: Good signature from "Anthropic Claude Code Release Signing <security@anthropic.com>"
+
+# 4. Check the binary against the manifest
+sha256sum ~/.local/share/claude/versions/2.1.89/claude
+```
+
+## Troubleshooting
+
+<Accordion type="single">
+  <AccordionItem value="issue-1">
+    <AccordionTrigger>
+      claude: command not found after installing
+    </AccordionTrigger>
+    <AccordionContent>
+      The native installer puts the launcher in `~/.local/bin`. Add it to your `PATH`:
+      ```bash
+      export PATH="$HOME/.local/bin:$PATH"
+      echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+      source ~/.bashrc
+      ```
+      Then check the install with `claude doctor`.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-2">
+    <AccordionTrigger>
+      apt fails with NO_PUBKEY BAA929FF1A7ECACE
+    </AccordionTrigger>
+    <AccordionContent>
+      The key was not downloaded or is not in the keyring:
+      ```bash
+      sudo install -d -m 0755 /etc/apt/keyrings
+      sudo curl -fsSL https://downloads.claude.ai/keys/claude-code.asc \
+        -o /etc/apt/keyrings/claude-code.asc
+      gpg --show-keys /etc/apt/keyrings/claude-code.asc
+      ```
+      The fingerprint must be `31DDDE24DDFAB679F42D7BD2BAA929FF1A7ECACE`.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-3">
+    <AccordionTrigger>
+      The install script fails on Alpine
+    </AccordionTrigger>
+    <AccordionContent>
+      Alpine has no `bash` or `curl` by default:
+      ```bash
+      apk add bash curl libgcc libstdc++ ripgrep
+      ```
+      Then set `USE_BUILTIN_RIPGREP=0` in `~/.claude/settings.json` and run the installer
+      again.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-4">
+    <AccordionTrigger>
+      It crashes with a Bus error on a network home directory
+    </AccordionTrigger>
+    <AccordionContent>
+      Claude Code reads parts of the executable while it runs. On NFS or similar shared
+      storage, install it on **local disk** instead:
+      ```bash
+      # Install to a local path
+      export XDG_DATA_HOME=/opt/claude
+      curl -fsSL https://claude.ai/install.sh | bash
+      ```
+      Set `DISABLE_UPDATES=1` if your own tooling manages upgrades, so an in-place upgrade
+      cannot delete the binary another machine is running.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-5">
+    <AccordionTrigger>
+      The Bash tool is not available on Windows
+    </AccordionTrigger>
+    <AccordionContent>
+      Install [Git for Windows](https://git-scm.com/downloads/win) so Git Bash is available.
+      Or point Claude Code straight at it:
+      ```json
+      {
+        "env": {
+          "CLAUDE_CODE_GIT_BASH_PATH": "C:\\Program Files\\Git\\bin\\bash.exe"
+        }
+      }
+      ```
+      Without Git for Windows, Claude Code uses the PowerShell tool instead.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-6">
+    <AccordionTrigger>
+      Run claude doctor for a full diagnostic
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      claude doctor
+      ```
+      It reports install health, settings-file validation errors and every warning with a
+      suggested fix — without starting a session.
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>
+
+## Best Practices
+
+1. **Use the native installer** — it auto-updates and is the best tested path.
+2. **Verify the release manifest** before you trust a downloaded binary.
+3. **Keep a project `CLAUDE.md`** in the repository with the conventions the agent should
+   follow, and commit it.
+4. **Use the `stable` channel** on shared machines so nobody gets a broken release on a
+   Monday morning.
+5. **Give the agent scoped permissions** rather than the whole machine.
+6. **Use `ANTHROPIC_API_KEY` from a secret store**, never from a committed file.
+7. **Run it in CI with a scoped token** and a read-only checkout.
+
+## Next Steps
+
+- [Claude Code Documentation](https://code.claude.com/docs/)
+- [Claude Code on GitHub](https://github.com/anthropics/claude-code)
+- [Gemini CLI](/docs/ai-ide/gemini-cli)
+- [OpenCode](/docs/ai-ide/opencode)
+- [Git Installation Guide](/docs/version-control/git)

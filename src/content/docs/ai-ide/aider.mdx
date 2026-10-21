@@ -1,0 +1,267 @@
+---
+title: Aider Installation Guide
+description: Install Aider with the one-line installer, uv or pipx, connect it to a model provider and let it commit your changes to git as it works.
+---
+
+Aider is AI pair programming in your terminal. It edits files, runs your tests and
+**commits each change to git**, so you always have a clean undo.
+
+<Callout title="Use the recommended installers">
+  The one-line installer and `uv` / `pipx` give Aider its own isolated Python
+  environment. Installing it with a plain `pip install` often puts the wrong
+  dependencies on your system.
+</Callout>
+
+## System Requirements
+
+- Python 3.8 to 3.13 (Aider installs Python 3.12 for itself if you need it)
+- `git` — Aider works in a repository and commits as it goes
+- An API key for one of the supported providers, or a local model through Ollama or
+  LM Studio
+
+## Installation Instructions
+
+### The One-Line Installer (Recommended)
+
+```bash
+# macOS and Linux
+curl -LsSf https://aider.chat/install.sh | sh
+
+# Windows PowerShell
+powershell -ExecutionPolicy ByPass -c "irm https://aider.chat/install.ps1 | iex"
+```
+
+The script installs Aider in its own separate Python environment, and installs Python
+3.12 for it if the system does not have a suitable version.
+
+### With uv
+
+```bash
+python -m pip install uv
+uv tool install --force --python python3.12 --with pip aider-chat@latest
+```
+
+### With pipx
+
+```bash
+python -m pip install pipx
+pipx install aider-chat
+```
+
+### With pip
+
+Use a virtual environment, otherwise you will fight with dependencies:
+
+```bash
+python -m venv ~/.venvs/aider
+source ~/.venvs/aider/bin/activate
+python -m pip install -U --upgrade-strategy only-if-needed aider-chat
+```
+
+## Connecting a Model
+
+```bash
+# Anthropic
+export ANTHROPIC_API_KEY=sk-ant-...
+aider --model sonnet
+
+# OpenAI
+export OPENAI_API_KEY=sk-...
+aider --model gpt-4o
+
+# Google Gemini
+export GEMINI_API_KEY=...
+aider --model gemini/gemini-2.5-pro
+
+# DeepSeek
+export DEEPSEEK_API_KEY=...
+aider --model deepseek
+
+# A local model through Ollama
+aider --model ollama/qwen2.5-coder:32b
+
+# GitHub Copilot
+aider --model copilot/sonnet
+```
+
+```bash
+# List everything Aider can talk to
+aider --models
+```
+
+Put the keys in a `.env` file next to your project — Aider reads it automatically — and
+add it to `.gitignore`:
+
+```bash
+echo ".env" >> .gitignore
+```
+
+## Your First Session
+
+```bash
+cd /to/your/project
+aider --model sonnet --api-key anthropic=$ANTHROPIC_API_KEY
+```
+
+```text
+# In the chat
+Add a --verbose flag to the CLI that prints the current config on startup.
+```
+
+Aider will:
+
+1. Read the relevant files
+2. Show you the diff it proposes
+3. Apply the change and commit it
+
+## Useful Flags
+
+```bash
+# Add files explicitly to the context
+aider src/parser.py
+
+# Let Aider find the relevant files itself
+aider --read docs/architecture.md
+
+# Skip the git repo (Aider warns when you are not in one)
+aider --no-git
+
+# Use a specific file to describe the style you want
+aider --edit-format diff
+
+# Run your test command after every change
+aider --test-cmd "pytest -q"
+```
+
+### In-Chat Commands
+
+| Command | What it does |
+| --- | --- |
+| `/add` | Add files to the chat context |
+| `/drop` | Remove files from the context |
+| `/undo` | Undo the last change (and its commit) |
+| `/diff` | Show the pending changes |
+| `/commit` | Commit manually |
+| `/run` | Run a shell command |
+| `/ask` | Ask a question without editing anything |
+| `/architect` | Switch to the architect model for planning |
+| `/code` | Switch back to the coding model |
+| `/help` | List every command |
+
+### Architect Mode
+
+For bigger changes, let a stronger model plan and a cheaper model implement:
+
+```text
+/architect Design a caching layer for the API and write out the plan.
+/code Now implement that plan.
+```
+
+## Troubleshooting
+
+<Accordion type="single">
+  <AccordionItem value="issue-1">
+    <AccordionTrigger>
+      aider: command not found
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # Where did it go?
+      which aider
+      aider --version
+
+      # The one-line installer puts it in ~/.local/bin
+      export PATH="$HOME/.local/bin:$PATH"
+      echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+      ```
+      If the module is installed but the script is missing, run it as a module:
+      ```bash
+      python -m aider
+      ```
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-2">
+    <AccordionTrigger>
+      The wrong dependencies are installed
+    </AccordionTrigger>
+    <AccordionContent>
+      This is what the recommended installers exist to prevent:
+      ```bash
+      # Remove a broken pip install
+      python -m pip uninstall aider-chat
+
+      # Reinstall cleanly with uv
+      uv tool install --force --python python3.12 --with pip aider-chat@latest
+      ```
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-3">
+    <AccordionTrigger>
+      Authentication or model errors
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # Check the key is set
+      echo $ANTHROPIC_API_KEY
+
+      # List the models Aider can see
+      aider --models
+
+      # Aider reads a .env file in the project directory
+      ls -la .env
+      ```
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-4">
+    <AccordionTrigger>
+      Aider will not edit the file
+    </AccordionTrigger>
+    <AccordionContent>
+      The file has to be in the chat context — either mention it or let Aider find it:
+      ```text
+      /add src/parser.py
+      ```
+      Read-only files are skipped on purpose. Ask Aider to add the file first, then request
+      the change.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-5">
+    <AccordionTrigger>
+      The model hits its token limit
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # Aider can split large changes into smaller ones
+      aider --model sonnet --no-auto-commits
+
+      # Use a model with a bigger context
+      aider --model gpt-4o
+      ```
+      Ask for one file at a time rather than a whole feature.
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>
+
+## Best Practices
+
+1. **Always work in a git repository** — Aider commits every change, so you always have
+   an undo.
+2. **Commit your work before you start** so the history is readable.
+3. **Set the test command** with `--test-cmd` so Aider can verify its own changes.
+4. **Keep a `.env` file** for keys and add it to `.gitignore`.
+5. **Use architect mode** for anything that touches more than two files.
+6. **Review the diff** before you accept a change.
+7. **Be specific** — describe the behaviour you want, not just the function names.
+8. **Use `/undo`** freely; it is cheap.
+
+## Next Steps
+
+- [Aider Documentation](https://aider.chat/docs/)
+- [Aider on GitHub](https://github.com/Aider-AI/aider)
+- [Claude Code](/docs/ai-ide/claude-code)
+- [Goose](/docs/ai-ide/goose)
+- [Git Installation Guide](/docs/version-control/git)

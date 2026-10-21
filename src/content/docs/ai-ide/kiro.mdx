@@ -1,0 +1,232 @@
+---
+title: Kiro Installation Guide
+description: Install AWS Kiro, the agentic IDE for spec-driven development, and connect the CLI, web and cloud surfaces to the same project context.
+---
+
+Kiro is AWS's agentic development platform. Instead of prompting an assistant to write
+code, you write a **spec** — requirements, design and tasks — and the agent implements
+against it.
+
+<Callout title="One harness, many surfaces">
+  The IDE, the CLI, the web app, mobile and Crew all run the same agent harness. Your
+  specs, steering, permissions, hooks, MCP servers and custom agents follow the project
+  across all of them.
+</Callout>
+
+## System Requirements
+
+- macOS, Windows or Linux on a 64-bit processor
+- 8 GB RAM or more (16 GB recommended for large repositories)
+- 5 GB of free disk space
+- A Kiro account with the IDE, CLI or web surface you want to use
+- A terminal and `git` for the CLI and for working with the project
+
+## Installation Instructions
+
+### The IDE
+
+Kiro is downloaded from the official downloads page, which detects your platform:
+
+```bash
+# macOS — download the .dmg from https://kiro.dev/downloads/
+# and drag Kiro into your Applications folder
+
+# Windows — download the .exe installer from https://kiro.dev/downloads/
+# and run it
+
+# Linux — download the .deb or .rpm from https://kiro.dev/downloads/
+sudo apt install ./kiro_amd64.deb
+# or
+sudo dnf install ./kiro-amd64.rpm
+```
+
+All platform downloads, including the AppImage and the ARM64 builds, are listed on
+[kiro.dev/downloads](https://kiro.dev/downloads/).
+
+### The CLI
+
+The CLI gives you the same agent in a terminal, which is what you want for headless
+automation and CI/CD:
+
+```bash
+# Follow the official setup for your platform
+# https://kiro.dev/docs/cli/setup/
+```
+
+The CLI is also the fastest way to use Kiro from a container or a remote host, where the
+IDE is not an option.
+
+## Signing In
+
+Kiro needs a Kiro account:
+
+```bash
+# The CLI walks you through the browser flow
+kiro auth login
+
+# Check the current state
+kiro auth status
+```
+
+<Callout title="Unified authentication">
+  You sign in once and the same session works across the IDE, the CLI, the web app and
+  cloud sessions.
+</Callout>
+
+## The Kiro Workflow
+
+### 1. Write a Spec
+
+Kiro's core idea is that a **spec** is a living document with three parts:
+
+- **Requirements** — what the feature must do, expressed as numbered requirements
+- **Design** — how it will be built, including the architecture and the trade-offs
+- **Tasks** — the implementation steps, each traceable back to a requirement
+
+Kiro can help you draft the first version:
+
+```text
+Create a spec for adding two-factor authentication to the login flow. Requirements
+first, then the design, then the tasks.
+```
+
+### 2. Run Requirements Analysis
+
+Before any code is written, Kiro checks the spec against itself and finds the gaps:
+
+```bash
+# From the CLI
+kiro spec analyze-requirements
+```
+
+This surfaces contradictions, ambiguities and missing acceptance criteria while they are
+still cheap to fix.
+
+### 3. Implement Task by Task
+
+```bash
+# Generate the implementation for the next task
+kiro task start
+
+# Check that the code matches the spec
+kiro spec verify
+```
+
+### 4. Verify with Property-Based Tests
+
+Kiro can turn requirements into executable properties — checks that hold for generated
+inputs, not just the examples you wrote:
+
+```bash
+kiro spec correctness
+```
+
+## Steering: Project Conventions
+
+**Steering** files are persistent instructions that shape every request in a project.
+They live in `.kiro/steering/` and are committed to Git:
+
+```markdown
+<!-- .kiro/steering/backend-conventions.md -->
+
+- All API handlers live in `src/routes/` and use the `createHandler` factory.
+- Every database access goes through the repository layer in `src/db/`.
+- Run `npm run lint && npm test` before a task is marked complete.
+```
+
+## Keeping the Agent in Control
+
+| Control | What it does |
+| --- | --- |
+| **Permissions** | Define which paths and commands the agent may touch |
+| **`.kiroignore`** | Keeps sensitive paths out of the agent's context |
+| **Hooks** | Runs your own scripts when agent events fire |
+| **Powers** | Adds on-demand tools and knowledge |
+| **MCP** | Connects external systems through the Model Context Protocol |
+| **Checkpoints and rewind** | Lets you inspect or undo agent changes |
+
+## Troubleshooting
+
+<Accordion type="single">
+  <AccordionItem value="issue-1">
+    <AccordionTrigger>
+      The agent ignores the project conventions
+    </AccordionTrigger>
+    <AccordionContent>
+      Steering files have to live in `.kiro/steering/` at the project root and be
+      included when the file is loaded:
+      ```bash
+      # List what the agent sees
+      kiro steering list
+      ```
+      A file with `inclusion: manual` is only sent when you mention it explicitly.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-2">
+    <AccordionTrigger>
+      The CLI and the IDE do not see the same project
+    </AccordionTrigger>
+    <AccordionContent>
+      Both surfaces read the same `.kiro/` directory, so they should agree. If they do
+      not, the CLI is pointed at a different working directory:
+      ```bash
+      pwd
+      ls -la .kiro/
+      ```
+      Start the CLI from the repository root.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-3">
+    <AccordionTrigger>
+      The agent stops after a failed command
+    </AccordionTrigger>
+    <AccordionContent>
+      Check the permissions for the project — the agent may not be allowed to run the
+      command it needs:
+      ```bash
+      kiro permissions list
+      ```
+      Grant the permission in `.kiro/settings/` or approve it interactively when prompted.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-4">
+    <AccordionTrigger>
+      The installation does not complete
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # Check the download
+      curl -I https://kiro.dev/downloads/
+
+      # On Linux, install the dependencies by hand
+      sudo apt install -y libgtk-3-0 libxss1 libasound2t64
+      ```
+      If the IDE will not start on a headless server, use the CLI instead — it needs no
+      display.
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>
+
+## Best Practices
+
+1. **Write the spec before the code** — the requirements analysis step catches more
+   problems than any amount of prompt tweaking.
+2. **Keep steering files in Git** so the whole team gets the same behaviour.
+3. **One task at a time** — it keeps the diff reviewable and the agent focused.
+4. **Use property-based correctness checks** for the requirements that matter.
+5. **Set permissions deliberately** — start with the agent restricted to the project
+   directory.
+6. **Commit the `.kiro/` directory** except for anything machine-specific.
+7. **Use cloud sessions** for long refactors you can hand off and come back to.
+
+## Next Steps
+
+- [Kiro Documentation](https://kiro.dev/docs/)
+- [Kiro Downloads](https://kiro.dev/downloads/)
+- [Kiro on GitHub](https://github.com/kirodotdev/Kiro)
+- [Cursor](/docs/ai-ide/cursor)
+- [Windsurf / Devin Desktop](/docs/ai-ide/windsurf)
+- [Claude Code](/docs/ai-ide/claude-code)

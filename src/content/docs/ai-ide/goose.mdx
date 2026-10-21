@@ -1,0 +1,201 @@
+---
+title: Goose Installation Guide
+description: Install Block's open-source Goose agent as a desktop app or CLI, connect it to Anthropic, OpenAI, Google or a local model, and extend it with 70+ MCP extensions.
+---
+
+Goose is a general-purpose AI agent that runs on your machine — not just for code, but for
+research, writing, automation and data analysis. It ships as a desktop app, a CLI and an
+API, and it is part of the Agentic AI Foundation at the Linux Foundation.
+
+<Callout title="Fully open source">
+  Goose is Apache 2.0, works with 15+ model providers, and connects to 70+ extensions
+  through the Model Context Protocol. Nothing is locked to a single vendor.
+</Callout>
+
+## System Requirements
+
+- macOS, Linux or Windows on a 64-bit processor
+- 4 GB RAM or more
+- An API key for one of the supported providers, or a local model through Ollama
+- `git` for the code-related workflows
+
+## Installation Instructions
+
+### The Desktop App
+
+Download the app for macOS, Linux or Windows from
+[goose-docs.ai](https://goose-docs.ai/docs/getting-started/installation) and install it like
+any other desktop application.
+
+### The CLI
+
+```bash
+# macOS, Linux and WSL
+curl -fsSL https://github.com/aaif-goose/goose/releases/download/stable/download_cli.sh | bash
+
+# Verify
+goose --version
+```
+
+```bash
+# Build from source
+git clone https://github.com/aaif-goose/goose.git
+cd goose
+make build
+make install
+```
+
+## Configuration
+
+Goose needs a provider before it can do anything:
+
+```bash
+# Start the configuration flow
+goose configure
+
+# Or set the key directly
+export ANTHROPIC_API_KEY=sk-ant-...
+export OPENAI_API_KEY=sk-...
+export GOOGLE_API_KEY=...
+```
+
+| Provider | Environment variable |
+| --- | --- |
+| Anthropic | `ANTHROPIC_API_KEY` |
+| OpenAI | `OPENAI_API_KEY` |
+| Google | `GOOGLE_API_KEY` |
+| OpenRouter | `OPENROUTER_API_KEY` |
+| Azure | `AZURE_OPENAI_API_KEY` |
+| Amazon Bedrock | `AWS_BEARER_TOKEN_BEDROCK` |
+| Ollama (local) | `OLLAMA_HOST` |
+
+<Callout title="Use the subscription you already pay for">
+  Goose can use your existing Claude, ChatGPT or Gemini subscription through
+  [ACP providers](https://goose-docs.ai/docs/guides/acp-providers) — no separate API key
+  needed.
+</Callout>
+
+## Extensions
+
+Extensions are the tools Goose can call. They are shared through MCP:
+
+```bash
+# List the available extensions
+goose extension list
+
+# Add one
+goose extension add developer
+
+# Remove one
+goose extension remove developer
+```
+
+```bash
+# Configure a custom MCP server
+goose mcp add filesystem -- /usr/bin/npx -y @modelcontextprotocol/server-filesystem .
+```
+
+## Using Goose
+
+```bash
+# Start an interactive session
+goose session
+
+# Run a single task non-interactively
+goose run "summarise the changelog for the last release"
+
+# List the available recipes
+goose recipe list
+```
+
+```text
+> use the developer extension
+> add the "fix flaky test" recipe
+```
+
+## Troubleshooting
+
+<Accordion type="single">
+  <AccordionItem value="issue-1">
+    <AccordionTrigger>
+      The installer does not finish
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # Run it with the shell trace enabled
+      sh -x download_cli.sh
+
+      # Download the binary directly instead
+      # https://github.com/aaif-goose/goose/releases
+      ```
+      The script installs to `~/.local/bin` — make sure that directory is on your `PATH`.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-2">
+    <AccordionTrigger>
+      The provider is not detected
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # Is the key visible to the process?
+      env | grep -E 'ANTHROPIC|OPENAI|GOOGLE'
+
+      # Re-run the configuration flow
+      goose configure
+      ```
+      Keys exported in a shell profile are not visible to a desktop app launched from a
+      menu — use the configuration flow for the app.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-3">
+    <AccordionTrigger>
+      An extension will not start
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # Check what is registered
+      goose mcp list
+
+      # Run the extension command by hand to see the real error
+      goose mcp add test -- /usr/bin/npx -y @modelcontextprotocol/server-filesystem .
+      ```
+      Most extensions are distributed as npm packages, so `node` and `npx` have to be
+      installed and on the `PATH`.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-4">
+    <AccordionTrigger>
+      The session is slow or the model seems unresponsive
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # Turn on the debug output
+      GOOSE_DEBUG=1 goose session
+      ```
+      The debug log shows every request, the tools it called and the tokens each step
+      used.
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>
+
+## Best Practices
+
+1. **Install only the extensions you need** — each one adds tools the model can call.
+2. **Use a local model** for sensitive code — Ollama keeps everything on the machine.
+3. **Check the debug log** first when something misbehaves; `GOOSE_DEBUG=1` is detailed.
+4. **Use recipes** for repeatable multi-step tasks.
+5. **Keep the API key in a secret store**, not in a shell profile on a shared machine.
+6. **Pin the version** in CI images so an update cannot break a pipeline.
+7. **Build a custom distribution** if you need preconfigured providers and branding.
+
+## Next Steps
+
+- [Goose Documentation](https://goose-docs.ai/docs/)
+- [Goose on GitHub](https://github.com/aaif-goose/goose)
+- [Model Context Protocol](https://modelcontextprotocol.io/)
+- [Aider](/docs/ai-ide/aider)
+- [OpenCode](/docs/ai-ide/opencode)
+- [Docker Installation Guide](/docs/containers/docker)

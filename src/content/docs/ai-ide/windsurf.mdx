@@ -1,0 +1,241 @@
+---
+title: Windsurf / Devin Desktop Installation Guide
+description: Install Windsurf, now shipped as Devin Desktop, from the official Codeium apt and yum repositories, import your Cursor or VS Code settings and start an agent session.
+---
+
+Windsurf is an AI editor built on the Codeium engine. It has been rebranded to **Devin
+Desktop** by Cognition — the Linux packages are now called `devin-desktop`, and the
+`windsurf` package remains as a transitional alias.
+
+<Callout title="The repositories keep the old name">
+  The repository URLs still use the pre-rebrand `windsurf` naming, but the package is
+  `devin-desktop`. `windsurf` is kept as a transitional package that pulls in
+  `devin-desktop`, so existing installations keep receiving updates.
+</Callout>
+
+## System Requirements
+
+- **macOS** — Yosemite (10.10) or newer
+- **Windows** — Windows 10 or newer
+- **Linux** — glibc 2.28+, glibcxx 3.4.25+ (Ubuntu 20, Debian 10, Fedora 36, RHEL 8)
+- A Devin account (the free tier is enough to start)
+
+## Installation Instructions
+
+<Tabs defaultValue="ubuntu">
+  <TabsList>
+    <TabsTrigger value="ubuntu">Ubuntu/Debian</TabsTrigger>
+    <TabsTrigger value="rpm">RHEL/Fedora</TabsTrigger>
+    <TabsTrigger value="macos">macOS</TabsTrigger>
+    <TabsTrigger value="windows">Windows</TabsTrigger>
+    <TabsTrigger value="tarball">Linux tarball</TabsTrigger>
+  </TabsList>
+
+  <TabsContent value="ubuntu">
+    ### Ubuntu / Debian (apt)
+
+    ```bash
+    # Install the prerequisites
+    sudo apt-get install -y wget gpg
+
+    # Import the signing key
+    wget -qO- "https://windsurf-stable.codeiumdata.com/wVxQEIWkwPUEAGf3/windsurf.gpg" \
+      | gpg --dearmor > windsurf-stable.gpg
+    sudo install -D -o root -g root -m 644 windsurf-stable.gpg \
+      /etc/apt/keyrings/windsurf-stable.gpg
+    rm -f windsurf-stable.gpg
+
+    # Add the repository
+    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/windsurf-stable.gpg] https://windsurf-stable.codeiumdata.com/wVxQEIWkwPUEAGf3/apt stable main" \
+      | sudo tee /etc/apt/sources.list.d/windsurf.list > /dev/null
+
+    # Install
+    sudo apt install -y apt-transport-https
+    sudo apt update
+    sudo apt install -y devin-desktop
+    ```
+
+    The `windsurf` package is still published and pulls in `devin-desktop`, so you can
+    install either one:
+
+    ```bash
+    sudo apt install -y windsurf
+    ```
+  </TabsContent>
+
+  <TabsContent value="rpm">
+    ### RHEL / CentOS / Fedora (dnf)
+
+    ```bash
+    # Import the signing key
+    sudo rpm --import https://windsurf-stable.codeiumdata.com/wVxQEIWkwPUEAGf3/yum/RPM-GPG-KEY-windsurf
+
+    # Add the repository
+    sudo tee /etc/yum.repos.d/windsurf.repo > /dev/null <<'EOF'
+    [windsurf]
+    name=Windsurf Repository
+    baseurl=https://windsurf-stable.codeiumdata.com/wVxQEIWkwPUEAGf3/yum/repo/
+    enabled=1
+    autorefresh=1
+    gpgcheck=1
+    metadata_expire=1h
+    gpgkey=https://windsurf-stable.codeiumdata.com/wVxQEIWkwPUEAGf3/yum/RPM-GPG-KEY-windsurf
+    EOF
+
+    # Install
+    sudo dnf check-update
+    sudo dnf install -y devin-desktop
+    ```
+
+    <Callout title="Why `metadata_expire=1h` matters">
+      Without it dnf falls back to its 48-hour default, so a new release can appear to
+      lag by up to two days.
+    </Callout>
+  </TabsContent>
+
+  <TabsContent value="macos">
+    ### macOS
+
+    Download the installer from
+    [devin.ai/download](https://devin.ai/download/confirmation?code=ma) and open it. The
+    app is added to your Applications folder.
+  </TabsContent>
+
+  <TabsContent value="windows">
+    ### Windows
+
+    Download the installer from
+    [devin.ai/download](https://devin.ai/download/confirmation?code=wu) and run it. It
+    installs to `C:\Program Files\Devin`.
+  </TabsContent>
+
+  <TabsContent value="tarball">
+    ### Linux tarball
+
+    ```bash
+    # Download from https://devin.ai/download/confirmation?code=li
+    tar xf devin-desktop-linux-amd64.tar.gz
+    ./devin-desktop
+    ```
+
+    The tarball does not update itself — use the apt or rpm package if you want updates
+    from your package manager.
+  </TabsContent>
+</Tabs>
+
+## First Run
+
+1. Launch the editor and pick your theme.
+2. Leave **"Install `devin-desktop` terminal command"** checked so you can open
+   projects from a terminal:
+   ```bash
+   devin-desktop ~/Developer/my-project
+   ```
+3. Import your existing settings — both VS Code and Cursor configurations are supported.
+4. Sign in with your Devin account, or provide a Devin API key for manual authentication.
+
+## Working with the Agent
+
+The starting page is centred on the agent input. A good first session in an unfamiliar
+repository:
+
+```text
+Explore my codebase and diagram how it works
+```
+
+| Feature | What it is for |
+| --- | --- |
+| **Cascade** | The agent loop: it plans, edits files, runs commands and reports back |
+| **Workflows** | Automate repetitive multi-step trajectories |
+| **Memories and rules** | Persistent instructions and preferences for the agent |
+| **MCP** | Extend the agent with external tools and data sources |
+| **Context Awareness** | Fast retrieval of the files relevant to your prompt |
+| **App Deploys** | Ship the result to a deployed application |
+
+## Troubleshooting
+
+<Accordion type="single">
+  <AccordionItem value="issue-1">
+    <AccordionTrigger>
+      The package name changed and my install stopped updating
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # See what is installed
+      dpkg -l | grep -E 'windsurf|devin-desktop'
+
+      # Move to the new package name
+      sudo apt remove windsurf
+      sudo apt install -y devin-desktop
+      ```
+      The `windsurf` package pulls in `devin-desktop`, so simply installing the new
+      package is enough to keep receiving updates.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-2">
+    <AccordionTrigger>
+      GPG key errors during installation
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # Check the keyring file
+      sudo ls -l /etc/apt/keyrings/windsurf-stable.gpg
+
+      # Re-import it
+      wget -qO- "https://windsurf-stable.codeiumdata.com/wVxQEIWkwPUEAGf3/windsurf.gpg" \
+        | gpg --dearmor | sudo install -D -o root -g root -m 644 /dev/stdin \
+        /etc/apt/keyrings/windsurf-stable.gpg
+      sudo apt update
+      ```
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-3">
+    <AccordionTrigger>
+      The editor is slow or the agent never finishes
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # The agent needs the same access you do — check for a proxy or firewall
+      curl -I https://windsurf-stable.codeiumdata.com
+
+      # Look at the editor logs
+      # Help -> Toggle Developer Tools -> Console
+      ```
+      Large repositories slow the context indexing down. Start with a narrower folder or
+      exclude build output with the ignore file.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-4">
+    <AccordionTrigger>
+      An extension will not install
+    </AccordionTrigger>
+    <AccordionContent>
+      Devin Desktop does not allow installing extensions from any marketplace, and a few
+      extensions are incompatible with it — other AI completion extensions in particular.
+      Remove the conflicting extension and restart the editor.
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>
+
+## Best Practices
+
+1. **Import your Cursor or VS Code settings** during onboarding so you keep your
+   keybindings and extensions.
+2. **Start with an exploration prompt** before asking for changes.
+3. **Use Workflows** for repetitive tasks you would otherwise spell out every time.
+4. **Keep rules and memories in version control** so the team shares them.
+5. **Review each diff** before accepting the agent's work.
+6. **Check the `devin-desktop` package name** in your automation — the `windsurf` alias is
+   transitional.
+7. **Install the terminal command** so you can open projects from a shell.
+
+## Next Steps
+
+- [Devin Desktop Documentation](https://docs.devin.ai/desktop)
+- [Cursor](/docs/ai-ide/cursor)
+- [Zed](/docs/ai-ide/zed)
+- [Kiro](/docs/ai-ide/kiro)
+- [Git Installation Guide](/docs/version-control/git)

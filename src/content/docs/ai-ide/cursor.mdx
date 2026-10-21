@@ -1,0 +1,243 @@
+---
+title: Cursor Installation Guide
+description: Install the Cursor AI editor on Linux, macOS and Windows from the official apt and yum repositories, import your VS Code setup and start using Agent and Plan Mode.
+---
+
+Cursor is a VS Code fork with AI built in. It keeps the extensions, keybindings and
+settings you already use, and adds an agent that can read and change the whole project.
+
+<Callout title="Use the official repositories">
+  The apt and yum packages give you a desktop entry, automatic updates and the `cursor`
+  CLI. The AppImage works, but it does not update itself and it does not add the CLI to
+  your `PATH`.
+</Callout>
+
+## System Requirements
+
+- macOS 12 (Monterey) or newer — Apple Silicon and Intel are both supported
+- Windows 10 or newer
+- Debian / Ubuntu 20.04+, RHEL / CentOS / Fedora 8+, or any x86_64 / arm64 Linux with
+  glibc 2.28+
+- About 2 GB of disk space
+- A Cursor account (free tier available)
+
+## Installation Instructions
+
+<Tabs defaultValue="ubuntu">
+  <TabsList>
+    <TabsTrigger value="ubuntu">Ubuntu/Debian</TabsTrigger>
+    <TabsTrigger value="rpm">RHEL/Fedora</TabsTrigger>
+    <TabsTrigger value="appimage">AppImage</TabsTrigger>
+    <TabsTrigger value="macos">macOS</TabsTrigger>
+    <TabsTrigger value="windows">Windows</TabsTrigger>
+  </TabsList>
+
+  <TabsContent value="ubuntu">
+    ### Ubuntu / Debian (apt)
+
+    ```bash
+    # Add Cursor's signing key
+    curl -fsSL https://downloads.cursor.com/keys/anysphere.asc \
+      | gpg --dearmor \
+      | sudo tee /etc/apt/keyrings/cursor.gpg > /dev/null
+    sudo chmod go+r /etc/apt/keyrings/cursor.gpg
+
+    # Add the repository
+    echo "deb [arch=amd64,arm64 signed-by=/etc/apt/keyrings/cursor.gpg] https://downloads.cursor.com/aptrepo stable main" \
+      | sudo tee /etc/apt/sources.list.d/cursor.list > /dev/null
+
+    # Install
+    sudo apt update
+    sudo apt install cursor
+
+    # Verify
+    cursor --version
+    ```
+  </TabsContent>
+
+  <TabsContent value="rpm">
+    ### RHEL / Fedora / Rocky (yum)
+
+    ```bash
+    # Add Cursor's repository
+    sudo tee /etc/yum.repos.d/cursor.repo > /dev/null << 'EOF'
+    [cursor]
+    name=Cursor
+    baseurl=https://downloads.cursor.com/yumrepo
+    enabled=1
+    gpgcheck=1
+    gpgkey=https://downloads.cursor.com/keys/anysphere.asc
+    EOF
+
+    # Install
+    sudo dnf install cursor
+
+    cursor --version
+    ```
+  </TabsContent>
+
+  <TabsContent value="appimage">
+    ### AppImage (portable)
+
+    ```bash
+    # Download from https://cursor.com/downloads
+    chmod +x Cursor-*.AppImage
+
+    # Run it
+    ./Cursor-*.AppImage
+    ```
+
+    The apt and yum packages are preferred — they provide a desktop icon, automatic
+    updates and the CLI tools.
+  </TabsContent>
+
+  <TabsContent value="macos">
+    ### macOS
+
+    Download the `.dmg` from [cursor.com/downloads](https://cursor.com/downloads) and
+    drag Cursor into your Applications folder. The first launch installs the
+    `cursor` shell command for opening files from the terminal.
+  </TabsContent>
+
+  <TabsContent value="windows">
+    ### Windows
+
+    Download the `.exe` installer from [cursor.com/downloads](https://cursor.com/downloads)
+    and run it. The installer adds `cursor` to your `PATH` so you can open files from
+    the command line.
+  </TabsContent>
+</Tabs>
+
+## First Run
+
+1. Launch Cursor and sign in with your GitHub or Google account.
+2. Pick a theme and choose whether to import your VS Code settings, extensions and
+   keybindings — **say yes**, it is the fastest way to get a familiar setup.
+3. Open a project folder.
+
+## Using the Agent
+
+```text
+# Ask it to explain the codebase first
+Explain this codebase. Point me to the main entry points and anything I should read
+before making changes.
+
+# Ask for a plan before it writes code
+```
+
+| Mode | What it does |
+| --- | --- |
+| **Ask** | Answers questions, reads files, does not change anything |
+| **Agent** | Reads, edits files and runs commands to complete a task |
+| **Plan Mode** (`Shift+Tab`) | Researches and produces an implementation plan, then waits for your approval before writing code |
+
+A good first task in a new repository:
+
+```text
+Suggest three small, safe improvements to this codebase. Explain the tradeoffs and wait
+for me to choose one.
+```
+
+### Project Rules
+
+Rules are persistent instructions that apply to every request in a project. Create
+`.cursor/rules/*.mdc` in the repository and commit them:
+
+```markdown
+---
+description: How we write and test code in this service
+globs: ["src/**/*.ts"]
+alwaysApply: false
+---
+
+- Use named exports, never default exports.
+- Every new function needs a unit test in `__tests__`.
+- Run `npm run lint && npm test` before you tell me a change is done.
+```
+
+## Troubleshooting
+
+<Accordion type="single">
+  <AccordionItem value="issue-1">
+    <AccordionTrigger>
+      GPG or repository errors during installation
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # Check the key is there and readable
+      sudo ls -l /etc/apt/keyrings/cursor.gpg
+
+      # Re-add it
+      curl -fsSL https://downloads.cursor.com/keys/anysphere.asc \
+        | gpg --dearmor \
+        | sudo tee /etc/apt/keyrings/cursor.gpg > /dev/null
+      sudo chmod go+r /etc/apt/keyrings/cursor.gpg
+      sudo apt update
+      ```
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-2">
+    <AccordionTrigger>
+      The editor will not start on Linux
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # Check the GLIBC version — Cursor needs 2.28 or newer
+      ldd --version | head -n 1
+
+      # Look for the real error
+      cursor --verbose
+      ```
+      Missing GPU or sandbox libraries are the usual cause on minimal servers. The
+      AppImage carries more of its dependencies than the apt package.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-3">
+    <AccordionTrigger>
+      The agent does not see the right files
+    </AccordionTrigger>
+    <AccordionContent>
+      The agent works on the folder you opened. Confirm it in the title bar, then
+      reference files explicitly with `@`:
+      ```text
+      How is authentication handled in @src/api/routes/login.ts
+      ```
+      Large monorepos benefit from `.cursorignore` and focused rules.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-4">
+    <AccordionTrigger>
+      Sign-in loops or the agent says it is not authenticated
+    </AccordionTrigger>
+    <AccordionContent>
+      Sign out and back in from the account menu. On Linux, a stale keyring entry can block
+      the login flow:
+      ```bash
+      # Check the credential store is working
+      secret-tool search service cursor
+      ```
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>
+
+## Best Practices
+
+1. **Import your VS Code setup** — extensions, settings and keybindings all carry over.
+2. **Start in Ask mode** to explore a repository before letting the agent change anything.
+3. **Use Plan Mode for anything multi-file** and read the plan before approving it.
+4. **Commit your rules** to `.cursor/rules/` so the whole team gets the same behaviour.
+5. **Review every diff** — the agent shows you exactly what changed.
+6. **Keep a clean working tree** so you can tell the agent's changes apart from yours.
+7. **Use `.cursorignore`** to keep secrets, build output and vendored code out of the context.
+8. **Pin the version in CI images** so a broken update cannot break your pipeline.
+
+## Next Steps
+
+- [Cursor Documentation](https://cursor.com/docs)
+- [Zed](/docs/ai-ide/zed) — the open-source alternative
+- [VS Code AI Extensions](/docs/ai-ide/vscode-extensions)
+- [Claude Code](/docs/ai-ide/claude-code) — the same workflow in your terminal
+- [Git Installation Guide](/docs/version-control/git)

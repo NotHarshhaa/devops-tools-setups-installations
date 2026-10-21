@@ -106,12 +106,24 @@ This repository serves as your one-stop solution for DevOps tools setup and conf
  ┃ ┗ 📂 docs/
  ┃   ┣ 📄 index.mdx              # Landing page / introduction
  ┃   ┣ 📄 installation.mdx       # Installation hub with all tools
+ ┃   ┣ 📄 ai-ide.mdx             # Category overview page
  ┃   ┣ 📄 containers.mdx         # Category overview page
  ┃   ┣ 📄 ci-cd.mdx              # Category overview page
  ┃   ┣ 📄 infrastructure.mdx     # Category overview page
  ┃   ┣ 📄 cloud.mdx              # Category overview page
  ┃   ┣ 📄 monitoring.mdx         # Category overview page
  ┃   ┣ 📄 version-control.mdx    # Category overview page
+ ┃   ┣ 📂 ai-ide/
+ ┃   ┃ ┣ 📄 cursor.mdx           # Cursor AI editor
+ ┃   ┃ ┣ 📄 zed.mdx             # Zed editor
+ ┃   ┃ ┣ 📄 windsurf.mdx        # Windsurf / Devin Desktop
+ ┃   ┃ ┣ 📄 kiro.mdx            # AWS Kiro
+ ┃   ┃ ┣ 📄 claude-code.mdx     # Claude Code
+ ┃   ┃ ┣ 📄 gemini-cli.mdx     # Gemini CLI / Antigravity CLI
+ ┃   ┃ ┣ 📄 aider.mdx           # Aider
+ ┃   ┃ ┣ 📄 goose.mdx           # Goose
+ ┃   ┃ ┣ 📄 opencode.mdx        # OpenCode
+ ┃   ┃ ┗ 📄 vscode-extensions.mdx # Copilot, Cline, Roo Code, Continue
  ┃   ┣ 🔄 ci-cd/
  ┃   ┃ ┣ 📄 github-actions.mdx    # GitHub Actions Workflows & Configuration
  ┃   ┃ ┣ 📄 gitlab-ci.mdx         # GitLab CI/CD Pipeline Setup
@@ -285,6 +297,7 @@ npm test         # Should pass all tests
 
 | Category | Tools Included |
 |----------|---------------|
+| 🤖 **AI IDE Tools** | Cursor • Zed • Windsurf • Kiro • Claude Code • Gemini CLI • Aider • Goose • OpenCode |
 | 🔄 **CI/CD** | GitHub Actions • GitLab CI • Jenkins |
 | ☁️ **Cloud Platforms** | AWS CLI • Azure CLI • Google Cloud CLI |
 | 🐳 **Containers** | Docker • Kubernetes • Helm • Istio • OpenShift |

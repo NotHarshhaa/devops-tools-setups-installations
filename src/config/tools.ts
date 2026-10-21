@@ -5,10 +5,12 @@ import {
   GaugeIcon,
   GitBranchIcon,
   type LucideIcon,
+  SparklesIcon,
   WorkflowIcon,
 } from "lucide-react";
 
 export type CategorySlug =
+  | "ai-ide"
   | "containers"
   | "cloud"
   | "infrastructure"
@@ -36,6 +38,7 @@ export interface ToolMeta {
 }
 
 export const CATEGORY_ORDER: CategorySlug[] = [
+  "ai-ide",
   "containers",
   "cloud",
   "infrastructure",
@@ -45,6 +48,16 @@ export const CATEGORY_ORDER: CategorySlug[] = [
 ];
 
 export const categories: CategoryMeta[] = [
+  {
+    slug: "ai-ide",
+    title: "AI IDE Tools",
+    description:
+      "Set up the AI editors, terminal agents and IDE extensions teams are using right now — from Cursor and Zed to Claude Code, Gemini CLI and Goose.",
+    icon: SparklesIcon,
+    href: "/docs/ai-ide",
+    accent: "from-fuchsia-500 to-violet-500",
+    iconClass: "text-fuchsia-500",
+  },
   {
     slug: "containers",
     title: "Containers",
@@ -112,6 +125,86 @@ export const categoryBySlug = Object.fromEntries(
 ) as Record<CategorySlug, CategoryMeta>;
 
 export const tools: ToolMeta[] = [
+  {
+    slug: "ai-ide/cursor",
+    name: "Cursor",
+    description:
+      "Install the Cursor AI editor from the official apt and yum repositories, import your VS Code setup and start using Agent and Plan Mode.",
+    category: "ai-ide",
+    tags: ["ai-ide", "editor", "agent", "vscode"],
+  },
+  {
+    slug: "ai-ide/zed",
+    name: "Zed",
+    description:
+      "Install the open-source Zed editor with its install script, pin a version and configure the built-in AI assistant and agent panel.",
+    category: "ai-ide",
+    tags: ["ai-ide", "editor", "open-source", "agent"],
+  },
+  {
+    slug: "ai-ide/windsurf",
+    name: "Windsurf / Devin Desktop",
+    description:
+      "Install Windsurf, now shipped as Devin Desktop, from the Codeium package repositories and import your Cursor or VS Code settings.",
+    category: "ai-ide",
+    tags: ["ai-ide", "editor", "agent", "codeium"],
+  },
+  {
+    slug: "ai-ide/kiro",
+    name: "Kiro",
+    description:
+      "Install AWS Kiro, the agentic IDE with spec-driven development, and connect the CLI, web and cloud surfaces to the same project context.",
+    category: "ai-ide",
+    tags: ["ai-ide", "editor", "agent", "aws"],
+  },
+  {
+    slug: "ai-ide/claude-code",
+    name: "Claude Code",
+    description:
+      "Install Anthropic's Claude Code with the native installer or the signed apt, dnf and apk repositories, then verify the release signature.",
+    category: "ai-ide",
+    tags: ["ai-ide", "cli", "agent", "anthropic"],
+  },
+  {
+    slug: "ai-ide/gemini-cli",
+    name: "Gemini CLI",
+    description:
+      "Install Google's Gemini CLI with npm, npx or Homebrew, authenticate with OAuth or an API key and migrate to Antigravity CLI.",
+    category: "ai-ide",
+    tags: ["ai-ide", "cli", "agent", "google"],
+  },
+  {
+    slug: "ai-ide/aider",
+    name: "Aider",
+    description:
+      "Install Aider with the one-line installer, uv or pipx, point it at a model provider and let it commit your changes in git.",
+    category: "ai-ide",
+    tags: ["ai-ide", "cli", "pair-programming", "open-source"],
+  },
+  {
+    slug: "ai-ide/goose",
+    name: "Goose",
+    description:
+      "Install Block's open-source Goose agent as a desktop app or CLI and connect it to 70+ extensions through MCP.",
+    category: "ai-ide",
+    tags: ["ai-ide", "cli", "agent", "open-source"],
+  },
+  {
+    slug: "ai-ide/opencode",
+    name: "OpenCode",
+    description:
+      "Install the open-source OpenCode terminal agent with the install script, npm or Homebrew and bootstrap the project with AGENTS.md.",
+    category: "ai-ide",
+    tags: ["ai-ide", "cli", "agent", "open-source"],
+  },
+  {
+    slug: "ai-ide/vscode-extensions",
+    name: "VS Code AI Extensions",
+    description:
+      "Add AI to VS Code with GitHub Copilot, Cline, Roo Code and Continue, and install them from the command line in CI images.",
+    category: "ai-ide",
+    tags: ["ai-ide", "editor", "extensions", "vscode"],
+  },
   {
     slug: "containers/docker",
     name: "Docker",

@@ -1,0 +1,231 @@
+---
+title: VS Code AI Extensions Installation Guide
+description: Add AI to Visual Studio Code with GitHub Copilot, Cline, Roo Code and Continue, install them from the command line and configure them for a team.
+---
+
+You do not have to switch editors to get an AI assistant. The VS Code extension
+marketplace has everything from inline completion to fully autonomous agents.
+
+<Callout title="Do not install two agents at once">
+  Cline and Roo Code both take over the agent panel, and Copilot's own agent mode
+  conflicts with them. Pick one agent, keep the others for completion only.
+</Callout>
+
+## Installing the Extensions
+
+<Tabs defaultValue="cli">
+  <TabsList>
+    <TabsTrigger value="cli">Command Line</TabsTrigger>
+    <TabsTrigger value="ui">Marketplace</TabsTrigger>
+    <TabsTrigger value="remote">Remote and Containers</TabsTrigger>
+  </TabsList>
+
+  <TabsContent value="cli">
+    ### From the Command Line
+
+    ```bash
+    # GitHub Copilot — inline completion and chat
+    code --install-extension GitHub.copilot
+    code --install-extension GitHub.copilot-chat
+
+    # Cline — an autonomous agent that edits files and runs commands
+    code --install-extension saoudrizwan.claude-dev
+
+    # Roo Code — the community fork of Cline with extra modes
+    code --install-extension RooVeterinaryInc.roo-cline
+
+    # Continue — an open-source assistant and agent
+    code --install-extension Continue.continue
+
+    # List what is installed
+    code --list-extensions
+    ```
+  </TabsContent>
+
+  <TabsContent value="ui">
+    ### From the Marketplace
+
+    Open the Extensions view with `Ctrl+Shift+X` (Windows and Linux) or
+    `Cmd+Shift+X` (macOS), search for the extension, and click **Install**.
+
+    The same extensions work in VS Code for the Web and in the lightweight
+    `code-server` build.
+  </TabsContent>
+
+  <TabsContent value="remote">
+    ### In Containers and Remote Hosts
+
+    Extensions are installed on the machine that runs the editor, not the remote host —
+    but a dev container or a remote session needs its own copy:
+
+    ```dockerfile
+    # .devcontainer/Dockerfile
+    FROM mcr.microsoft.com/devcontainers/base:ubuntu
+    RUN code --install-extension GitHub.copilot \
+       && code --install-extension Continue.continue
+    ```
+
+    ```bash
+    # Install it into a running dev container
+    code --remote Development-Container --install-extension GitHub.copilot
+    ```
+  </TabsContent>
+</Tabs>
+
+## Choosing an Extension
+
+| Extension | Model | Best for |
+| --- | --- | --- |
+| **GitHub Copilot** | GitHub's own | Inline completion, chat, and an agent mode inside VS Code |
+| **Cline** | Bring your own key | A fully autonomous agent that plans, edits and runs commands |
+| **Roo Code** | Bring your own key | The same, with extra modes and a smaller footprint |
+| **Continue** | Bring your own key | Open-source, configurable, works with local models |
+
+## GitHub Copilot
+
+```bash
+# Sign in
+code --install-extension GitHub.copilot
+```
+
+Sign in from the Accounts icon in the activity bar, or with the
+[GitHub CLI](/docs/version-control/github-cli):
+
+```bash
+gh auth login
+```
+
+```json
+// .vscode/settings.json — repository level defaults
+{
+  "github.copilot.chat.codeGeneration.useInstructionFiles": true
+}
+```
+
+Put your repository instructions in `.github/copilot-instructions.md` and commit them.
+
+## Cline and Roo Code
+
+Both agents work the same way: you pick a model provider, paste an API key, and describe
+the task. They read the project, propose edits and run commands in a terminal.
+
+```json
+// .vscode/settings.json — keep the agent out of sensitive paths
+{
+  "cline.deniedCommands": ["rm -rf", "git push --force"],
+  "cline.customInstructions": "Run `npm test` before you say a change is done."
+}
+```
+
+<Callout title="Give the agent a sandbox">
+  Run the agent inside a dev container so a stray command cannot touch your machine.
+  Review every diff — the agent can run commands with your permissions.
+</Callout>
+
+## Continue
+
+Continue is fully open source and works with any provider, including local models:
+
+```yaml
+# ~/.continue/config.yaml
+name: My Assistant
+version: 1.0.0
+schema: v1
+models:
+  - name: Claude Sonnet
+    provider: anthropic
+    model: claude-sonnet-4-5
+    apiKey: $ANTHROPIC_API_KEY
+  - name: Llama (local)
+    provider: ollama
+    model: llama3.1
+    apiBase: http://localhost:11434/v1
+```
+
+```bash
+# The models tab in the sidebar
+code --install-extension Continue.continue
+```
+
+## Troubleshooting
+
+<Accordion type="single">
+  <AccordionItem value="issue-1">
+    <AccordionTrigger>
+      The extension does not appear
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # Is it installed for this profile?
+      code --list-extensions | grep -i copilot
+
+      # Install it again
+      code --install-extension GitHub.copilot
+      ```
+      In a remote or container session you have to install it **in that environment** — the
+      extension runs where the workspace is.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-2">
+    <AccordionTrigger>
+      The agent does nothing
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # Open the output channel for the extension
+      # View -> Output -> select "Cline" or "Roo Code"
+      ```
+      The usual cause is a missing API key, or the agent waiting for approval on a command
+      it is not allowed to run. Check the extension's own settings panel.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-3">
+    <AccordionTrigger>
+      Two agents fight over the chat panel
+    </AccordionTrigger>
+    <AccordionContent>
+      Cline, Roo Code and Copilot's agent mode all want the same UI. Disable one:
+      ```bash
+      code --disable-extension RooVeterinaryInc.roo-cline
+      ```
+      Keep Copilot for inline completion and one agent for the panel.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-4">
+    <AccordionTrigger>
+      The API key is rejected
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # Check the key is visible to VS Code
+      code --status | grep -i token
+      ```
+      A key in your shell profile is not visible to a VS Code window launched from a
+      desktop menu. Put the key in the extension's own settings, or export it in the
+      terminal you launch `code` from.
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>
+
+## Best Practices
+
+1. **Pick one agent** and keep the rest for completion only.
+2. **Commit the instructions file** — `.github/copilot-instructions.md` or
+   `.continue/rules` — so the team gets the same behaviour.
+3. **Run agents in a dev container** so they cannot touch your machine.
+4. **Review every diff** and read the terminal output the agent produced.
+5. **Keep API keys in the OS keychain or a secret store**, never in `settings.json` that
+   you commit.
+6. **Pin the extension versions** in the dev container image for reproducible setups.
+7. **Add the generated files to `.gitignore`** — agents create scratch files.
+
+## Next Steps
+
+- [GitHub Copilot Documentation](https://docs.github.com/en/copilot)
+- [Cline](https://docs.cline.bot/) and [Roo Code](https://docs.roocode.com/)
+- [Continue Documentation](https://docs.continue.dev/)
+- [GitHub CLI](/docs/version-control/github-cli)
+- [Cursor](/docs/ai-ide/cursor)

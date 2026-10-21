@@ -1,0 +1,275 @@
+---
+title: OpenCode Installation Guide
+description: Install the open-source OpenCode terminal agent with the install script, npm or Homebrew, connect a model provider and bootstrap the project with an AGENTS.md file.
+---
+
+OpenCode is an open-source AI coding agent that runs in your terminal, as a desktop app or
+as an IDE extension. It works with any model provider and keeps the project context in a
+file you commit to Git.
+
+<Callout title="Two major versions, one command">
+  OpenCode 1 and OpenCode 2 both use the `opencode` command and cannot be installed side
+  by side under their default name. Follow the [OpenCode 2 migration
+  guide](https://opencode.ai/v2/docs/) if you are moving from v1.
+</Callout>
+
+## System Requirements
+
+- A modern terminal emulator — WezTerm, Alacritty, Ghostty or Kitty are the best
+  supported
+- macOS, Linux or Windows (WSL2 is recommended on Windows)
+- API keys for the model providers you want to use
+- `git` for the project workflows
+
+## Installation Instructions
+
+<Tabs defaultValue="script">
+  <TabsList>
+    <TabsTrigger value="script">Install Script</TabsTrigger>
+    <TabsTrigger value="npm">npm / Bun</TabsTrigger>
+    <TabsTrigger value="brew">Homebrew</TabsTrigger>
+    <TabsTrigger value="arch">Arch</TabsTrigger>
+    <TabsTrigger value="windows">Windows</TabsTrigger>
+    <TabsTrigger value="docker">Docker</TabsTrigger>
+  </TabsList>
+
+  <TabsContent value="script">
+    ### Install Script (Recommended)
+
+    ```bash
+    curl -fsSL https://opencode.ai/install | bash
+
+    # Verify
+    opencode --version
+    ```
+  </TabsContent>
+
+  <TabsContent value="npm">
+    ### Node.js
+
+    ```bash
+    npm install -g opencode-ai
+
+    # Bun
+    bun add -g opencode-ai
+
+    # pnpm
+    pnpm add -g opencode-ai
+
+    # Yarn
+    yarn global add opencode-ai
+    ```
+  </TabsContent>
+
+  <TabsContent value="brew">
+    ### Homebrew (macOS and Linux)
+
+    ```bash
+    # The official tap has the most up-to-date releases
+    brew install anomalyco/tap/opencode
+
+    # The core formula is maintained by the Homebrew team and updates less often
+    brew install opencode
+    ```
+  </TabsContent>
+
+  <TabsContent value="arch">
+    ### Arch Linux
+
+    ```bash
+    # Stable
+    sudo pacman -S opencode
+
+    # Latest from the AUR
+    paru -S opencode-bin
+    ```
+  </TabsContent>
+
+  <TabsContent value="windows">
+    ### Windows
+
+    ```powershell
+    # Chocolatey
+    choco install opencode
+
+    # Scoop
+    scoop install opencode
+
+    # npm
+    npm install -g opencode-ai
+
+    # mise
+    mise use -g github:anomalyco/opencode
+    ```
+
+    <Callout title="Use WSL2 on Windows">
+      OpenCode's docs recommend Windows Subsystem for Linux — it gives better performance
+      and full compatibility with the features.
+    </Callout>
+  </TabsContent>
+
+  <TabsContent value="docker">
+    ### Docker
+
+    ```bash
+    docker run -it --rm ghcr.io/anomalyco/opencode
+    ```
+  </TabsContent>
+</Tabs>
+
+## Connecting a Provider
+
+Run the `/connect` command in the TUI and pick a provider:
+
+```text
+/connect
+```
+
+OpenCode Zen is a curated list of models that the OpenCode team has tested, and it is the
+easiest option if you do not already have a provider key.
+
+You can also configure a provider directly — OpenCode reads the same environment
+variables the provider SDKs use:
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+export OPENAI_API_KEY=sk-...
+```
+
+## Bootstrapping a Project
+
+```bash
+cd /path/to/project
+opencode
+```
+
+```text
+/init
+```
+
+`/init` makes OpenCode analyse the project and write an `AGENTS.md` file in the project
+root. **Commit that file** — it is what makes the agent consistent across the team and
+across machines.
+
+## Working with OpenCode
+
+```text
+# Ask about the codebase
+How is authentication handled in @packages/functions/src/api/index.ts
+```
+
+| Mode | What it does |
+| --- | --- |
+| **Build** | Reads, edits files and runs commands |
+| **Plan** | Suggests *how* to implement something, without changing anything (`Tab` to switch) |
+
+The Plan mode is worth using for anything that spans more than one file: write the
+request, read the plan, give feedback, then switch to Build.
+
+### Useful Commands
+
+| Command | What it does |
+| --- | --- |
+| `/init` | Create the `AGENTS.md` for the project |
+| `/undo` | Revert the last change and show the original message |
+| `/redo` | Re-apply an undone change |
+| `@` | Fuzzy search for a file to add to the context |
+
+## Troubleshooting
+
+<Accordion type="single">
+  <AccordionItem value="issue-1">
+    <AccordionTrigger>
+      opencode: command not found
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # Where is it?
+      which opencode
+      echo $PATH
+
+      # The install script uses ~/.local/bin
+      export PATH="$HOME/.local/bin:$PATH"
+      echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+      ```
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-2">
+    <AccordionTrigger>
+      The terminal renders incorrectly
+    </AccordionTrigger>
+    <AccordionContent>
+      OpenCode needs a modern terminal emulator. WezTerm, Alacritty, Ghostty and Kitty
+      are the best supported. The classic macOS Terminal.app and the basic Windows console
+      render the TUI incorrectly.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-3">
+    <AccordionTrigger>
+      The agent does not know about the project
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # Is the AGENTS.md file there?
+      ls -la AGENTS.md
+      ```
+      Run `/init` to create it, and commit it so the agent gets the same context on every
+      machine. Reference specific files with `@` when you need precision.
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-4">
+    <AccordionTrigger>
+      The provider request fails
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # Which keys are visible?
+      env | grep -E 'ANTHROPIC|OPENAI|GOOGLE|OPENROUTER'
+
+      # Reconnect from the TUI
+      # /connect
+      ```
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-5">
+    <AccordionTrigger>
+      OpenCode 1 and 2 are fighting each other
+    </AccordionTrigger>
+    <AccordionContent>
+      Both versions use the `opencode` command, so the second install replaces the first.
+      Pick one:
+      ```bash
+      # Remove the old one
+      npm uninstall -g opencode-ai
+      rm -f ~/.local/bin/opencode
+
+      # Install the version you want
+      curl -fsSL https://opencode.ai/install | bash
+      ```
+      The v2 migration guide covers moving your configuration.
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>
+
+## Best Practices
+
+1. **Commit `AGENTS.md`** — it is the single highest-value file in the repository.
+2. **Use Plan mode for multi-file work** and read the plan before approving it.
+3. **Reference files with `@`** instead of hoping the agent finds the right one.
+4. **Keep the working tree clean** so `/undo` stays meaningful.
+5. **Use `opencode` in CI** with a scoped provider key and a read-only checkout.
+6. **Pin the version** in CI images.
+7. **Review diffs** — the agent shows exactly what it changed.
+
+## Next Steps
+
+- [OpenCode Documentation](https://opencode.ai/docs/)
+- [OpenCode 2 Migration Guide](https://opencode.ai/v2/docs/)
+- [OpenCode on GitHub](https://github.com/anomalyco/opencode)
+- [Claude Code](/docs/ai-ide/claude-code)
+- [Goose](/docs/ai-ide/goose)
+- [Aider](/docs/ai-ide/aider)

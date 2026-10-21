@@ -31,6 +31,66 @@ export const docsConfig = {
       ],
     },
     {
+      title: "AI IDE Tools",
+      items: [
+        {
+          title: "Overview",
+          href: "/docs/ai-ide",
+          items: [],
+        },
+        {
+          title: "Cursor",
+          href: "/docs/ai-ide/cursor",
+          items: [],
+        },
+        {
+          title: "Zed",
+          href: "/docs/ai-ide/zed",
+          items: [],
+        },
+        {
+          title: "Windsurf / Devin Desktop",
+          href: "/docs/ai-ide/windsurf",
+          items: [],
+        },
+        {
+          title: "Kiro",
+          href: "/docs/ai-ide/kiro",
+          items: [],
+        },
+        {
+          title: "Claude Code",
+          href: "/docs/ai-ide/claude-code",
+          items: [],
+        },
+        {
+          title: "Gemini CLI",
+          href: "/docs/ai-ide/gemini-cli",
+          items: [],
+        },
+        {
+          title: "Aider",
+          href: "/docs/ai-ide/aider",
+          items: [],
+        },
+        {
+          title: "Goose",
+          href: "/docs/ai-ide/goose",
+          items: [],
+        },
+        {
+          title: "OpenCode",
+          href: "/docs/ai-ide/opencode",
+          items: [],
+        },
+        {
+          title: "VS Code AI Extensions",
+          href: "/docs/ai-ide/vscode-extensions",
+          items: [],
+        },
+      ],
+    },
+    {
       title: "Containers",
       items: [
         {
