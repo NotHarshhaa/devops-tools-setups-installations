@@ -292,7 +292,7 @@ export const tools: ToolMeta[] = [
     slug: "version-control/git",
     name: "Git",
     description:
-      "Install Git, configure your identity and learn the branching workflow.",
+      "Install Git 2.56, configure your identity, SSH keys, credential helper and commit signing, and work with branches the modern way.",
     category: "version-control",
     tags: ["version-control", "collaboration", "history"],
   },
@@ -300,7 +300,7 @@ export const tools: ToolMeta[] = [
     slug: "version-control/github-cli",
     name: "GitHub CLI",
     description:
-      "Install the gh CLI and work with pull requests, issues and releases.",
+      "Install GitHub CLI 2.102 from the official repository, authenticate and manage pull requests, workflows, releases and secrets.",
     category: "version-control",
     tags: ["version-control", "github", "cli", "collaboration"],
   },
@@ -308,7 +308,7 @@ export const tools: ToolMeta[] = [
     slug: "version-control/gitlab-cli",
     name: "GitLab CLI",
     description:
-      "Install the glab CLI and manage merge requests, pipelines and projects.",
+      "Install GitLab CLI 1.124, authenticate with OAuth or a token and manage merge requests, pipelines, runners and releases.",
     category: "version-control",
     tags: ["version-control", "gitlab", "cli", "collaboration"],
   },

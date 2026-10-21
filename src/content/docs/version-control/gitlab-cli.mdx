@@ -1,265 +1,402 @@
 ---
 title: GitLab CLI Installation Guide
-description: A comprehensive guide for installing and configuring GitLab CLI (glab) on different operating systems
+description: Install GitLab CLI 1.124 on Linux, macOS and Windows, authenticate with OAuth or a token, and manage merge requests, pipelines, runners and releases from your terminal.
 ---
 
-GitLab CLI (`glab`) is an open source GitLab CLI tool that brings GitLab to your terminal. It allows you to manage GitLab operations directly from the command line, reducing context switching between the browser and terminal.
+GitLab CLI (`glab`) is the official GitLab command-line tool. It handles merge requests,
+issues, pipelines, runners and releases — and it detects the GitLab instance from the
+remotes in your working directory.
 
-## Prerequisites
+<Callout title="Versions used in this guide">
+  GitLab CLI **1.124.0** · requires **GitLab 16.0 or newer** · Homebrew is the officially
+  supported package manager · `glab duo cli` for GitLab Duo in the terminal
+</Callout>
 
-- A system running Windows, macOS, or Linux
-- Administrative/sudo privileges
-- Terminal/Command Prompt access
-- Internet connection for downloading packages
-- A GitLab account (self-hosted or GitLab.com)
+<Callout title="Homebrew is the officially supported install method">
+  The GitLab CLI project officially supports Homebrew on macOS, Linux and WSL. Everything
+  else — the `.deb`/`.rpm` packages, the distro packages and the container image — is
+  maintained by the community and may lag behind.
+</Callout>
+
+## System Requirements
+
+- A 64-bit operating system: Linux, macOS or Windows
+- `git` on your `PATH`
+- A GitLab.com, GitLab Dedicated or GitLab Self-Managed instance on **GitLab 16.0 or
+  later** — some commands need even newer versions
 
 ## Installation Instructions
 
-<Tabs defaultValue="ubuntu">
+<Tabs defaultValue="brew">
   <TabsList>
-    <TabsTrigger value="ubuntu">Ubuntu/Debian</TabsTrigger>
-    <TabsTrigger value="centos">CentOS/RHEL</TabsTrigger>
-    <TabsTrigger value="fedora">Fedora</TabsTrigger>
-    <TabsTrigger value="arch">Arch Linux</TabsTrigger>
-    <TabsTrigger value="alpine">Alpine</TabsTrigger>
-    <TabsTrigger value="suse">SUSE</TabsTrigger>
-    <TabsTrigger value="macos">macOS</TabsTrigger>
+    <TabsTrigger value="brew">Homebrew</TabsTrigger>
+    <TabsTrigger value="binary">Binary / Packages</TabsTrigger>
+    <TabsTrigger value="linux">Linux</TabsTrigger>
     <TabsTrigger value="windows">Windows</TabsTrigger>
+    <TabsTrigger value="docker">Docker</TabsTrigger>
   </TabsList>
 
-  <TabsContent value="ubuntu">
-    ### Ubuntu/Debian Installation
+  <TabsContent value="brew">
+    ### Homebrew (officially supported)
 
     ```bash
-    # Download the latest .deb package
-    curl -LO "https://gitlab.com/gitlab-org/cli/-/releases/download/v$(curl -s "https://gitlab.com/api/v4/projects/gitlab-org%2Fcli/releases" | grep tag_name | head -n 1 | cut -d'"' -f4)/glab_$(curl -s "https://gitlab.com/api/v4/projects/gitlab-org%2Fcli/releases" | grep tag_name | head -n 1 | cut -d'"' -f4)_linux_amd64.deb"
-
-    # Install the package
-    sudo dpkg -i glab_*_linux_amd64.deb
-    ```
-  </TabsContent>
-
-  <TabsContent value="centos">
-    ### CentOS/RHEL Installation
-
-    ```bash
-    # For RHEL/CentOS/Fedora
-    sudo dnf install glab
-    ```
-  </TabsContent>
-
-  <TabsContent value="fedora">
-    ### Fedora Installation
-
-    ```bash
-    # For Fedora
-    sudo dnf install glab
-    ```
-  </TabsContent>
-
-  <TabsContent value="arch">
-    ### Arch Linux Installation
-
-    ```bash
-    # Using yay
-    yay -S glab-bin
-
-    # Or using the AUR manually
-    git clone https://aur.archlinux.org/glab-bin.git
-    cd glab-bin
-    makepkg -si
-    ```
-  </TabsContent>
-
-  <TabsContent value="alpine">
-    ### Alpine Linux Installation
-
-    ```bash
-    sudo apk add glab
-    ```
-  </TabsContent>
-
-  <TabsContent value="suse">
-    ### SUSE Linux Installation
-
-    ```bash
-    sudo zypper install glab
-    ```
-  </TabsContent>
-
-  <TabsContent value="macos">
-    ### macOS Installation
-
-    ```bash
+    # macOS, Linux and Windows (through WSL)
     brew install glab
+
+    # Update later with
+    brew upgrade glab
+
+    glab --version
     ```
+  </TabsContent>
+
+  <TabsContent value="binary">
+    ### Precompiled binaries
+
+    Every release publishes binaries and packages on the
+    [releases page](https://gitlab.com/gitlab-org/cli/-/releases):
+
+    ```bash
+    # Linux
+    curl -LO "https://gitlab.com/gitlab-org/cli/-/releases/v1.124.0/downloads/glab_1.124.0_linux_amd64.tar.gz"
+    tar xzf glab_1.124.0_linux_amd64.tar.gz
+    sudo install -m 0755 bin/glab /usr/local/bin/glab
+
+    # macOS
+    curl -LO "https://gitlab.com/gitlab-org/cli/-/releases/v1.124.0/downloads/glab_1.124.0_darwin_amd64.tar.gz"
+    tar xzf glab_1.124.0_darwin_amd64.tar.gz
+    sudo install -m 0755 bin/glab /usr/local/bin/glab
+
+    # Windows — download glab.exe from the releases page
+    ```
+
+    ```bash
+    # Debian / Ubuntu
+    curl -LO "https://gitlab.com/gitlab-org/cli/-/releases/v1.124.0/downloads/glab_1.124.0_linux_amd64.deb"
+    sudo dpkg -i glab_1.124.0_linux_amd64.deb
+
+    # RHEL / CentOS / Fedora
+    curl -LO "https://gitlab.com/gitlab-org/cli/-/releases/v1.124.0/downloads/glab_1.124.0_linux_amd64.rpm"
+    sudo rpm -Uvh glab_1.124.0_linux_amd64.rpm
+    ```
+  </TabsContent>
+
+  <TabsContent value="linux">
+    ### Other Linux distributions (community maintained)
+
+    ```bash
+    # Fedora
+    sudo dnf install glab
+
+    # Arch Linux
+    sudo pacman -S glab
+
+    # Alpine Linux
+    sudo apk add --no-cache glab
+
+    # openSUSE / SUSE
+    sudo zypper install glab
+
+    # Nix / NixOS
+    nix-env -iA nixos.glab
+
+    # mise
+    mise use -g "ubi:gitlab-org/cli@latest"
+    ```
+
+    <Callout title="Snap needs extra connections">
+      A snap-installed `glab` cannot see your SSH keys or keychain until you connect them:
+      ```bash
+      sudo snap install glab
+      sudo snap connect glab:ssh-keys
+      sudo snap connect glab:password-manager-service
+      ```
+      Without the keychain connection, `glab auth login` falls back to plaintext storage.
+    </Callout>
   </TabsContent>
 
   <TabsContent value="windows">
-    ### Windows Installation
+    ### Windows
 
     ```powershell
-    # Using Scoop
+    # Windows Package Manager
+    winget install glab.glab
+
+    # Chocolatey
+    choco install glab
+
+    # Scoop
     scoop install glab
 
-    # Using Chocolatey
-    choco install gitlab-cli -y
+    # Or download glab.exe from the releases page
+    ```
+  </TabsContent>
+
+  <TabsContent value="docker">
+    ### Docker
+
+    ```bash
+    docker pull gitlab/glab
     ```
 
-    #### Manual Installation
-    1. Download the latest Windows release from [GitLab CLI Releases](https://gitlab.com/gitlab-org/cli/-/releases)
-    2. Extract the archive
-    3. Add the binary location to your system's PATH
+    ```yaml
+    # .gitlab-ci.yml — the entrypoint has to be the glab binary
+    example:
+      stage: test
+      image:
+        name: "gitlab/glab"
+        entrypoint: [""]
+      script:
+        - glab --version
+    ```
   </TabsContent>
 </Tabs>
 
-## Post-Installation Configuration
+## Authentication
 
-After installing GitLab CLI, authenticate with your GitLab account:
+`glab` supports OAuth, personal access tokens and CI job tokens.
 
 ```bash
-# Start the login process
+# Interactive login
 glab auth login
 
-# Follow the interactive prompts to:
-# 1. Enter your GitLab instance URL (default: https://gitlab.com)
-# 2. Enter your personal access token
-# 3. Choose your preferred protocol (HTTPS or SSH)
+# Log in to a self-managed instance
+glab auth login --hostname gitlab.example.com
+
+# Non-interactive login with a token
+echo "$GITLAB_TOKEN" | glab auth login --stdin
+
+# Check the current state
+glab auth status
+
+# Log out
+glab auth logout
 ```
-
-## Verification
-
-Verify the installation by checking the GitLab CLI version:
 
 ```bash
-glab --version
+# In CI, the token is simply an environment variable
+export GITLAB_TOKEN=glpat-xxxxxxxxxxxx
+export CI_SERVER_URL=https://gitlab.com
 ```
 
-## Common Commands and Usage
+| Variable | Purpose |
+| --- | --- |
+| `GITLAB_TOKEN` | Token used for API requests |
+| `GITLAB_HOST` | Default instance URL |
+| `GLAB_CONFIG_DIR` | Where the configuration is stored |
+| `GLAB_DEBUG` | Set to `true` for verbose logging, including the underlying git commands |
 
-### Repository Operations
+## Everyday Commands
 
-```bash
-# Clone a repository
-glab repo clone owner/repo
-
-# Create a new repository
-glab repo create [name]
-
-# Fork a repository
-glab repo fork [repository]
-
-# View repository
-glab repo view [repository]
-```
-
-### Issue Management
-
-```bash
-# Create an issue
-glab issue create
-
-# List issues
-glab issue list
-
-# View an issue
-glab issue view [issue-number]
-
-# Close an issue
-glab issue close [issue-number]
-```
-
-### Merge Request Operations
+### Merge Requests
 
 ```bash
 # Create a merge request
-glab mr create
+glab mr create --title "Add login" --description "Closes #42" --source-branch feature/login
 
-# List merge requests
-glab mr list
+# List, view and check out
+glab mr list --assignee=@me
+glab mr list --reviewer=@me
+glab mr view 235
+glab mr checkout 235
 
-# Check out a merge request locally
-glab mr checkout [mr-number]
-
-# View a merge request
-glab mr view [mr-number]
+# Review and merge
+glab mr approve 235
+glab mr merge 235 --squash --remove-source-branch
 ```
 
-### CI/CD Pipeline Operations
+### Issues
 
 ```bash
-# View pipeline status
+# Create and list
+glab issue create -m release-2.0.0 -t "My title here" --label important
+glab issue list --assignee=@me
+
+# Update and close
+glab issue update 42 --label "needs review"
+glab issue close 42
+```
+
+### Pipelines and Jobs
+
+```bash
+# List and inspect
 glab pipeline list
+glab pipeline view 12345
+glab pipeline status
 
-# View pipeline logs
-glab pipeline ci view
+# Follow a job log
+glab ci list
+glab ci view 98765
+glab ci trace 98765
 
-# Trigger a pipeline
-glab pipeline run
+# Retry a failed job
+glab ci retry 98765
+```
+
+### Repositories and Releases
+
+```bash
+# Repository
+glab repo clone owner/repo
+glab repo fork owner/repo
+glab repo view
+
+# Releases and changelogs
+glab release create v1.2.0 --notes "Bug fixes"
+glab changelog generate
+```
+
+### Runners, Agents and Variables
+
+```bash
+# Runners
+glab runner list
+glab runner create --name my-runner --executor docker
+
+# GitLab Agents for Kubernetes
+glab cluster agent list
+
+# Project and group variables
+glab variable set LOG_LEVEL --scope project --value debug
+glab variable list
+```
+
+### GitLab Duo in the Terminal
+
+```bash
+# Ask GitLab Duo about the codebase
+glab duo cli
+
+# Or a one-off question
+glab duo chat "explain this module"
 ```
 
 ## Troubleshooting
 
-### Common Issues
+<Accordion type="single">
+  <AccordionItem value="issue-1">
+    <AccordionTrigger>
+      Authentication errors or 401 responses
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # What does glab think is authenticated?
+      glab auth status
 
-1. **Authentication Failed**
-   - Ensure you have a valid GitLab account
-   - Check your personal access token permissions
-   - Verify your GitLab instance URL
-   - Check your internet connection
+      # Log in again
+      glab auth logout
+      glab auth login
 
-2. **Command Not Found**
-   - Ensure GitLab CLI is properly installed
-   - Check if the installation directory is in your PATH
-   - Try closing and reopening your terminal
+      # Turn on debug logging
+      GLAB_DEBUG=true glab mr list
+      ```
+      A token without the `api` scope fails on every API call. Personal access tokens
+      need at least `api` (or `read_api` for read-only work).
+    </AccordionContent>
+  </AccordionItem>
 
-3. **API Rate Limiting**
-   - Authenticate with your GitLab account
-   - Wait for rate limit to reset
-   - Use authenticated requests
+  <AccordionItem value="issue-2">
+    <AccordionTrigger>
+      glab talks to the wrong GitLab instance
+    </AccordionTrigger>
+    <AccordionContent>
+      `glab` detects the host from your git remotes. Check what it resolves to:
+      ```bash
+      git remote -v
+      glab auth status
+      ```
+      Set the host explicitly:
+      ```bash
+      glab auth status --hostname gitlab.example.com
+      export GITLAB_HOST=https://gitlab.example.com
+      ```
+    </AccordionContent>
+  </AccordionItem>
 
-## Security Considerations
+  <AccordionItem value="issue-3">
+    <AccordionTrigger>
+      The repository cannot be found
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # Are you inside a repository with a GitLab remote?
+      git remote -v
 
-1. Keep GitLab CLI updated to the latest version
-2. Use tokens with minimum required permissions
-3. Enable two-factor authentication on your GitLab account
-4. Regularly rotate access tokens
-5. Never share or expose your personal access tokens
-6. Use environment variables for sensitive information
+      # Point glab at it explicitly
+      glab repo view --repo owner/repo
+      ```
+      For GitLab subgroups, use the full path: `glab mr list --repo group/subgroup/project`.
+    </AccordionContent>
+  </AccordionItem>
 
-## Environment Variables
+  <AccordionItem value="issue-4">
+    <AccordionTrigger>
+      Commands fail with "not found" on an older instance
+    </AccordionTrigger>
+    <AccordionContent>
+      `glab` supports GitLab 16.0 and later, and some commands need a newer version than
+      that. Check what your instance offers:
+      ```bash
+      glab api version
+      ```
+      Upgrade the instance, or use the REST API directly with `glab api` for the calls
+      your version does not support.
+    </AccordionContent>
+  </AccordionItem>
 
-GitLab CLI respects several environment variables:
+  <AccordionItem value="issue-5">
+    <AccordionTrigger>
+      The pipeline log is empty
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # The job may still be running
+      glab ci status
 
-```bash
-# Set default GitLab host
-export GITLAB_HOST="gitlab.com"
+      # Fetch the raw log
+      glab ci trace 98765 --raw
+      ```
+      Traces are only available for jobs that have finished and are retained for a limited
+      time — download the log before it expires.
+    </AccordionContent>
+  </AccordionItem>
 
-# Set personal access token
-export GITLAB_TOKEN="your-token"
+  <AccordionItem value="issue-6">
+    <AccordionTrigger>
+      The command is not found
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      which glab
+      glab --version
+      ```
+      The Homebrew formula installs into `/opt/homebrew/bin` on Apple silicon — make sure
+      that is on your `PATH`. A `.deb` install puts the binary in `/usr/bin/glab`.
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>
 
-# Set default editor
-export EDITOR="vim"
-```
+## Best Practices
 
-## Configuration File
+1. **Install with Homebrew** — it is the officially supported method and always has the
+   current release.
+2. **Use a scoped token**: `read_api` for read-only automation, `api` only when you
+   really need to write.
+3. **Set `GITLAB_TOKEN` in CI** instead of running the interactive login.
+4. **Turn on `GLAB_DEBUG=true`** when something behaves strangely — it shows the git
+   commands and the API calls.
+5. **Use `glab api`** for anything the CLI does not wrap.
+6. **Use `glab runner` and `glab cluster agent`** to manage runners and agents instead
+   of the web UI.
+7. **Pin the CLI version** in CI images so a new release cannot change your pipeline.
+8. **Never commit a token** — use CI variables and masked, protected project variables.
 
-GitLab CLI configuration is stored in `~/.config/glab-cli/config.yml`:
+## Next Steps
 
-```yaml
-# Example configuration
-hosts:
-  gitlab.com:
-    token: your-token
-    git_protocol: ssh
-  gitlab.example.com:
-    token: your-enterprise-token
-    git_protocol: https
-```
-
-## Additional Resources
-
-- [GitLab CLI Documentation](https://gitlab.com/gitlab-org/cli/-/tree/main/docs)
-- [GitLab CLI Repository](https://gitlab.com/gitlab-org/cli)
-- [GitLab Documentation](https://docs.gitlab.com)
-- [GitLab API Documentation](https://docs.gitlab.com/ee/api/) 
+- [GitLab CLI Documentation](https://docs.gitlab.com/cli/)
+- [GitLab CLI Releases](https://gitlab.com/gitlab-org/cli/-/releases)
+- [Authenticate with GitLab](https://docs.gitlab.com/cli/authentication/)
+- [Git Installation Guide](/docs/version-control/git)
+- [GitHub CLI Installation Guide](/docs/version-control/github-cli)
+- [GitLab CI/CD Setup Guide](/docs/ci-cd/gitlab-ci)

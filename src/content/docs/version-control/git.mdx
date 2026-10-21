@@ -1,203 +1,447 @@
 ---
 title: Git Installation Guide
-description: A comprehensive guide for installing and configuring Git on different operating systems
+description: Install Git 2.56 on Linux, macOS and Windows, configure your identity, SSH keys, credential helpers and commit signing, and work with branches the modern way.
 ---
 
-Git is a distributed version control system that tracks changes in any set of computer files, usually used for coordinating work among programmers who are collaboratively developing source code during software development.
+Git is the distributed version control system that every DevOps workflow is built on. This
+guide installs the current release and configures the parts that matter day to day.
 
-## Prerequisites
+<Callout title="Versions used in this guide">
+  Git **2.56.0** (released September 2026) · `git switch` / `git restore` ·
+  **Git Credential Manager** for storing credentials · commit signing with an SSH or
+  GPG key
+</Callout>
 
-- A system running Windows, macOS, or Linux
-- Administrative/sudo privileges
-- Terminal/Command Prompt access
-- Internet connection for downloading packages
+<Callout title="Your distribution's package is often older">
+  `apt install git` gives you whatever the distribution shipped — sometimes several
+  releases behind. That is fine for most work, but if you need the newest Git (for a
+  new flag or a security fix), build it from source or use a version manager.
+</Callout>
+
+## System Requirements
+
+- A 64-bit operating system: Linux, macOS or Windows
+- For building from source: GCC 4.9+ or Clang, Make, `zlib1g-dev`, `libssl-dev`,
+  `libcurl4-openssl-dev`, `libexpat1-dev`, `gettext`, `libpcre2-dev` and `pkg-config`
+- About 200 MB of disk space for a full build
 
 ## Installation Instructions
 
-<Tabs defaultValue="ubuntu">
+<Tabs defaultValue="linux">
   <TabsList>
-    <TabsTrigger value="ubuntu">Ubuntu/Debian</TabsTrigger>
-    <TabsTrigger value="centos">CentOS/RHEL</TabsTrigger>
-    <TabsTrigger value="fedora">Fedora</TabsTrigger>
-    <TabsTrigger value="arch">Arch Linux</TabsTrigger>
-    <TabsTrigger value="alpine">Alpine</TabsTrigger>
-    <TabsTrigger value="suse">SUSE</TabsTrigger>
+    <TabsTrigger value="linux">Linux</TabsTrigger>
     <TabsTrigger value="macos">macOS</TabsTrigger>
     <TabsTrigger value="windows">Windows</TabsTrigger>
+    <TabsTrigger value="source">From Source</TabsTrigger>
+    <TabsTrigger value="versioned">Version Manager</TabsTrigger>
   </TabsList>
 
-  <TabsContent value="ubuntu">
-    ### Ubuntu/Debian Installation
+  <TabsContent value="linux">
+    ### Linux
 
     ```bash
-    # Update package list
+    # Debian / Ubuntu
     sudo apt update
+    sudo apt install -y git
 
-    # Install Git
-    sudo apt install git -y
-    ```
-  </TabsContent>
+    # RHEL / CentOS / Rocky / Alma
+    sudo dnf install -y git
 
-  <TabsContent value="centos">
-    ### CentOS/RHEL Installation
+    # Fedora
+    sudo dnf install -y git
 
-    ```bash
-    # For RHEL/CentOS
-    sudo yum install git -y
-    ```
-  </TabsContent>
-
-  <TabsContent value="fedora">
-    ### Fedora Installation
-
-    ```bash
-    # For Fedora
-    sudo dnf install git -y
-    ```
-  </TabsContent>
-
-  <TabsContent value="arch">
-    ### Arch Linux Installation
-
-    ```bash
+    # Arch Linux
     sudo pacman -S git
-    ```
-  </TabsContent>
 
-  <TabsContent value="alpine">
-    ### Alpine Linux Installation
+    # Alpine Linux
+    sudo apk add --no-cache git
 
-    ```bash
-    sudo apk add git
-    ```
-  </TabsContent>
-
-  <TabsContent value="suse">
-    ### SUSE Linux Installation
-
-    ```bash
-    sudo zypper install git
+    # SUSE / openSUSE
+    sudo zypper install -y git
     ```
   </TabsContent>
 
   <TabsContent value="macos">
-    ### macOS Installation
+    ### macOS
+
+    macOS ships with an old Git (the Xcode command line tools version). Install a current
+    one with Homebrew:
 
     ```bash
-    # Using Homebrew
     brew install git
 
-    # Using MacPorts
-    sudo port install git
+    # Make the Homebrew version the default
+    echo 'export PATH="/opt/homebrew/bin:$PATH"' >> ~/.zshrc
+    source ~/.zshrc
+
+    git --version
+    ```
+
+    Check which Git you are actually running:
+
+    ```bash
+    which -a git
     ```
   </TabsContent>
 
   <TabsContent value="windows">
-    ### Windows Installation
+    ### Windows
 
     ```powershell
-    # Using Winget
+    # Windows Package Manager (Git for Windows)
     winget install --id Git.Git -e --source winget
 
-    # Using Chocolatey
+    # Chocolatey
     choco install git -y
     ```
 
-    #### Manual Installation
-    1. Download the latest Git installer from [Git for Windows](https://git-scm.com/download/win)
-    2. Run the installer and follow the installation wizard
-    3. Choose your preferred options during installation
+    Or download the installer from [git-scm.com/download/win](https://git-scm.com/download/win)
+    and make sure to select **"Git from the command line and also from 3rd-party software"**
+    so it ends up on your `PATH`.
+  </TabsContent>
+
+  <TabsContent value="source">
+    ### From Source (latest release)
+
+    ```bash
+    # Install the build dependencies
+    sudo apt update
+    sudo apt install -y build-essential libssl-dev libcurl4-openssl-dev \
+      zlib1g-dev libexpat1-dev gettext libpcre2-dev pkg-config
+
+    # Download and build the latest release
+    cd /tmp
+    curl -LO https://www.kernel.org/pub/software/scm/git/git-2.56.0.tar.gz
+    tar xzf git-2.56.0.tar.gz
+    cd git-2.56.0
+
+    make prefix=/usr/local
+    sudo make prefix=/usr/local install
+
+    # Verify
+    git --version
+    ```
+  </TabsContent>
+
+  <TabsContent value="versioned">
+    ### Version Manager
+
+    Use a version manager when different projects need different Git versions:
+
+    ```bash
+    # mise (works on Linux, macOS and Windows)
+    curl https://mise.run | sh
+    mise use -g git@2.56.0
+    git --version
+
+    # asdf
+    asdf plugin add git
+    asdf install git latest
+    asdf global git latest
+    ```
   </TabsContent>
 </Tabs>
 
 ## Post-Installation Configuration
 
-After installing Git, configure your identity:
+### Identity
 
 ```bash
-# Set your name
+# Your name and email — these end up in every commit you make
 git config --global user.name "Your Name"
+git config --global user.email "you@example.com"
 
-# Set your email
-git config --global user.email "your.email@example.com"
-
-# Set default branch name
+# The default branch for new repositories
 git config --global init.defaultBranch main
 
-# Configure default text editor (optional)
-git config --global core.editor "vim"  # or nano, code, etc.
+# The editor for commit messages
+git config --global core.editor "code --wait"   # or vim, nano, ...
+
+# Check what is set
+git config --global --list
 ```
 
-## Verification
-
-Verify the installation by checking the Git version:
+### A Sensible Default Setup
 
 ```bash
-git --version
+# Pull with rebase instead of merge commits
+git config --global pull.rebase true
+
+# Reuse conflict resolutions when rebasing
+git config --global rerere.enabled true
+
+# Show the original object when a file is renamed
+git config --global diff.renames copies
+
+# Prune deleted branches when fetching
+git config --global fetch.prune true
+
+# Use the native file system monitor on macOS and Windows
+git config --global core.fsmonitor true
 ```
 
-## Common Configuration Options
+### SSH Keys
 
-### Setting Up SSH Keys
-
-1. Generate SSH key:
 ```bash
-ssh-keygen -t ed25519 -C "your.email@example.com"
-```
+# 1. Generate an ed25519 key
+ssh-keygen -t ed25519 -C "you@example.com"
 
-2. Start SSH agent:
-```bash
+# 2. Start the agent and add the key (macOS)
 eval "$(ssh-agent -s)"
-```
-
-3. Add SSH key to agent:
-```bash
 ssh-add ~/.ssh/id_ed25519
+
+# On Linux with systemd, enable the agent once
+sudo systemctl enable --now ssh-agent
 ```
 
-### Configuring Git Credentials Helper
+```bash
+# 3. Copy the public key to the host
+ssh-copy-id -i ~/.ssh/id_ed25519.pub you@server
+
+# 4. Test it
+ssh -T git@github.com
+```
+
+Use a different key per service with `~/.ssh/config`:
+
+```text
+Host github.com
+  IdentityFile ~/.ssh/id_ed25519_github
+  AddKeysToAgent yes
+
+Host gitlab.com
+  IdentityFile ~/.ssh/id_ed25519_gitlab
+```
+
+### Credential Storage
+
+Do not store passwords in plain text. Use **Git Credential Manager**, which stores them in
+the OS keychain:
 
 ```bash
-# For Windows
-git config --global credential.helper wincred
+# Linux, macOS and Windows with Git Credential Manager installed
+git config --global credential.helper manager
 
-# For macOS
+# macOS only — the system keychain
 git config --global credential.helper osxkeychain
 
-# For Linux
-git config --global credential.helper cache
+# Windows only — the Windows Credential Manager
+git config --global credential.helper manager
+```
+
+```bash
+# Check which helper is active
+git config --global credential.helper
+git credential fill   # type protocol=https, host=github.com and press Ctrl-D
+```
+
+### Signing Your Commits
+
+Since Git 2.34 you can sign with an **SSH key** — no GPG needed:
+
+```bash
+# Use the SSH key format
+git config --global gpg.format ssh
+
+# The key to sign with
+git config --global user.signingkey ~/.ssh/id_ed25519.pub
+
+# Sign every commit automatically
+git config --global commit.gpgsign true
+
+# And every tag
+git config --global tag.gpgsign true
+```
+
+```bash
+# Verify a signature
+git log --show-signature -1
+```
+
+## Everyday Commands
+
+```bash
+# Start a repository and commit
+git init
+git add .
+git commit -m "Initial commit"
+
+# Branching — the modern commands
+git switch -c feature/login        # create and switch
+git switch main                     # switch back
+git switch -                        # switch to the previous branch
+git branch -d feature/login        # delete a merged branch
+
+# Undo changes
+git restore file.txt                # discard unstaged changes
+git restore --staged file.txt       # unstage
+git restore --source=HEAD file.txt  # discard changes to a file
+git commit --amend                  # fix the last commit
+
+# Unstage
+git reset HEAD file.txt
+
+# See what changed
+git status
+git diff
+git diff --staged
+git log --oneline --graph --decorate
+
+# Pull with rebase
+git pull --rebase
+
+# Sync a branch with the main branch
+git rebase main
+# or merge the other way
+git merge main
+
+# Undo a merge or rebase
+git reset --hard ORIG_HEAD
+
+# Stash work in progress
+git stash push -m "wip"
+git stash list
+git stash pop
+
+# Worktrees — a second checkout of the same repository
+git worktree add ../myapp-feature feature/login
 ```
 
 ## Troubleshooting
 
-### Common Issues
+<Accordion type="single">
+  <AccordionItem value="issue-1">
+    <AccordionTrigger>
+      "command not found: git" after installation
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # Where is it?
+      which -a git
 
-1. **Git not found after installation**
-   - Ensure Git is added to your system's PATH
-   - Try closing and reopening your terminal
-   - For Windows, run the installer again and select "Add to PATH" option
+      # Add it to your PATH (macOS with Homebrew)
+      echo 'export PATH="/opt/homebrew/bin:$PATH"' >> ~/.zshrc
+      source ~/.zshrc
+      ```
+      On Windows, reopen the terminal after installing so it picks up the new `PATH`.
+    </AccordionContent>
+  </AccordionItem>
 
-2. **Permission denied errors**
-   - Check if you have the necessary permissions
-   - Ensure SSH keys are properly set up
-   - Verify remote repository permissions
+  <AccordionItem value="issue-2">
+    <AccordionTrigger>
+      The wrong version of Git is being used
+    </AccordionTrigger>
+    <AccordionContent>
+      macOS ships its own Git, and the Xcode command line tools take precedence:
+      ```bash
+      which -a git
+      /usr/bin/git --version   # the system version
+      ```
+      Put the Homebrew path first in your `PATH`, or use a version manager.
+    </AccordionContent>
+  </AccordionItem>
 
-3. **SSL Certificate Errors**
-   - Update your system's SSL certificates
-   - For Windows: Update Git for Windows
-   - For Linux: Update ca-certificates package
+  <AccordionItem value="issue-3">
+    <AccordionTrigger>
+      "Permission denied (publickey)" when pushing
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # Is the key loaded?
+      ssh-add -l
 
-## Security Considerations
+      # Does the server accept this key?
+      ssh -T git@github.com
 
-1. Keep Git updated to the latest version for security patches
-2. Use SSH keys instead of passwords when possible
-3. Enable two-factor authentication on Git hosting platforms
-4. Regularly rotate access tokens and credentials
-5. Avoid storing sensitive information in Git repositories
+      # Which key is being used?
+      ssh -vT git@github.com 2>&1 | grep "Offering"
+      ```
+      If the agent is not running, `eval "$(ssh-agent -s)"` and `ssh-add` the key. If the
+      server has an old key, remove it from your account and add the new public key.
+    </AccordionContent>
+  </AccordionItem>
 
-## Additional Resources
+  <AccordionItem value="issue-4">
+    <AccordionTrigger>
+      SSL certificate errors
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # Update the system certificates
+      sudo apt update && sudo apt install -y ca-certificates
+      sudo update-ca-certificates
 
-- [Official Git Documentation](https://git-scm.com/doc)
-- [Git Book](https://git-scm.com/book/en/v2)
-- [GitHub Guides](https://guides.github.com/)
-- [GitLab Documentation](https://docs.gitlab.com/) 
+      # Check what Git is using
+      git config --show-origin --get http.sslCAInfo
+      ```
+      Behind a TLS-inspecting proxy, point Git at the corporate CA:
+      ```bash
+      git config --global http.sslCAInfo /usr/local/share/ca-certificates/company.crt
+      ```
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-5">
+    <AccordionTrigger>
+      "detected dubious ownership" in a repository
+    </AccordionTrigger>
+    <AccordionContent>
+      Git refuses to work in a directory owned by another user — this is a safety check
+      against symlink attacks:
+      ```bash
+      sudo chown -R $(id -u):$(id -g) /path/to/repo
+
+      # Or tell Git the directory is safe
+      git config --global --add safe.directory /path/to/repo
+      ```
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="issue-6">
+    <AccordionTrigger>
+      The repository is slow or huge
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # Let Git notice file changes instead of scanning everything
+      git config --global core.fsmonitor true
+
+      # Clean up and repack
+      git maintenance run --auto
+      git gc --aggressive --prune=now
+
+      # See the biggest objects in the history
+      git count-objects -vH
+      ```
+      For very large repositories, a partial clone (`git clone --filter=blob:none`) keeps
+      the history local but fetches blobs on demand.
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>
+
+## Best Practices
+
+1. **Set your identity once** and use `git config --global` so every repository inherits it.
+2. **Use `git switch` and `git restore`** instead of the older `git checkout` — they are
+   explicit about what they change.
+3. **Never commit secrets.** Use `.gitignore` from day one, and add a secret scanner to
+   your pre-commit hooks.
+4. **Sign your commits** — with an SSH key it costs nothing and proves the commit is
+   yours.
+5. **Use a credential helper**, never a password in the remote URL.
+6. **Rebase your branch before opening a pull request** so the history stays linear.
+7. **Set `pull.rebase true`** so a pull never creates an accidental merge commit.
+8. **Enable `rerere`** so a resolved conflict is remembered for the next rebase.
+9. **Use `git maintenance run --auto`** (or `git maintenance start`) to keep the
+   repository healthy.
+10. **Prefer `gh` and `glab`** for pull requests, issues and pipelines — they handle the
+    API details and authentication for you.
+
+## Next Steps
+
+- [Git Documentation](https://git-scm.com/doc)
+- [Pro Git Book](https://git-scm.com/book/en/v2)
+- [Git Reference Manual](https://git-scm.com/docs)
+- [GitHub CLI Installation Guide](/docs/version-control/github-cli)
+- [GitLab CLI Installation Guide](/docs/version-control/gitlab-cli)
+- [GitHub Actions Setup Guide](/docs/ci-cd/github-actions)

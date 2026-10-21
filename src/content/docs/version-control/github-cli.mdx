@@ -1,233 +1,440 @@
 ---
 title: GitHub CLI Installation Guide
-description: A comprehensive guide for installing and configuring GitHub CLI (gh) on different operating systems
+description: Install GitHub CLI 2.102 on Linux, macOS and Windows, authenticate with GitHub, and manage pull requests, issues, workflows and releases from your terminal.
 ---
 
-GitHub CLI (`gh`) is GitHub's official command-line tool that brings GitHub to your terminal. It reduces the need to switch between the browser and terminal by enabling you to manage GitHub workflows directly from the command line.
+GitHub CLI (`gh`) is GitHub's official command-line tool. It brings pull requests, issues,
+workflows and releases into the terminal, next to where you already work with `git`.
 
-## Prerequisites
+<Callout title="Versions used in this guide">
+  GitHub CLI **2.102.1** · the official `cli.github.com` apt and rpm repositories ·
+  **PGP key rotation effective 5 September 2026** · immutable releases since v2.93.0
+</Callout>
 
-- A system running Windows, macOS, or Linux
-- Administrative/sudo privileges
-- Terminal/Command Prompt access
-- Internet connection for downloading packages
-- A GitHub account
+<Callout title="The Linux signing key was rotated on 5 September 2026">
+  GitHub CLI's Linux packages are signed with two keys. If `apt update` or `dnf install`
+  fails with a key error, your machine still trusts the old key. Re-import the keyring
+  file and the fingerprints are:
+  `2C6106201985B60E6C7AC87323F3D4EA75716059` and
+  `7F38BBB59D064DBCB3D84D725612B36462313325`.
+</Callout>
+
+## System Requirements
+
+- A 64-bit operating system: Linux, macOS or Windows
+- `git` on your `PATH` — `gh` shells out to it for most commands
+- A GitHub account (GitHub.com, GitHub Enterprise Cloud or GitHub Enterprise Server 2.20+)
 
 ## Installation Instructions
 
-<Tabs defaultValue="ubuntu">
+<Tabs defaultValue="debian">
   <TabsList>
-    <TabsTrigger value="ubuntu">Ubuntu/Debian</TabsTrigger>
-    <TabsTrigger value="centos">CentOS/RHEL</TabsTrigger>
-    <TabsTrigger value="fedora">Fedora</TabsTrigger>
-    <TabsTrigger value="arch">Arch Linux</TabsTrigger>
-    <TabsTrigger value="alpine">Alpine</TabsTrigger>
-    <TabsTrigger value="suse">SUSE</TabsTrigger>
+    <TabsTrigger value="debian">Debian/Ubuntu</TabsTrigger>
+    <TabsTrigger value="rpm">RHEL/CentOS</TabsTrigger>
+    <TabsTrigger value="community">Community PKGs</TabsTrigger>
     <TabsTrigger value="macos">macOS</TabsTrigger>
     <TabsTrigger value="windows">Windows</TabsTrigger>
+    <TabsTrigger value="binary">Binary</TabsTrigger>
   </TabsList>
 
-  <TabsContent value="ubuntu">
-    ### Ubuntu/Debian Installation
+  <TabsContent value="debian">
+    ### Debian / Ubuntu / Raspberry Pi (official)
 
     ```bash
-    # Add GitHub CLI repository
-    curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+    # Install the keyring and the repository in one step
+    (type -p wget >/dev/null || (sudo apt update && sudo apt install wget -y)) \
+      && sudo mkdir -p -m 755 /etc/apt/keyrings \
+      && out=$(mktemp) && wget -nv -O$out https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+      && cat $out | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null \
+      && sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+      && sudo mkdir -p -m 755 /etc/apt/sources.list.d \
+      && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+      && sudo apt update \
+      && sudo apt install gh -y
 
-    # Update package list and install
-    sudo apt update
-    sudo apt install gh -y
+    # Verify
+    gh --version
     ```
+
+    <Callout title="Check the key before you trust it">
+      ```bash
+      curl -fsSL -o - https://cli.github.com/packages/githubcli-archive-keyring.gpg | gpg --show-keys
+      ```
+      The fingerprints must match the ones listed above before you import the key.
+    </Callout>
   </TabsContent>
 
-  <TabsContent value="centos">
-    ### CentOS/RHEL Installation
+  <TabsContent value="rpm">
+    ### RHEL / CentOS / Fedora / openSUSE / SUSE (official)
+
+    DNF5 and DNF4 use different commands:
 
     ```bash
-    # For RHEL/CentOS
+    # DNF5 (Fedora 41+, RHEL 10+)
+    sudo dnf install dnf5-plugins
+    sudo dnf config-manager addrepo --from-repofile=https://cli.github.com/packages/rpm/gh-cli.repo
+    sudo dnf install gh
+
+    # DNF4 (Fedora < 41, RHEL 9)
+    sudo dnf install 'dnf-command(config-manager)'
     sudo dnf config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo
-    sudo dnf install gh -y
+    sudo dnf install gh
     ```
-  </TabsContent>
-
-  <TabsContent value="fedora">
-    ### Fedora Installation
 
     ```bash
-    # For Fedora
-    sudo dnf install gh -y
-    ```
-  </TabsContent>
-
-  <TabsContent value="arch">
-    ### Arch Linux Installation
-
-    ```bash
-    sudo pacman -S github-cli
-    ```
-  </TabsContent>
-
-  <TabsContent value="alpine">
-    ### Alpine Linux Installation
-
-    ```bash
-    sudo apk add github-cli
-    ```
-  </TabsContent>
-
-  <TabsContent value="suse">
-    ### SUSE Linux Installation
-
-    ```bash
+    # openSUSE / SUSE
     sudo zypper addrepo https://cli.github.com/packages/rpm/gh-cli.repo
     sudo zypper ref
     sudo zypper install gh
+
+    # Amazon Linux 2
+    type -p yum-config-manager >/dev/null || sudo yum install yum-utils
+    sudo yum-config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo
+    sudo yum install gh
     ```
   </TabsContent>
 
+  <TabsContent value="community">
+    ### Community-maintained packages
+
+    These are **not** maintained by the GitHub CLI team, so they often lag behind:
+
+    ```bash
+    # Arch Linux
+    sudo pacman -S github-cli
+
+    # Alpine Linux
+    sudo apk add --no-cache github-cli
+
+    # Fedora (community package)
+    sudo dnf install gh
+    ```
+
+    <Callout title="Avoid the community Debian/Ubuntu package">
+      As of November 2025 the GitHub CLI maintainers strongly recommend the official
+      Debian package: the community-distributed 2.45.x/2.46.x build is broken because it
+      uses GitHub APIs that have since been deprecated.
+    </Callout>
+  </TabsContent>
+
   <TabsContent value="macos">
-    ### macOS Installation
+    ### macOS (Homebrew)
 
     ```bash
     brew install gh
+
+    # Update later with
+    brew upgrade gh
     ```
   </TabsContent>
 
   <TabsContent value="windows">
-    ### Windows Installation
+    ### Windows
 
     ```powershell
-    # Using Winget
+    # Windows Package Manager
     winget install --id GitHub.cli
 
-    # Using Chocolatey
-    choco install gh -y
+    # Chocolatey
+    choco install gh
 
-    # Using Scoop
+    # Scoop
     scoop install gh
     ```
   </TabsContent>
+
+  <TabsContent value="binary">
+    ### Precompiled binary
+
+    Releases for `386`, `amd64`, `arm64` and `armv6` are published on the
+    [releases page](https://github.com/cli/cli/releases/latest):
+
+    ```bash
+    # Download the latest release for your architecture
+    curl -LO https://github.com/cli/cli/releases/latest/download/gh_2.102.1_linux_amd64.tar.gz
+    tar xzf gh_2.102.1_linux_amd64.tar.gz
+    sudo install gh_2.102.1_linux_amd64/bin/gh /usr/local/bin/gh
+
+    # Verify the download against the published attestation
+    gh attestation verify gh_2.102.1_linux_amd64.tar.gz --repo cli/cli
+    ```
+
+    <Callout title="Snap is discouraged">
+      The GitHub CLI team explicitly advises **never** installing `gh` as a snap — the
+      sandboxing causes real problems with authentication and credential storage.
+    </Callout>
+  </TabsContent>
 </Tabs>
 
-## Post-Installation Configuration
-
-After installing GitHub CLI, authenticate with your GitHub account:
+## Authentication
 
 ```bash
-# Start the login process
+# Interactive login — choose the host, protocol and browser or device code
 gh auth login
 
-# Follow the interactive prompts to:
-# 1. Select GitHub.com or GitHub Enterprise Server
-# 2. Choose your preferred protocol (HTTPS or SSH)
-# 3. Authenticate through your browser or with a token
+# For a headless machine, print a code instead of opening a browser
+gh auth login --web
+
+# Choose the git protocol used for clones (ssh or https)
+gh auth login --git-protocol ssh
+
+# For GitHub Enterprise Server
+gh auth login --hostname ghe.example.com
 ```
 
-## Verification
-
-Verify the installation by checking the GitHub CLI version:
-
 ```bash
-gh --version
+# Check which accounts are configured
+gh auth status
+
+# Switch between accounts
+gh auth switch --hostname github.com --user octocat
+
+# Let gh configure git to use its credentials
+gh auth setup-git
+
+# Refresh an expiring token
+gh auth refresh --scopes repo,workflow
+
+# Print the token (for scripts)
+gh auth token
 ```
 
-## Common Commands and Usage
-
-### Repository Operations
+### In CI
 
 ```bash
-# Clone a repository
-gh repo clone owner/repo
-
-# Create a new repository
-gh repo create [name] [flags]
-
-# Fork a repository
-gh repo fork [repository]
-
-# View repository
-gh repo view [repository]
+# GitHub Actions
+env:
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+run: gh pr list
 ```
 
-### Issue Management
-
 ```bash
-# Create an issue
-gh issue create
-
-# List issues
-gh issue list
-
-# View an issue
-gh issue view [issue-number]
-
-# Close an issue
-gh issue close [issue-number]
+# Or use the fine-grained token
+export GH_TOKEN=ghp_xxxxxxxxxxxx
+export GH_HOST=github.com
 ```
 
-### Pull Request Operations
+| Variable | Purpose |
+| --- | --- |
+| `GH_TOKEN` | Token used for API requests |
+| `GH_ENTERPRISE_TOKEN` | Token for GitHub Enterprise Server |
+| `GH_HOST` | Default hostname, for example `ghe.example.com` |
+| `GH_EDITOR` | Editor used by `gh pr create` and friends |
+| `GH_BROWSER` | Browser opened by `gh browse` and `gh pr create` |
+| `GH_REPO` | Default repository, so you can skip the flags |
+| `GH_TELEMETRY` | Set to `0` to disable usage telemetry |
+
+## Everyday Commands
+
+### Pull Requests
 
 ```bash
-# Create a pull request
-gh pr create
+# Create a pull request from the current branch
+gh pr create --title "Add login" --body "Closes #42" --base main
 
-# List pull requests
-gh pr list
+# List, view and check out
+gh pr list --state open
+gh pr view 123 --web
+gh pr checkout 123
 
-# Check out a pull request locally
-gh pr checkout [pr-number]
+# Review, merge and clean up
+gh pr diff 123
+gh pr review 123 --approve
+gh pr merge 123 --squash --delete-branch
+gh pr update-branch 123
+```
 
-# View a pull request
-gh pr view [pr-number]
+### Issues and Pull Requests
+
+```bash
+# Search across GitHub
+gh search issues "flaky test" --owner octocat
+gh search code "retry" --repo cli/cli
+gh search repos "devops" --limit 20
+
+# Issues
+gh issue create --title "Bug" --body "Details" --label bug
+gh issue list --assignee @me
+gh issue close 42 --comment "Fixed in #43"
+```
+
+### Workflows and Runs
+
+```bash
+# List the workflows and trigger one
+gh workflow list
+gh workflow run deploy.yml --ref main
+
+# Watch a run
+gh run list --workflow ci.yml
+gh run watch 123456789
+gh run view 123456789 --log-failed
+gh run rerun 123456789 --failed
+gh run download 123456789 --name artifacts
+```
+
+### Repositories
+
+```bash
+# Clone, fork and create
+gh repo clone cli/cli
+gh repo fork cli/cli --clone
+gh repo create my-project --private --push
+
+# Browse files in the repository
+gh repo view --web
+gh browse --branch main
+```
+
+### Secrets, Variables and Releases
+
+```bash
+# Repository secrets and variables
+gh secret set API_KEY --body "value"
+gh secret list
+gh variable set LOG_LEVEL --body "debug"
+
+# Releases
+gh release create v1.2.0 --generate-notes
+gh release upload v1.2.0 ./dist/app.tar.gz
+gh release view v1.2.0
+```
+
+### Power Features
+
+```bash
+# Verify a build attestation
+gh attestation verify oci://ghcr.io/owner/image:v1 --repo owner/repo
+
+# Install the agent skill that lets a coding agent drive gh
+gh skill install cli/cli gh --scope user
+
+# Extensions, aliases and configuration
+gh extension install dlvhdr/gh-dash
+gh alias set co "pr checkout"
+gh config set editor vim
 ```
 
 ## Troubleshooting
 
-### Common Issues
+<Accordion type="single">
+  <AccordionItem value="issue-1">
+    <AccordionTrigger>
+      "gpg: ... NO_PUBKEY" or "key ... not found" during installation
+    </AccordionTrigger>
+    <AccordionContent>
+      This is the 5 September 2026 key rotation. Re-import the keyring and update the
+      repository:
+      ```bash
+      sudo rm -f /etc/apt/keyrings/githubcli-archive-keyring.gpg
+      curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+        | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null
+      sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg
+      sudo apt update
+      ```
+      Confirm the fingerprints with `gpg --show-keys` before importing.
+    </AccordionContent>
+  </AccordionItem>
 
-1. **Authentication Failed**
-   - Ensure you have a valid GitHub account
-   - Check your internet connection
-   - Try regenerating your authentication token
-   - Verify you have the correct permissions
+  <AccordionItem value="issue-2">
+    <AccordionTrigger>
+      gh: command not found
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      which gh
+      echo $PATH
+      ```
+      The official package installs to `/usr/bin/gh`. On macOS with Homebrew, add
+      `/opt/homebrew/bin` to your `PATH`.
+    </AccordionContent>
+  </AccordionItem>
 
-2. **Command Not Found**
-   - Ensure GitHub CLI is properly installed
-   - Check if the installation directory is in your PATH
-   - Try closing and reopening your terminal
+  <AccordionItem value="issue-3">
+    <AccordionTrigger>
+      Authentication errors
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # What does gh think is authenticated?
+      gh auth status
 
-3. **API Rate Limiting**
-   - Authenticate with your GitHub account
-   - Wait for rate limit to reset
-   - Use authenticated requests
+      # Log in again
+      gh auth logout
+      gh auth login
 
-## Security Considerations
+      # Check the token works
+      gh api user
+      ```
+      A token that was revoked or has expired shows up as a 401. `gh auth refresh` issues
+      a new one when the account uses OAuth.
+    </AccordionContent>
+  </AccordionItem>
 
-1. Keep GitHub CLI updated to the latest version
-2. Use token-based authentication instead of password
-3. Enable two-factor authentication on your GitHub account
-4. Regularly rotate access tokens
-5. Be cautious when using scripts that automate GitHub CLI commands
+  <AccordionItem value="issue-4">
+    <AccordionTrigger>
+      "Could not resolve to a Repository with the name"
+    </AccordionTrigger>
+    <AccordionContent>
+      `gh` cannot work out which repository to use. Set it explicitly:
+      ```bash
+      gh repo set cli/cli
+      # or for a single command
+      gh pr list -R cli/cli
+      ```
+      Make sure you are inside a git repository with a `github.com` remote.
+    </AccordionContent>
+  </AccordionItem>
 
-## Environment Variables
+  <AccordionItem value="issue-5">
+    <AccordionTrigger>
+      API rate limit errors
+    </AccordionTrigger>
+    <AccordionContent>
+      ```bash
+      # Check the limit and when it resets
+      gh api rate_limit
+      ```
+      Authenticated requests get 5,000 requests per hour instead of 60. Make sure
+      `gh auth status` shows you are logged in, and set `GH_TOKEN` in CI.
+    </AccordionContent>
+  </AccordionItem>
 
-GitHub CLI respects several environment variables:
+  <AccordionItem value="issue-6">
+    <AccordionTrigger>
+      gh behaves differently in CI
+    </AccordionTrigger>
+    <AccordionContent>
+      `gh` never opens a browser in CI, so use the token environment variable instead of
+      the login flow:
+      ```bash
+      export GH_TOKEN=${{ secrets.GITHUB_TOKEN }}
+      gh pr list
+      ```
+      For pull requests from forks, use the read-only `GITHUB_TOKEN` — it cannot see
+      secrets by design.
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>
 
-```bash
-# Set default GitHub host
-export GH_HOST="github.com"
+## Best Practices
 
-# Set default editor
-export GH_EDITOR="vim"
+1. **Install from the official repository** — the community packages lag and the
+   Debian/Ubuntu one is currently broken.
+2. **Run `gh auth login` once per machine** and use `gh auth setup-git` so `git` uses the
+   same credentials.
+3. **Set `GH_REPO`** in CI to avoid repeating `-R` on every command.
+4. **Use `GITHUB_TOKEN` in GitHub Actions**, never a personal access token.
+5. **Prefer `gh api`** for anything the CLI does not wrap — it is the full REST API.
+6. **Set `GH_TELEMETRY=0`** if your organisation does not want usage telemetry.
+7. **Pin the CLI version** in CI images so a new release cannot change your pipeline.
+8. **Verify releases with `gh attestation verify`** before you trust a downloaded binary.
 
-# Set default browser
-export GH_BROWSER="firefox"
-```
-
-## Additional Resources
+## Next Steps
 
 - [GitHub CLI Manual](https://cli.github.com/manual/)
 - [GitHub CLI Repository](https://github.com/cli/cli)
-- [GitHub CLI Reference](https://cli.github.com/reference)
-- [GitHub Documentation](https://docs.github.com) 
+- [GitHub CLI Releases](https://github.com/cli/cli/releases/latest)
+- [Git Installation Guide](/docs/version-control/git)
+- [GitLab CLI Installation Guide](/docs/version-control/gitlab-cli)
+- [GitHub Actions Setup Guide](/docs/ci-cd/github-actions)
